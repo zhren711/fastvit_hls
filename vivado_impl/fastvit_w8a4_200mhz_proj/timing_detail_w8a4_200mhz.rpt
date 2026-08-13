@@ -1,0 +1,730 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2024.2 (win64) Build 5239630 Fri Nov 08 22:35:27 MST 2024
+| Date         : Sun Aug  9 06:00:23 2026
+| Host         : DESKTOP-GBLH5MP running 64-bit major release  (build 9200)
+| Command      : report_timing -delay_type max -max_paths 10 -sort_by group -file E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_200mhz_proj/timing_detail_w8a4_200mhz.rpt
+| Design       : fastvit_bd_wrapper
+| Device       : 7z020-clg400
+| Speed File   : -1  PRODUCTION 1.12 2019-11-22
+| Design State : Routed
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Timing Report
+
+Slack (VIOLATED) :        -3.164ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[6]/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        7.997ns  (logic 2.314ns (28.934%)  route 5.683ns (71.066%))
+  Logic Levels:           10  (CARRY4=2 LUT3=2 LUT4=2 LUT5=1 LUT6=3)
+  Clock Path Skew:        -0.146ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.740ns = ( 7.740 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.001ns
+    Clock Pessimism Removal (CPR):    0.115ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.707     3.001    fastvit_bd_i/fastvit_ip_0/inst/ap_clk
+    SLICE_X59Y63         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X59Y63         FDRE (Prop_fdre_C_Q)         0.456     3.457 r  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/Q
+                         net (fo=1, routed)           0.656     4.113    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_6_0[20]
+    SLICE_X59Y63         LUT4 (Prop_lut4_I3_O)        0.124     4.237 f  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_11/O
+                         net (fo=2, routed)           0.303     4.541    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/op_code_read_reg_4139_reg[23]
+    SLICE_X59Y64         LUT6 (Prop_lut6_I0_O)        0.124     4.665 f  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1_LOPT_REMAP/O
+                         net (fo=1, routed)           0.444     5.108    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1/O_n
+    SLICE_X62Y65         LUT5 (Prop_lut5_I4_O)        0.124     5.232 f  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_0_LOPT_REMAP/O
+                         net (fo=20, routed)          0.510     5.743    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/grp_gelu_worker_fu_2106_ap_start_reg_reg_0
+    SLICE_X56Y65         LUT6 (Prop_lut6_I1_O)        0.124     5.867 f  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][0]_srl32_i_9__0/O
+                         net (fo=72, routed)          0.831     6.698    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/op_code_read_reg_4139_reg[2]_2
+    SLICE_X57Y65         LUT4 (Prop_lut4_I0_O)        0.124     6.822 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][0]_srl32_i_3/O
+                         net (fo=97, routed)          1.456     8.278    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mem_reg
+    SLICE_X75Y49         LUT3 (Prop_lut3_I2_O)        0.124     8.402 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i_4_LOPT_REMAP/O
+                         net (fo=1, routed)           0.647     9.048    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i_4/O_n
+    SLICE_X79Y49         LUT6 (Prop_lut6_I1_O)        0.124     9.172 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i_0_LOPT_REMAP/O
+                         net (fo=23, routed)          0.836    10.008    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/push
+    SLICE_X77Y45         LUT3 (Prop_lut3_I1_O)        0.124    10.132 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i__carry_i_4/O
+                         net (fo=1, routed)           0.000    10.132    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i__carry_i_4_n_0
+    SLICE_X77Y45         CARRY4 (Prop_carry4_S[0]_CO[3])
+                                                      0.532    10.664 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry/CO[3]
+                         net (fo=1, routed)           0.000    10.664    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry_n_0
+    SLICE_X77Y46         CARRY4 (Prop_carry4_CI_O[1])
+                                                      0.334    10.998 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry__0/O[1]
+                         net (fo=1, routed)           0.000    10.998    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry__0_n_6
+    SLICE_X77Y46         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[6]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.561     7.740    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/ap_clk
+    SLICE_X77Y46         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[6]/C
+                         clock pessimism              0.115     7.855    
+                         clock uncertainty           -0.083     7.772    
+    SLICE_X77Y46         FDRE (Setup_fdre_C_D)        0.062     7.834    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[6]
+  -------------------------------------------------------------------
+                         required time                          7.834    
+                         arrival time                         -10.998    
+  -------------------------------------------------------------------
+                         slack                                 -3.164    
+
+Slack (VIOLATED) :        -3.143ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[8]/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        7.976ns  (logic 2.293ns (28.747%)  route 5.683ns (71.253%))
+  Logic Levels:           10  (CARRY4=2 LUT3=2 LUT4=2 LUT5=1 LUT6=3)
+  Clock Path Skew:        -0.146ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.740ns = ( 7.740 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.001ns
+    Clock Pessimism Removal (CPR):    0.115ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.707     3.001    fastvit_bd_i/fastvit_ip_0/inst/ap_clk
+    SLICE_X59Y63         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X59Y63         FDRE (Prop_fdre_C_Q)         0.456     3.457 r  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/Q
+                         net (fo=1, routed)           0.656     4.113    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_6_0[20]
+    SLICE_X59Y63         LUT4 (Prop_lut4_I3_O)        0.124     4.237 f  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_11/O
+                         net (fo=2, routed)           0.303     4.541    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/op_code_read_reg_4139_reg[23]
+    SLICE_X59Y64         LUT6 (Prop_lut6_I0_O)        0.124     4.665 f  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1_LOPT_REMAP/O
+                         net (fo=1, routed)           0.444     5.108    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1/O_n
+    SLICE_X62Y65         LUT5 (Prop_lut5_I4_O)        0.124     5.232 f  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_0_LOPT_REMAP/O
+                         net (fo=20, routed)          0.510     5.743    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/grp_gelu_worker_fu_2106_ap_start_reg_reg_0
+    SLICE_X56Y65         LUT6 (Prop_lut6_I1_O)        0.124     5.867 f  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][0]_srl32_i_9__0/O
+                         net (fo=72, routed)          0.831     6.698    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/op_code_read_reg_4139_reg[2]_2
+    SLICE_X57Y65         LUT4 (Prop_lut4_I0_O)        0.124     6.822 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][0]_srl32_i_3/O
+                         net (fo=97, routed)          1.456     8.278    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mem_reg
+    SLICE_X75Y49         LUT3 (Prop_lut3_I2_O)        0.124     8.402 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i_4_LOPT_REMAP/O
+                         net (fo=1, routed)           0.647     9.048    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i_4/O_n
+    SLICE_X79Y49         LUT6 (Prop_lut6_I1_O)        0.124     9.172 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i_0_LOPT_REMAP/O
+                         net (fo=23, routed)          0.836    10.008    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/push
+    SLICE_X77Y45         LUT3 (Prop_lut3_I1_O)        0.124    10.132 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i__carry_i_4/O
+                         net (fo=1, routed)           0.000    10.132    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i__carry_i_4_n_0
+    SLICE_X77Y45         CARRY4 (Prop_carry4_S[0]_CO[3])
+                                                      0.532    10.664 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry/CO[3]
+                         net (fo=1, routed)           0.000    10.664    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry_n_0
+    SLICE_X77Y46         CARRY4 (Prop_carry4_CI_O[3])
+                                                      0.313    10.977 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry__0/O[3]
+                         net (fo=1, routed)           0.000    10.977    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry__0_n_4
+    SLICE_X77Y46         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[8]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.561     7.740    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/ap_clk
+    SLICE_X77Y46         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[8]/C
+                         clock pessimism              0.115     7.855    
+                         clock uncertainty           -0.083     7.772    
+    SLICE_X77Y46         FDRE (Setup_fdre_C_D)        0.062     7.834    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[8]
+  -------------------------------------------------------------------
+                         required time                          7.834    
+                         arrival time                         -10.977    
+  -------------------------------------------------------------------
+                         slack                                 -3.143    
+
+Slack (VIOLATED) :        -3.069ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[7]/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        7.902ns  (logic 2.219ns (28.080%)  route 5.683ns (71.920%))
+  Logic Levels:           10  (CARRY4=2 LUT3=2 LUT4=2 LUT5=1 LUT6=3)
+  Clock Path Skew:        -0.146ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.740ns = ( 7.740 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.001ns
+    Clock Pessimism Removal (CPR):    0.115ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.707     3.001    fastvit_bd_i/fastvit_ip_0/inst/ap_clk
+    SLICE_X59Y63         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X59Y63         FDRE (Prop_fdre_C_Q)         0.456     3.457 r  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/Q
+                         net (fo=1, routed)           0.656     4.113    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_6_0[20]
+    SLICE_X59Y63         LUT4 (Prop_lut4_I3_O)        0.124     4.237 f  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_11/O
+                         net (fo=2, routed)           0.303     4.541    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/op_code_read_reg_4139_reg[23]
+    SLICE_X59Y64         LUT6 (Prop_lut6_I0_O)        0.124     4.665 f  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1_LOPT_REMAP/O
+                         net (fo=1, routed)           0.444     5.108    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1/O_n
+    SLICE_X62Y65         LUT5 (Prop_lut5_I4_O)        0.124     5.232 f  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_0_LOPT_REMAP/O
+                         net (fo=20, routed)          0.510     5.743    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/grp_gelu_worker_fu_2106_ap_start_reg_reg_0
+    SLICE_X56Y65         LUT6 (Prop_lut6_I1_O)        0.124     5.867 f  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][0]_srl32_i_9__0/O
+                         net (fo=72, routed)          0.831     6.698    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/op_code_read_reg_4139_reg[2]_2
+    SLICE_X57Y65         LUT4 (Prop_lut4_I0_O)        0.124     6.822 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][0]_srl32_i_3/O
+                         net (fo=97, routed)          1.456     8.278    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mem_reg
+    SLICE_X75Y49         LUT3 (Prop_lut3_I2_O)        0.124     8.402 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i_4_LOPT_REMAP/O
+                         net (fo=1, routed)           0.647     9.048    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i_4/O_n
+    SLICE_X79Y49         LUT6 (Prop_lut6_I1_O)        0.124     9.172 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i_0_LOPT_REMAP/O
+                         net (fo=23, routed)          0.836    10.008    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/push
+    SLICE_X77Y45         LUT3 (Prop_lut3_I1_O)        0.124    10.132 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i__carry_i_4/O
+                         net (fo=1, routed)           0.000    10.132    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i__carry_i_4_n_0
+    SLICE_X77Y45         CARRY4 (Prop_carry4_S[0]_CO[3])
+                                                      0.532    10.664 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry/CO[3]
+                         net (fo=1, routed)           0.000    10.664    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry_n_0
+    SLICE_X77Y46         CARRY4 (Prop_carry4_CI_O[2])
+                                                      0.239    10.903 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry__0/O[2]
+                         net (fo=1, routed)           0.000    10.903    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry__0_n_5
+    SLICE_X77Y46         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[7]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.561     7.740    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/ap_clk
+    SLICE_X77Y46         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[7]/C
+                         clock pessimism              0.115     7.855    
+                         clock uncertainty           -0.083     7.772    
+    SLICE_X77Y46         FDRE (Setup_fdre_C_D)        0.062     7.834    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[7]
+  -------------------------------------------------------------------
+                         required time                          7.834    
+                         arrival time                         -10.903    
+  -------------------------------------------------------------------
+                         slack                                 -3.069    
+
+Slack (VIOLATED) :        -3.053ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[5]/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        7.886ns  (logic 2.203ns (27.934%)  route 5.683ns (72.066%))
+  Logic Levels:           10  (CARRY4=2 LUT3=2 LUT4=2 LUT5=1 LUT6=3)
+  Clock Path Skew:        -0.146ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.740ns = ( 7.740 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.001ns
+    Clock Pessimism Removal (CPR):    0.115ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.707     3.001    fastvit_bd_i/fastvit_ip_0/inst/ap_clk
+    SLICE_X59Y63         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X59Y63         FDRE (Prop_fdre_C_Q)         0.456     3.457 r  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/Q
+                         net (fo=1, routed)           0.656     4.113    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_6_0[20]
+    SLICE_X59Y63         LUT4 (Prop_lut4_I3_O)        0.124     4.237 f  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_11/O
+                         net (fo=2, routed)           0.303     4.541    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/op_code_read_reg_4139_reg[23]
+    SLICE_X59Y64         LUT6 (Prop_lut6_I0_O)        0.124     4.665 f  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1_LOPT_REMAP/O
+                         net (fo=1, routed)           0.444     5.108    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1/O_n
+    SLICE_X62Y65         LUT5 (Prop_lut5_I4_O)        0.124     5.232 f  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_0_LOPT_REMAP/O
+                         net (fo=20, routed)          0.510     5.743    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/grp_gelu_worker_fu_2106_ap_start_reg_reg_0
+    SLICE_X56Y65         LUT6 (Prop_lut6_I1_O)        0.124     5.867 f  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][0]_srl32_i_9__0/O
+                         net (fo=72, routed)          0.831     6.698    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/op_code_read_reg_4139_reg[2]_2
+    SLICE_X57Y65         LUT4 (Prop_lut4_I0_O)        0.124     6.822 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][0]_srl32_i_3/O
+                         net (fo=97, routed)          1.456     8.278    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mem_reg
+    SLICE_X75Y49         LUT3 (Prop_lut3_I2_O)        0.124     8.402 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i_4_LOPT_REMAP/O
+                         net (fo=1, routed)           0.647     9.048    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i_4/O_n
+    SLICE_X79Y49         LUT6 (Prop_lut6_I1_O)        0.124     9.172 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i_0_LOPT_REMAP/O
+                         net (fo=23, routed)          0.836    10.008    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/push
+    SLICE_X77Y45         LUT3 (Prop_lut3_I1_O)        0.124    10.132 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i__carry_i_4/O
+                         net (fo=1, routed)           0.000    10.132    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/i__carry_i_4_n_0
+    SLICE_X77Y45         CARRY4 (Prop_carry4_S[0]_CO[3])
+                                                      0.532    10.664 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry/CO[3]
+                         net (fo=1, routed)           0.000    10.664    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry_n_0
+    SLICE_X77Y46         CARRY4 (Prop_carry4_CI_O[0])
+                                                      0.223    10.887 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry__0/O[0]
+                         net (fo=1, routed)           0.000    10.887    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr0_inferred__0/i__carry__0_n_7
+    SLICE_X77Y46         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[5]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.561     7.740    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/ap_clk
+    SLICE_X77Y46         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[5]/C
+                         clock pessimism              0.115     7.855    
+                         clock uncertainty           -0.083     7.772    
+    SLICE_X77Y46         FDRE (Setup_fdre_C_D)        0.062     7.834    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/mOutPtr_reg[5]
+  -------------------------------------------------------------------
+                         required time                          7.834    
+                         arrival time                         -10.887    
+  -------------------------------------------------------------------
+                         slack                                 -3.053    
+
+Slack (VIOLATED) :        -2.990ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[6]/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        7.478ns  (logic 2.314ns (30.946%)  route 5.164ns (69.054%))
+  Logic Levels:           10  (CARRY4=2 LUT3=1 LUT4=1 LUT5=1 LUT6=5)
+  Clock Path Skew:        -0.222ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.650ns = ( 7.650 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.001ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.707     3.001    fastvit_bd_i/fastvit_ip_0/inst/ap_clk
+    SLICE_X59Y63         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X59Y63         FDRE (Prop_fdre_C_Q)         0.456     3.457 f  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/Q
+                         net (fo=1, routed)           0.656     4.113    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_6_0[20]
+    SLICE_X59Y63         LUT4 (Prop_lut4_I3_O)        0.124     4.237 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_11/O
+                         net (fo=2, routed)           0.303     4.541    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/op_code_read_reg_4139_reg[23]
+    SLICE_X59Y64         LUT6 (Prop_lut6_I0_O)        0.124     4.665 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1_LOPT_REMAP/O
+                         net (fo=1, routed)           0.444     5.108    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1/O_n
+    SLICE_X62Y65         LUT5 (Prop_lut5_I4_O)        0.124     5.232 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_0_LOPT_REMAP/O
+                         net (fo=20, routed)          0.510     5.743    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/grp_gelu_worker_fu_2106_ap_start_reg_reg_0
+    SLICE_X56Y65         LUT6 (Prop_lut6_I1_O)        0.124     5.867 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][0]_srl32_i_9__0/O
+                         net (fo=72, routed)          0.949     6.815    fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/mOutPtr[7]_i_3
+    SLICE_X57Y63         LUT6 (Prop_lut6_I2_O)        0.124     6.939 r  fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_2_LOPT_REMAP/O
+                         net (fo=1, routed)           0.407     7.346    fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_2/O_n
+    SLICE_X57Y63         LUT6 (Prop_lut6_I0_O)        0.124     7.470 r  fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_0_LOPT_REMAP/O
+                         net (fo=3, routed)           0.753     8.223    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/empty_n_reg_0
+    SLICE_X50Y64         LUT6 (Prop_lut6_I1_O)        0.124     8.347 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/mOutPtr[7]_i_2/O
+                         net (fo=12, routed)          0.806     9.154    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/p_12_in
+    SLICE_X47Y67         LUT3 (Prop_lut3_I2_O)        0.124     9.278 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[4]_i_6__0/O
+                         net (fo=1, routed)           0.000     9.278    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[4]_i_6__0_n_0
+    SLICE_X47Y67         CARRY4 (Prop_carry4_S[0]_CO[3])
+                                                      0.532     9.810 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[4]_i_1__0/CO[3]
+                         net (fo=1, routed)           0.000     9.810    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[4]_i_1__0_n_0
+    SLICE_X47Y68         CARRY4 (Prop_carry4_CI_O[1])
+                                                      0.334    10.144 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[6]_i_2/O[1]
+                         net (fo=1, routed)           0.335    10.479    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[6]_i_2_n_6
+    SLICE_X46Y66         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[6]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.471     7.650    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/ap_clk
+    SLICE_X46Y66         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[6]/C
+                         clock pessimism              0.129     7.779    
+                         clock uncertainty           -0.083     7.696    
+    SLICE_X46Y66         FDRE (Setup_fdre_C_D)       -0.207     7.489    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[6]
+  -------------------------------------------------------------------
+                         required time                          7.489    
+                         arrival time                         -10.479    
+  -------------------------------------------------------------------
+                         slack                                 -2.990    
+
+Slack (VIOLATED) :        -2.971ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[5]/CE
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        7.496ns  (logic 1.572ns (20.973%)  route 5.924ns (79.027%))
+  Logic Levels:           9  (LUT4=1 LUT5=1 LUT6=7)
+  Clock Path Skew:        -0.223ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.649ns = ( 7.649 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.001ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.707     3.001    fastvit_bd_i/fastvit_ip_0/inst/ap_clk
+    SLICE_X59Y63         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X59Y63         FDRE (Prop_fdre_C_Q)         0.456     3.457 f  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/Q
+                         net (fo=1, routed)           0.656     4.113    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_6_0[20]
+    SLICE_X59Y63         LUT4 (Prop_lut4_I3_O)        0.124     4.237 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_11/O
+                         net (fo=2, routed)           0.303     4.541    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/op_code_read_reg_4139_reg[23]
+    SLICE_X59Y64         LUT6 (Prop_lut6_I0_O)        0.124     4.665 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1_LOPT_REMAP/O
+                         net (fo=1, routed)           0.444     5.108    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1/O_n
+    SLICE_X62Y65         LUT5 (Prop_lut5_I4_O)        0.124     5.232 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_0_LOPT_REMAP/O
+                         net (fo=20, routed)          0.510     5.743    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/grp_gelu_worker_fu_2106_ap_start_reg_reg_0
+    SLICE_X56Y65         LUT6 (Prop_lut6_I1_O)        0.124     5.867 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][0]_srl32_i_9__0/O
+                         net (fo=72, routed)          0.949     6.815    fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/mOutPtr[7]_i_3
+    SLICE_X57Y63         LUT6 (Prop_lut6_I2_O)        0.124     6.939 r  fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_2_LOPT_REMAP/O
+                         net (fo=1, routed)           0.407     7.346    fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_2/O_n
+    SLICE_X57Y63         LUT6 (Prop_lut6_I0_O)        0.124     7.470 r  fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_0_LOPT_REMAP/O
+                         net (fo=3, routed)           0.753     8.223    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/empty_n_reg_0
+    SLICE_X50Y64         LUT6 (Prop_lut6_I1_O)        0.124     8.347 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/mOutPtr[7]_i_2/O
+                         net (fo=12, routed)          0.649     8.997    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/p_12_in
+    SLICE_X50Y62         LUT6 (Prop_lut6_I5_O)        0.124     9.121 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[6]_i_3/O
+                         net (fo=1, routed)           0.594     9.715    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[6]_i_3_n_0
+    SLICE_X47Y64         LUT6 (Prop_lut6_I5_O)        0.124     9.839 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[6]_i_1/O
+                         net (fo=11, routed)          0.658    10.497    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[6]_i_1_n_0
+    SLICE_X46Y67         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[5]/CE
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.470     7.649    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/ap_clk
+    SLICE_X46Y67         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[5]/C
+                         clock pessimism              0.129     7.778    
+                         clock uncertainty           -0.083     7.695    
+    SLICE_X46Y67         FDRE (Setup_fdre_C_CE)      -0.169     7.526    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[5]
+  -------------------------------------------------------------------
+                         required time                          7.526    
+                         arrival time                         -10.497    
+  -------------------------------------------------------------------
+                         slack                                 -2.971    
+
+Slack (VIOLATED) :        -2.971ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[3]/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        7.459ns  (logic 1.995ns (26.744%)  route 5.464ns (73.256%))
+  Logic Levels:           9  (CARRY4=1 LUT3=1 LUT4=1 LUT5=1 LUT6=5)
+  Clock Path Skew:        -0.220ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.652ns = ( 7.652 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.001ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.707     3.001    fastvit_bd_i/fastvit_ip_0/inst/ap_clk
+    SLICE_X59Y63         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X59Y63         FDRE (Prop_fdre_C_Q)         0.456     3.457 f  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/Q
+                         net (fo=1, routed)           0.656     4.113    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_6_0[20]
+    SLICE_X59Y63         LUT4 (Prop_lut4_I3_O)        0.124     4.237 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_11/O
+                         net (fo=2, routed)           0.303     4.541    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/op_code_read_reg_4139_reg[23]
+    SLICE_X59Y64         LUT6 (Prop_lut6_I0_O)        0.124     4.665 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1_LOPT_REMAP/O
+                         net (fo=1, routed)           0.444     5.108    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1/O_n
+    SLICE_X62Y65         LUT5 (Prop_lut5_I4_O)        0.124     5.232 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_0_LOPT_REMAP/O
+                         net (fo=20, routed)          0.510     5.743    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/grp_gelu_worker_fu_2106_ap_start_reg_reg_0
+    SLICE_X56Y65         LUT6 (Prop_lut6_I1_O)        0.124     5.867 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][0]_srl32_i_9__0/O
+                         net (fo=72, routed)          0.949     6.815    fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/mOutPtr[7]_i_3
+    SLICE_X57Y63         LUT6 (Prop_lut6_I2_O)        0.124     6.939 r  fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_2_LOPT_REMAP/O
+                         net (fo=1, routed)           0.407     7.346    fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_2/O_n
+    SLICE_X57Y63         LUT6 (Prop_lut6_I0_O)        0.124     7.470 r  fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_0_LOPT_REMAP/O
+                         net (fo=3, routed)           0.753     8.223    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/empty_n_reg_0
+    SLICE_X50Y64         LUT6 (Prop_lut6_I1_O)        0.124     8.347 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/mOutPtr[7]_i_2/O
+                         net (fo=12, routed)          0.806     9.154    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/p_12_in
+    SLICE_X47Y67         LUT3 (Prop_lut3_I2_O)        0.124     9.278 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[4]_i_6__0/O
+                         net (fo=1, routed)           0.000     9.278    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[4]_i_6__0_n_0
+    SLICE_X47Y67         CARRY4 (Prop_carry4_S[0]_O[2])
+                                                      0.547     9.825 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[4]_i_1__0/O[2]
+                         net (fo=2, routed)           0.636    10.460    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[4]_i_1__0_n_5
+    SLICE_X46Y63         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[3]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.473     7.652    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/ap_clk
+    SLICE_X46Y63         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[3]/C
+                         clock pessimism              0.129     7.781    
+                         clock uncertainty           -0.083     7.698    
+    SLICE_X46Y63         FDRE (Setup_fdre_C_D)       -0.208     7.490    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[3]
+  -------------------------------------------------------------------
+                         required time                          7.490    
+                         arrival time                         -10.460    
+  -------------------------------------------------------------------
+                         slack                                 -2.971    
+
+Slack (VIOLATED) :        -2.968ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[6]/CE
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        7.493ns  (logic 1.572ns (20.979%)  route 5.921ns (79.021%))
+  Logic Levels:           9  (LUT4=1 LUT5=1 LUT6=7)
+  Clock Path Skew:        -0.222ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.650ns = ( 7.650 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.001ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.707     3.001    fastvit_bd_i/fastvit_ip_0/inst/ap_clk
+    SLICE_X59Y63         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X59Y63         FDRE (Prop_fdre_C_Q)         0.456     3.457 f  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/Q
+                         net (fo=1, routed)           0.656     4.113    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_6_0[20]
+    SLICE_X59Y63         LUT4 (Prop_lut4_I3_O)        0.124     4.237 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_11/O
+                         net (fo=2, routed)           0.303     4.541    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/op_code_read_reg_4139_reg[23]
+    SLICE_X59Y64         LUT6 (Prop_lut6_I0_O)        0.124     4.665 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1_LOPT_REMAP/O
+                         net (fo=1, routed)           0.444     5.108    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1/O_n
+    SLICE_X62Y65         LUT5 (Prop_lut5_I4_O)        0.124     5.232 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_0_LOPT_REMAP/O
+                         net (fo=20, routed)          0.510     5.743    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/grp_gelu_worker_fu_2106_ap_start_reg_reg_0
+    SLICE_X56Y65         LUT6 (Prop_lut6_I1_O)        0.124     5.867 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][0]_srl32_i_9__0/O
+                         net (fo=72, routed)          0.949     6.815    fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/mOutPtr[7]_i_3
+    SLICE_X57Y63         LUT6 (Prop_lut6_I2_O)        0.124     6.939 r  fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_2_LOPT_REMAP/O
+                         net (fo=1, routed)           0.407     7.346    fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_2/O_n
+    SLICE_X57Y63         LUT6 (Prop_lut6_I0_O)        0.124     7.470 r  fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_0_LOPT_REMAP/O
+                         net (fo=3, routed)           0.753     8.223    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/empty_n_reg_0
+    SLICE_X50Y64         LUT6 (Prop_lut6_I1_O)        0.124     8.347 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/mOutPtr[7]_i_2/O
+                         net (fo=12, routed)          0.649     8.997    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/p_12_in
+    SLICE_X50Y62         LUT6 (Prop_lut6_I5_O)        0.124     9.121 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[6]_i_3/O
+                         net (fo=1, routed)           0.594     9.715    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[6]_i_3_n_0
+    SLICE_X47Y64         LUT6 (Prop_lut6_I5_O)        0.124     9.839 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[6]_i_1/O
+                         net (fo=11, routed)          0.656    10.494    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[6]_i_1_n_0
+    SLICE_X46Y66         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[6]/CE
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.471     7.650    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/ap_clk
+    SLICE_X46Y66         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[6]/C
+                         clock pessimism              0.129     7.779    
+                         clock uncertainty           -0.083     7.696    
+    SLICE_X46Y66         FDRE (Setup_fdre_C_CE)      -0.169     7.527    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[6]
+  -------------------------------------------------------------------
+                         required time                          7.527    
+                         arrival time                         -10.494    
+  -------------------------------------------------------------------
+                         slack                                 -2.968    
+
+Slack (VIOLATED) :        -2.953ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[3]_rep/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        7.460ns  (logic 1.995ns (26.743%)  route 5.465ns (73.257%))
+  Logic Levels:           9  (CARRY4=1 LUT3=1 LUT4=1 LUT5=1 LUT6=5)
+  Clock Path Skew:        -0.219ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.653ns = ( 7.653 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.001ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.707     3.001    fastvit_bd_i/fastvit_ip_0/inst/ap_clk
+    SLICE_X59Y63         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X59Y63         FDRE (Prop_fdre_C_Q)         0.456     3.457 f  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/Q
+                         net (fo=1, routed)           0.656     4.113    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_6_0[20]
+    SLICE_X59Y63         LUT4 (Prop_lut4_I3_O)        0.124     4.237 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_11/O
+                         net (fo=2, routed)           0.303     4.541    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/op_code_read_reg_4139_reg[23]
+    SLICE_X59Y64         LUT6 (Prop_lut6_I0_O)        0.124     4.665 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1_LOPT_REMAP/O
+                         net (fo=1, routed)           0.444     5.108    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1/O_n
+    SLICE_X62Y65         LUT5 (Prop_lut5_I4_O)        0.124     5.232 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_0_LOPT_REMAP/O
+                         net (fo=20, routed)          0.510     5.743    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/grp_gelu_worker_fu_2106_ap_start_reg_reg_0
+    SLICE_X56Y65         LUT6 (Prop_lut6_I1_O)        0.124     5.867 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][0]_srl32_i_9__0/O
+                         net (fo=72, routed)          0.949     6.815    fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/mOutPtr[7]_i_3
+    SLICE_X57Y63         LUT6 (Prop_lut6_I2_O)        0.124     6.939 r  fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_2_LOPT_REMAP/O
+                         net (fo=1, routed)           0.407     7.346    fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_2/O_n
+    SLICE_X57Y63         LUT6 (Prop_lut6_I0_O)        0.124     7.470 r  fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_0_LOPT_REMAP/O
+                         net (fo=3, routed)           0.753     8.223    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/empty_n_reg_0
+    SLICE_X50Y64         LUT6 (Prop_lut6_I1_O)        0.124     8.347 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/mOutPtr[7]_i_2/O
+                         net (fo=12, routed)          0.806     9.154    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/p_12_in
+    SLICE_X47Y67         LUT3 (Prop_lut3_I2_O)        0.124     9.278 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[4]_i_6__0/O
+                         net (fo=1, routed)           0.000     9.278    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[4]_i_6__0_n_0
+    SLICE_X47Y67         CARRY4 (Prop_carry4_S[0]_O[2])
+                                                      0.547     9.825 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[4]_i_1__0/O[2]
+                         net (fo=2, routed)           0.636    10.461    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[4]_i_1__0_n_5
+    SLICE_X42Y64         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[3]_rep/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.474     7.653    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/ap_clk
+    SLICE_X42Y64         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[3]_rep/C
+                         clock pessimism              0.129     7.782    
+                         clock uncertainty           -0.083     7.699    
+    SLICE_X42Y64         FDRE (Setup_fdre_C_D)       -0.191     7.508    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[3]_rep
+  -------------------------------------------------------------------
+                         required time                          7.508    
+                         arrival time                         -10.461    
+  -------------------------------------------------------------------
+                         slack                                 -2.953    
+
+Slack (VIOLATED) :        -2.951ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[4]_rep/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        7.403ns  (logic 2.054ns (27.747%)  route 5.349ns (72.253%))
+  Logic Levels:           9  (CARRY4=1 LUT3=1 LUT4=1 LUT5=1 LUT6=5)
+  Clock Path Skew:        -0.221ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.651ns = ( 7.651 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.001ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.707     3.001    fastvit_bd_i/fastvit_ip_0/inst/ap_clk
+    SLICE_X59Y63         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X59Y63         FDRE (Prop_fdre_C_Q)         0.456     3.457 f  fastvit_bd_i/fastvit_ip_0/inst/op_code_read_reg_4139_reg[20]/Q
+                         net (fo=1, routed)           0.656     4.113    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_6_0[20]
+    SLICE_X59Y63         LUT4 (Prop_lut4_I3_O)        0.124     4.237 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/mem_reg[68][64]_srl32_i_11/O
+                         net (fo=2, routed)           0.303     4.541    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/op_code_read_reg_4139_reg[23]
+    SLICE_X59Y64         LUT6 (Prop_lut6_I0_O)        0.124     4.665 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1_LOPT_REMAP/O
+                         net (fo=1, routed)           0.444     5.108    fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_1/O_n
+    SLICE_X62Y65         LUT5 (Prop_lut5_I4_O)        0.124     5.232 r  fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/i_0_LOPT_REMAP/O
+                         net (fo=20, routed)          0.510     5.743    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/grp_gelu_worker_fu_2106_ap_start_reg_reg_0
+    SLICE_X56Y65         LUT6 (Prop_lut6_I1_O)        0.124     5.867 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][0]_srl32_i_9__0/O
+                         net (fo=72, routed)          0.949     6.815    fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/mOutPtr[7]_i_3
+    SLICE_X57Y63         LUT6 (Prop_lut6_I2_O)        0.124     6.939 r  fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_2_LOPT_REMAP/O
+                         net (fo=1, routed)           0.407     7.346    fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_2/O_n
+    SLICE_X57Y63         LUT6 (Prop_lut6_I0_O)        0.124     7.470 r  fastvit_bd_i/fastvit_ip_0/inst/grp_pwconv_worker_fu_2137/grp_pwconv_worker_Pipeline_LOAD_PW_IN_VITIS_LOOP_130_3_fu_2142/i_0_LOPT_REMAP/O
+                         net (fo=3, routed)           0.753     8.223    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/empty_n_reg_0
+    SLICE_X50Y64         LUT6 (Prop_lut6_I1_O)        0.124     8.347 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/mOutPtr[7]_i_2/O
+                         net (fo=12, routed)          0.806     9.154    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/p_12_in
+    SLICE_X47Y67         LUT3 (Prop_lut3_I2_O)        0.124     9.278 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[4]_i_6__0/O
+                         net (fo=1, routed)           0.000     9.278    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr[4]_i_6__0_n_0
+    SLICE_X47Y67         CARRY4 (Prop_carry4_S[0]_O[3])
+                                                      0.606     9.884 r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[4]_i_1__0/O[3]
+                         net (fo=2, routed)           0.520    10.404    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[4]_i_1__0_n_4
+    SLICE_X48Y64         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[4]_rep/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=55922, routed)       1.472     7.651    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/ap_clk
+    SLICE_X48Y64         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[4]_rep/C
+                         clock pessimism              0.129     7.780    
+                         clock uncertainty           -0.083     7.697    
+    SLICE_X48Y64         FDRE (Setup_fdre_C_D)       -0.244     7.453    fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[4]_rep
+  -------------------------------------------------------------------
+                         required time                          7.453    
+                         arrival time                         -10.404    
+  -------------------------------------------------------------------
+                         slack                                 -2.951    
+
+
+
+

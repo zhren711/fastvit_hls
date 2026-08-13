@@ -1,0 +1,41 @@
+INFO: [SIM 2] *************** CSIM start ***************
+INFO: [SIM 4] CSIM will launch CLANG as the compiler.
+   Compiling ../../../../pool_ip_tb.cpp in release mode
+   Compiling ../../../../pool_ip.cpp in release mode
+   Generating csim.exe
+=========================================
+  pool_ip Testbench (int8, xc7z020)
+=========================================
+
+=== Test 1: MaxPool 2x2, CH=8, 16x16, stride=2 ===
+  MISMATCH[0]: hw=-125 sw=-46
+  MISMATCH[1]: hw=-121 sw=-44
+  MISMATCH[2]: hw=-117 sw=-42
+  MISMATCH[3]: hw=-113 sw=-40
+  MISMATCH[4]: hw=-109 sw=-38
+[FAIL] MaxPool 2x2: 504/512 errors
+
+=== Test 2: MaxPool 3x3, CH=8, 16x16, stride=2, SAME ===
+  MISMATCH[0]: hw=-118 sw=-14
+  MISMATCH[1]: hw=-102 sw=-12
+  MISMATCH[2]: hw=-86 sw=-10
+  MISMATCH[3]: hw=-70 sw=-8
+  MISMATCH[4]: hw=-54 sw=-6
+[FAIL] MaxPool 3x3: 509/512 errors
+
+=== Test 3: AvgPool 2x2, CH=8, 16x16, stride=2, shift=2 ===
+  MISMATCH[0]: hw=-30 sw=-23
+  MISMATCH[1]: hw=-26 sw=-21
+  MISMATCH[2]: hw=-22 sw=-19
+  MISMATCH[3]: hw=-18 sw=-17
+  MISMATCH[4]: hw=-14 sw=-15
+[FAIL] AvgPool 2x2: 496/512 errors
+
+=== Test 4: GlobalAvgPool, CH=8, 8x8 ===
+[PASS] GlobalAvgPool
+
+=========================================
+  TOTAL ERRORS: 1509
+=========================================
+ERR: [SIM 100] 'csim_design' failed: nonzero return value.
+INFO: [SIM 3] *************** CSIM finish ***************

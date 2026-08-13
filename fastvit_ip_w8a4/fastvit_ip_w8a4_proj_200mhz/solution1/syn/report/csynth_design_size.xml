@@ -1,0 +1,61 @@
+<design_size title="Design Size Report">
+    <item name="Total Instructions per Compilation Phase">
+        <table>
+            <keys size="4">Phase, Step, Instructions, Description</keys>
+            <column name="Compile/Link">, 12138, After all functions are compiled and linked into a single design</column>
+            <column name="">, , </column>
+            <column name="Unroll/Inline">, , After user unroll and inline pragmas are applied</column>
+            <column name="">(1) unroll,  3655, user unroll pragmas are applied</column>
+            <column name="">(2) simplification,  2768, simplification of applied user unroll pragmas</column>
+            <column name="">(3) inline,  2809, user inline pragmas are applied</column>
+            <column name="">(4) simplification,  2764, simplification of applied user inline pragmas</column>
+            <column name="">, , </column>
+            <column name="Array/Struct">, , After user array partition and struct aggregate/disaggregate pragmas are applied</column>
+            <column name="">(1) array partition,  7025, user array partition pragmas are applied</column>
+            <column name="">(2) simplification,  5618, simplification of applied user array partition &amp; struct aggregate/disaggregate pragmas</column>
+            <column name="">(3) aggregate/disaggregate ,  5618, user struct aggregate/disaggregate pragmas are applied</column>
+            <column name="">(4) array reshape,  5594, apply array reshape pragmas</column>
+            <column name="">(5) access patterns,  5964, array access pattern optmizations</column>
+            <column name="">, , </column>
+            <column name="Performance">, , After transformations are applied to meet performance pragma targets</column>
+            <column name="">(1) loop simplification,  5952, loop and instruction simplification</column>
+            <column name="">(2) parallelization,  5669, loops are unrolled or pipelined to meet performance targets</column>
+            <column name="">(3) array partition,  8038, arrays are partitioned to meet performance targets</column>
+            <column name="">(4) simplification,  6925, simplification of design after performance transformations</column>
+            <column name="">, , </column>
+            <column name="HW Transforms">, , After hardware transfomations</column>
+            <column name="">(1) lowering,  7046, initial conversion to HW specific instructions</column>
+            <column name="">(2) optimizations,  6811, high level synthesis optimizations</column>
+        </table>
+    </item>
+    <item name="Instructions per Function for each Compilation Phase">
+        <hiertable>
+            <header size="7" col0="Function" col1="Location" col2="Compile/Link" col3="Unroll/Inline" col4="Array/Struct" col5="Performance" col6="HW Transforms"/>
+            <rows>
+                <row id="0" col0="fastvit_ip" col1="fastvit_ip.cpp:19" col2="12138" col3="2764" col4="5964" col5="6925" col6="6811">
+                    <row id="5" col0="conv_worker" col1="conv_worker.cpp:66" col2="2428" col3="594" col4="768" col5="819" col6="891">
+                        <row id="1" col0="read_byte" col1="conv_worker.cpp:30" col2="64" col3="" col4="" col5="" col6=""/>
+                        <row id="11" col0="conv_quant_act" col1="conv_worker.cpp:13" col2="1040" col2_disp="1,040 (4 calls)" col3="" col4="" col5="" col6=""/>
+                        <row id="6" col0="write_nibble_group4" col1="conv_worker.cpp:46" col2="469" col3="" col4="" col5="" col6=""/>
+                    </row>
+                    <row id="3" col0="dwconv_worker" col1="dwconv_worker.cpp:143" col2="4952" col3="1062" col4="2022" col5="1733" col6="1430">
+                        <row id="2" col0="dwconv_apply_act" col1="dwconv_worker.cpp:131" col2="260" col3="" col4="" col5="" col6=""/>
+                    </row>
+                    <row id="4" col0="pwconv_worker" col1="pwconv_worker.cpp:50" col2="3911" col3="801" col4="2855" col5="3918" col6="3983">
+                        <row id="7" col0="pwconv_apply_act" col1="pwconv_worker.cpp:39" col2="2080" col2_disp="2,080 (8 calls)" col3="" col4="" col5="" col6=""/>
+                    </row>
+                    <row id="9" col0="add_worker" col1="add_worker.cpp:20" col2="617" col3="196" col4="200" col5="200" col6="213"/>
+                    <row id="8" col0="gelu_worker" col1="gelu_worker.cpp:32" col2="198" col3="76" col4="80" col5="80" col6="86"/>
+                </row>
+            </rows>
+            <notes/>
+        </hiertable>
+    </item>
+    <item name="Design Size Message Settings">
+        <table>
+            <keys size="3">Message Setting, Value, Description</keys>
+            <column name="config_compile -design_size_maximum_warning">100000, Show a warning when total design instructions exceeds this value</column>
+        </table>
+    </item>
+</design_size>
+

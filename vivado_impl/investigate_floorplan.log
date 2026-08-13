@@ -1,0 +1,219 @@
+
+****** Vivado v2024.2 (64-bit)
+  **** SW Build 5239630 on Fri Nov 08 22:35:27 MST 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Fri Aug  7 05:44:13 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source investigate_floorplan.tcl
+# set_param general.maxThreads 1
+# set script_dir [file normalize [file dirname [info script]]]
+# proc probe_worker {name proj_name} {
+#     puts ""
+#     puts "========================================================"
+#     puts " $name"
+#     puts "========================================================"
+#     set dcp [file normalize "$::script_dir/${proj_name}/${proj_name}.runs/impl_1/fastvit_bd_wrapper_routed.dcp"]
+#     if {![file exists $dcp]} {
+#         puts "DCP not found: $dcp"
+#         return
+#     }
+#     open_checkpoint $dcp
+# 
+#     puts "--- Device / part ---"
+#     puts [get_property PART [current_design]]
+# 
+#     puts "--- PS7 location (fixed hard block) ---"
+#     set ps7_cells [get_cells -hierarchical -filter {REF_NAME == "PS7"}]
+#     foreach c $ps7_cells {
+#         puts "  $c  LOC=[get_property LOC $c]"
+#     }
+# 
+#     puts "--- Worst path endpoints: LOC + clock region ---"
+#     set paths [get_timing_paths -delay_type max -max_paths 3 -nworst 1]
+#     foreach p $paths {
+#         set src [get_property STARTPOINT_PIN $p]
+#         set dst [get_property ENDPOINT_PIN $p]
+#         set src_cell [get_cells -of_objects [get_pins $src]]
+#         set dst_cell [get_cells -of_objects [get_pins $dst]]
+#         puts "  SRC: $src_cell  LOC=[get_property LOC $src_cell]  BEL=[get_property BEL $src_cell]"
+#         puts "  DST: $dst_cell  LOC=[get_property LOC $dst_cell]  BEL=[get_property BEL $dst_cell]"
+#         puts "  SLACK: [get_property SLACK $p]"
+#     }
+# 
+#     puts "--- Overall placed-cell bounding box for the whole worker hierarchy ---"
+#     set all_cells [get_cells -hierarchical -filter {IS_PRIMITIVE && LOC != ""}]
+#     set minx 999999; set maxx -1; set miny 999999; set maxy -1
+#     set n 0
+#     foreach c $all_cells {
+#         set loc [get_property LOC $c]
+#         if {[regexp {SLICE_X([0-9]+)Y([0-9]+)} $loc -> x y]} {
+#             if {$x < $minx} {set minx $x}
+#             if {$x > $maxx} {set maxx $x}
+#             if {$y < $miny} {set miny $y}
+#             if {$y > $maxy} {set maxy $y}
+#             incr n
+#         }
+#     }
+#     puts "  SLICE cells counted: $n"
+#     puts "  X range: $minx - $maxx"
+#     puts "  Y range: $miny - $maxy"
+# 
+#     puts "--- Device resource column ranges (report once, same for both) ---"
+#     set slice_x_max 0
+#     set slice_y_max 0
+#     foreach s [get_sites -filter {SITE_TYPE == SLICEL || SITE_TYPE == SLICEM}] {
+#         if {[regexp {SLICE_X([0-9]+)Y([0-9]+)} $s -> x y]} {
+#             if {$x > $slice_x_max} {set slice_x_max $x}
+#             if {$y > $slice_y_max} {set slice_y_max $y}
+#         }
+#     }
+#     puts "  Max SLICE_X: $slice_x_max   Max SLICE_Y: $slice_y_max"
+#     set ramb_x {}
+#     foreach s [get_sites -filter {SITE_TYPE == RAMB36}] {
+#         if {[regexp {RAMB36_X([0-9]+)Y} $s -> x]} { lappend ramb_x $x }
+#     }
+#     puts "  RAMB36 X columns: [lsort -unique -integer $ramb_x]"
+#     set dsp_x {}
+#     foreach s [get_sites -filter {SITE_TYPE == DSP48E1}] {
+#         if {[regexp {DSP48_X([0-9]+)Y} $s -> x]} { lappend dsp_x $x }
+#     }
+#     puts "  DSP48E1 X columns: [lsort -unique -integer $dsp_x]"
+# 
+#     close_design
+# }
+# probe_worker "DWCONV_ONLY" "fastvit_dwconv_only_200mhz_proj"
+
+========================================================
+ DWCONV_ONLY
+========================================================
+Command: open_checkpoint E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_dwconv_only_200mhz_proj/fastvit_dwconv_only_200mhz_proj.runs/impl_1/fastvit_bd_wrapper_routed.dcp
+
+Starting open_checkpoint Task
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.031 . Memory (MB): peak = 311.762 ; gain = 5.992
+INFO: [Device 21-403] Loading part xc7z020clg400-1
+Netlist sorting complete. Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.672 . Memory (MB): peak = 682.168 ; gain = 0.000
+INFO: [Netlist 29-17] Analyzing 2647 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2024.2
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Read ShapeDB Complete: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.055 . Memory (MB): peak = 877.324 ; gain = 11.023
+INFO: [Timing 38-478] Restoring timing data from binary archive.
+INFO: [Timing 38-479] Binary timing data restore complete.
+INFO: [Project 1-856] Restoring constraints from binary archive.
+INFO: [Project 1-853] Binary constraint restore complete.
+INFO: [Designutils 20-5722] Start Reading Physical Databases.
+Reading placement.
+Read Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.026 . Memory (MB): peak = 1543.547 ; gain = 0.000
+Reading placer database...
+Read Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.008 . Memory (MB): peak = 1543.547 ; gain = 0.000
+Read PlaceDB: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.848 . Memory (MB): peak = 1557.484 ; gain = 13.938
+Read PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 1557.484 ; gain = 0.000
+Reading routing.
+Read RouteStorage: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.397 . Memory (MB): peak = 1582.125 ; gain = 24.641
+Read Physdb Files: Time (s): cpu = 00:00:01 ; elapsed = 00:00:01 . Memory (MB): peak = 1582.125 ; gain = 38.578
+Restored from archive | CPU: 1.000000 secs | Memory: 0.000000 MB |
+Finished XDEF File Restore: Time (s): cpu = 00:00:01 ; elapsed = 00:00:01 . Memory (MB): peak = 1582.125 ; gain = 38.578
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.007 . Memory (MB): peak = 1582.125 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 179 instances were transformed.
+  RAM16X1D => RAM32X1D (RAMD32(x2)): 1 instance 
+  RAM16X1S => RAM32X1S (RAMS32): 14 instances
+  RAM32M => RAM32M (RAMD32(x6), RAMS32(x2)): 164 instances
+
+INFO: [Project 1-604] Checkpoint was created with Vivado v2024.2 (64-bit) build 5239630
+open_checkpoint: Time (s): cpu = 00:00:11 ; elapsed = 00:00:19 . Memory (MB): peak = 1582.125 ; gain = 1289.277
+--- Device / part ---
+xc7z020clg400-1
+--- PS7 location (fixed hard block) ---
+  fastvit_bd_i/ps7_0/inst/PS7_i  LOC=PS7_X0Y0
+--- Worst path endpoints: LOC + clock region ---
+get_timing_paths: Time (s): cpu = 00:00:06 ; elapsed = 00:00:07 . Memory (MB): peak = 1636.070 ; gain = 53.945
+  SRC: fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_1093/ap_enable_reg_pp0_iter2_reg  LOC=SLICE_X37Y3  BEL=SLICEL.CFF
+  DST: fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_10_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg  LOC=RAMB18_X1Y6  BEL=RAMB18E1.RAMB18E1
+  SLACK: -0.519
+  SRC: fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_1093/lshr_ln1_reg_5754_reg[0]_replica  LOC=SLICE_X39Y2  BEL=SLICEL.BFF
+  DST: fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_14_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg  LOC=RAMB18_X2Y6  BEL=RAMB18E1.RAMB18E1
+  SLACK: -0.516
+  SRC: fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_1093/lshr_ln1_reg_5754_reg[0]_replica  LOC=SLICE_X39Y2  BEL=SLICEL.BFF
+  DST: fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_10_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg  LOC=RAMB18_X1Y6  BEL=RAMB18E1.RAMB18E1
+  SLACK: -0.456
+--- Overall placed-cell bounding box for the whole worker hierarchy ---
+  SLICE cells counted: 48868
+  X range: 0 - 113
+  Y range: 0 - 129
+--- Device resource column ranges (report once, same for both) ---
+  Max SLICE_X: 113   Max SLICE_Y: 149
+WARNING: [Vivado 12-3731] No sites matched 'SITE_TYPE == RAMB36'
+  RAMB36 X columns: 
+  DSP48E1 X columns: 0 1 2 3 4
+# probe_worker "PWCONV_ONLY" "fastvit_pwconv_only_200mhz_proj"
+
+========================================================
+ PWCONV_ONLY
+========================================================
+Command: open_checkpoint E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_pwconv_only_200mhz_proj/fastvit_pwconv_only_200mhz_proj.runs/impl_1/fastvit_bd_wrapper_routed.dcp
+
+Starting open_checkpoint Task
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.001 . Memory (MB): peak = 1648.773 ; gain = 0.000
+Netlist sorting complete. Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.495 . Memory (MB): peak = 1648.773 ; gain = 0.000
+INFO: [Netlist 29-17] Analyzing 3689 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2024.2
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Read ShapeDB Complete: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.063 . Memory (MB): peak = 1648.773 ; gain = 0.000
+INFO: [Timing 38-478] Restoring timing data from binary archive.
+INFO: [Timing 38-479] Binary timing data restore complete.
+INFO: [Project 1-856] Restoring constraints from binary archive.
+INFO: [Project 1-853] Binary constraint restore complete.
+INFO: [Designutils 20-5722] Start Reading Physical Databases.
+Reading placement.
+Read Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.033 . Memory (MB): peak = 1648.773 ; gain = 0.000
+Reading placer database...
+Read Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.008 . Memory (MB): peak = 1648.773 ; gain = 0.000
+Read PlaceDB: Time (s): cpu = 00:00:02 ; elapsed = 00:00:01 . Memory (MB): peak = 1648.773 ; gain = 0.000
+Read PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 1648.773 ; gain = 0.000
+Reading routing.
+Read RouteStorage: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.453 . Memory (MB): peak = 1663.891 ; gain = 15.117
+Read Physdb Files: Time (s): cpu = 00:00:02 ; elapsed = 00:00:02 . Memory (MB): peak = 1663.891 ; gain = 15.117
+Restored from archive | CPU: 2.000000 secs | Memory: 0.000000 MB |
+Finished XDEF File Restore: Time (s): cpu = 00:00:02 ; elapsed = 00:00:02 . Memory (MB): peak = 1663.891 ; gain = 15.117
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.007 . Memory (MB): peak = 1663.891 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 204 instances were transformed.
+  RAM16X1D => RAM32X1D (RAMD32(x2)): 1 instance 
+  RAM16X1S => RAM32X1S (RAMS32): 30 instances
+  RAM32M => RAM32M (RAMD32(x6), RAMS32(x2)): 164 instances
+  SRLC32E => SRL16E: 9 instances
+
+INFO: [Project 1-604] Checkpoint was created with Vivado v2024.2 (64-bit) build 5239630
+open_checkpoint: Time (s): cpu = 00:00:10 ; elapsed = 00:00:10 . Memory (MB): peak = 1663.891 ; gain = 15.117
+--- Device / part ---
+xc7z020clg400-1
+--- PS7 location (fixed hard block) ---
+  fastvit_bd_i/ps7_0/inst/PS7_i  LOC=PS7_X0Y0
+--- Worst path endpoints: LOC + clock region ---
+get_timing_paths: Time (s): cpu = 00:00:06 ; elapsed = 00:00:06 . Memory (MB): peak = 1733.484 ; gain = 69.594
+  SRC: fastvit_bd_i/worker_0/inst/pwconv_worker_U/grp_pwconv_worker_Pipeline_VITIS_LOOP_93_14_fu_2488_ap_start_reg_reg  LOC=SLICE_X52Y77  BEL=SLICEL.B5FF
+  DST: fastvit_bd_i/worker_0/inst/pwconv_worker_U/grp_pwconv_worker_Pipeline_VITIS_LOOP_93_14_fu_2488/s_3_fu_68_reg[29]  LOC=SLICE_X44Y81  BEL=SLICEL.AFF
+  SLACK: -0.825
+  SRC: fastvit_bd_i/worker_0/inst/pwconv_worker_U/grp_pwconv_worker_Pipeline_VITIS_LOOP_93_14_fu_2488_ap_start_reg_reg  LOC=SLICE_X52Y77  BEL=SLICEL.B5FF
+  DST: fastvit_bd_i/worker_0/inst/pwconv_worker_U/grp_pwconv_worker_Pipeline_VITIS_LOOP_93_14_fu_2488/s_3_fu_68_reg[30]  LOC=SLICE_X44Y81  BEL=SLICEL.BFF
+  SLACK: -0.825
+  SRC: fastvit_bd_i/worker_0/inst/pwconv_worker_U/grp_pwconv_worker_Pipeline_VITIS_LOOP_93_14_fu_2488_ap_start_reg_reg  LOC=SLICE_X52Y77  BEL=SLICEL.B5FF
+  DST: fastvit_bd_i/worker_0/inst/pwconv_worker_U/grp_pwconv_worker_Pipeline_VITIS_LOOP_93_14_fu_2488/s_3_fu_68_reg[5]  LOC=SLICE_X44Y75  BEL=SLICEL.AFF
+  SLACK: -0.765
+--- Overall placed-cell bounding box for the whole worker hierarchy ---
+  SLICE cells counted: 57792
+  X range: 0 - 113
+  Y range: 0 - 137
+--- Device resource column ranges (report once, same for both) ---
+  Max SLICE_X: 113   Max SLICE_Y: 149
+WARNING: [Vivado 12-3731] No sites matched 'SITE_TYPE == RAMB36'
+  RAMB36 X columns: 
+  DSP48E1 X columns: 0 1 2 3 4
+INFO: [Common 17-206] Exiting Vivado at Fri Aug  7 05:45:06 2026...

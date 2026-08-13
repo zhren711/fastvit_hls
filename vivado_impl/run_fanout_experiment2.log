@@ -1,0 +1,99 @@
+
+****** Vivado v2024.2 (64-bit)
+  **** SW Build 5239630 on Fri Nov 08 22:35:27 MST 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Fri Jul 31 01:27:29 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source try_fanout_opt.tcl
+# set proj_dir [file normalize [file dirname [info script]]/fastvit_unified_proj]
+# set routed_dcp   "$proj_dir/fastvit_unified_proj.runs/impl_1/fastvit_bd_wrapper_routed.dcp"
+# set opt_dcp      "$proj_dir/fastvit_unified_proj.runs/impl_1/fastvit_bd_wrapper_opt.dcp"
+# puts ">>> Baseline: opening routed checkpoint, reporting current WNS"
+>>> Baseline: opening routed checkpoint, reporting current WNS
+# open_checkpoint $routed_dcp
+Command: open_checkpoint E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_unified_proj/fastvit_unified_proj.runs/impl_1/fastvit_bd_wrapper_routed.dcp
+
+Starting open_checkpoint Task
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.025 . Memory (MB): peak = 310.742 ; gain = 5.566
+INFO: [Device 21-403] Loading part xc7z020clg400-1
+Netlist sorting complete. Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.565 . Memory (MB): peak = 759.125 ; gain = 0.000
+INFO: [Netlist 29-17] Analyzing 6685 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2024.2
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Read ShapeDB Complete: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.082 . Memory (MB): peak = 982.906 ; gain = 13.238
+INFO: [Timing 38-478] Restoring timing data from binary archive.
+INFO: [Timing 38-479] Binary timing data restore complete.
+INFO: [Project 1-856] Restoring constraints from binary archive.
+INFO: [Constraints 18-5170] The checkpoint was created with non-default parameter values which do not match the current Vivado settings.  Mismatching parameters are:
+  general.maxThreads
+INFO: [Project 1-853] Binary constraint restore complete.
+INFO: [Designutils 20-5722] Start Reading Physical Databases.
+Reading placement.
+Read Netlist Cache: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.059 . Memory (MB): peak = 1722.672 ; gain = 0.000
+Reading placer database...
+Read Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.008 . Memory (MB): peak = 1722.672 ; gain = 0.000
+Read PlaceDB: Time (s): cpu = 00:00:01 ; elapsed = 00:00:02 . Memory (MB): peak = 1770.902 ; gain = 48.230
+Read PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 1770.902 ; gain = 0.000
+Reading routing.
+Read RouteStorage: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.469 . Memory (MB): peak = 1823.961 ; gain = 53.059
+Read Physdb Files: Time (s): cpu = 00:00:03 ; elapsed = 00:00:02 . Memory (MB): peak = 1823.961 ; gain = 101.289
+Restored from archive | CPU: 3.000000 secs | Memory: 0.000000 MB |
+Finished XDEF File Restore: Time (s): cpu = 00:00:03 ; elapsed = 00:00:02 . Memory (MB): peak = 1823.961 ; gain = 101.289
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.011 . Memory (MB): peak = 1823.961 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 433 instances were transformed.
+  RAM16X1D => RAM32X1D (RAMD32(x2)): 257 instances
+  RAM32M => RAM32M (RAMD32(x6), RAMS32(x2)): 164 instances
+  SRLC32E => SRL16E: 12 instances
+
+INFO: [Project 1-604] Checkpoint was created with Vivado v2024.2 (64-bit) build 5239630
+open_checkpoint: Time (s): cpu = 00:00:15 ; elapsed = 00:00:15 . Memory (MB): peak = 1823.961 ; gain = 1528.863
+get_timing_paths: Time (s): cpu = 00:00:10 ; elapsed = 00:00:06 . Memory (MB): peak = 1928.191 ; gain = 104.230
+# puts ">>> Baseline WNS: [get_property SLACK [get_timing_paths -max_paths 1 -nworst 1]]"
+>>> Baseline WNS: -2.873
+# puts ">>> Attempt 1: extra phys_opt_design -directive AggressiveFanoutOpt on top of the routed design"
+>>> Attempt 1: extra phys_opt_design -directive AggressiveFanoutOpt on top of the routed design
+# phys_opt_design -directive AggressiveFanoutOpt
+Command: phys_opt_design -directive AggressiveFanoutOpt
+Attempting to get a license for feature 'Implementation' and/or device 'xc7z020'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7z020'
+INFO: [Vivado_Tcl 4-241] Physical synthesis in post route mode 
+INFO: [Vivado_Tcl 4-137] Directive used for phys_opt_design is: AggressiveFanoutOpt
+INFO: [Vivado_Tcl 4-1435] PhysOpt_Tcl_Interface Runtime Before Starting Physical Synthesis Task | CPU: 5.00s |  WALL: 3.46s
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.011 . Memory (MB): peak = 2077.676 ; gain = 0.000
+
+Starting Physical Synthesis Task
+
+Phase 1 Physical Synthesis Initialization
+INFO: [Physopt 32-721] Multithreading enabled for phys_opt_design using a maximum of 2 CPUs
+INFO: [Physopt 32-668] Current Timing Summary | WNS=-2.873 | TNS=-28827.955 | WHS=0.019 | THS=0.000 |
+Phase 1 Physical Synthesis Initialization | Checksum: 25bb470de
+
+Time (s): cpu = 00:00:14 ; elapsed = 00:00:07 . Memory (MB): peak = 2115.004 ; gain = 37.328
+WARNING: [Physopt 32-745] Physical Optimization has determined that the magnitude of the negative slack is too large and it is highly unlikely that slack will be improved. Post-Route Physical Optimization is most effective when WNS is above -0.5ns
+
+Phase 2 Critical Path Optimization
+INFO: [Physopt 32-668] Current Timing Summary | WNS=-2.873 | TNS=-28827.955 | WHS=0.019 | THS=0.000 |
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][46]_srl32_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/i_7/O_n_16.
+INFO: [Physopt 32-710] Processed net fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/i_7/O_n_16. Critical path length was reduced through logic transformation on cell fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/i_7_LOPT_REMAP_16_comp.
+INFO: [Physopt 32-952] Improved path group WNS = -2.841. Path group: clk_fpga_0. Processed net: fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/ap_predicate_pred1826_state156_reg.
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[3]_rep_n_0.  Re-placed instance fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[3]_rep
+INFO: [Physopt 32-952] Improved path group WNS = -2.798. Path group: clk_fpga_0. Processed net: fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[3]_rep_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][51]_srl32_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/i_7/O_n_13.
+INFO: [Physopt 32-710] Processed net fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/i_7/O_n_13. Critical path length was reduced through logic transformation on cell fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/i_7_LOPT_REMAP_13_comp.
+INFO: [Physopt 32-952] Improved path group WNS = -2.758. Path group: clk_fpga_0. Processed net: fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/ap_predicate_pred1826_state156_reg.
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[2]_rep_n_0.  Re-placed instance fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[2]_rep
+INFO: [Physopt 32-952] Improved path group WNS = -2.750. Path group: clk_fpga_0. Processed net: fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/raddr_reg[2]_rep_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][48]_srl32_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/i_7/O_n_10.
+INFO: [Physopt 32-710] Processed net fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/i_7/O_n_10. Critical path length was reduced through logic transformation on cell fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/i_7_LOPT_REMAP_10_comp.
+INFO: [Physopt 32-952] Improved path group WNS = -2.750. Path group: clk_fpga_0. Processed net: fastvit_bd_i/fastvit_ip_0/inst/gmem3_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/ap_predicate_pred1826_state156_reg.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/fastvit_ip_0/inst/gmem0_m_axi_U/load_unit_0/fifo_rreq/U_fifo_srl/mem_reg[68][60]_srl32_n_0.

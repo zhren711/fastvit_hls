@@ -1,0 +1,59 @@
+================================================================
+== Design Size Report
+================================================================
+
+* Total Instructions per Compilation Phase
++---------------+-----------------------------+--------------+----------------------------------------------------------------------------------------+
+| Phase         | Step                        | Instructions | Description                                                                            |
++---------------+-----------------------------+--------------+----------------------------------------------------------------------------------------+
+| Compile/Link  |                             | 12,138       | After all functions are compiled and linked into a single design                       |
+|               |                             |              |                                                                                        |
+| Unroll/Inline |                             |              | After user unroll and inline pragmas are applied                                       |
+|               | (1) unroll                  |  3,655       | user unroll pragmas are applied                                                        |
+|               | (2) simplification          |  2,768       | simplification of applied user unroll pragmas                                          |
+|               | (3) inline                  |  2,809       | user inline pragmas are applied                                                        |
+|               | (4) simplification          |  2,764       | simplification of applied user inline pragmas                                          |
+|               |                             |              |                                                                                        |
+| Array/Struct  |                             |              | After user array partition and struct aggregate/disaggregate pragmas are applied       |
+|               | (1) array partition         |  7,025       | user array partition pragmas are applied                                               |
+|               | (2) simplification          |  5,618       | simplification of applied user array partition & struct aggregate/disaggregate pragmas |
+|               | (3) aggregate/disaggregate  |  5,618       | user struct aggregate/disaggregate pragmas are applied                                 |
+|               | (4) array reshape           |  5,594       | apply array reshape pragmas                                                            |
+|               | (5) access patterns         |  5,964       | array access pattern optmizations                                                      |
+|               |                             |              |                                                                                        |
+| Performance   |                             |              | After transformations are applied to meet performance pragma targets                   |
+|               | (1) loop simplification     |  5,952       | loop and instruction simplification                                                    |
+|               | (2) parallelization         |  5,669       | loops are unrolled or pipelined to meet performance targets                            |
+|               | (3) array partition         |  8,038       | arrays are partitioned to meet performance targets                                     |
+|               | (4) simplification          |  6,925       | simplification of design after performance transformations                             |
+|               |                             |              |                                                                                        |
+| HW Transforms |                             |              | After hardware transfomations                                                          |
+|               | (1) lowering                |  7,046       | initial conversion to HW specific instructions                                         |
+|               | (2) optimizations           |  6,811       | high level synthesis optimizations                                                     |
++---------------+-----------------------------+--------------+----------------------------------------------------------------------------------------+
+
+* Instructions per Function for each Compilation Phase
++-------------------------+-----------------------+-----------------+---------------+--------------+-------------+---------------+
+| Function                | Location              | Compile/Link    | Unroll/Inline | Array/Struct | Performance | HW Transforms |
++-------------------------+-----------------------+-----------------+---------------+--------------+-------------+---------------+
+| + fastvit_ip            | fastvit_ip.cpp:19     | 12,138          | 2,764         | 5,964        | 6,925       | 6,811         |
+|  + conv_worker          | conv_worker.cpp:66    | 2,428           |  594          |  768         |  819        |  891          |
+|     read_byte           | conv_worker.cpp:30    |    64           |               |              |             |               |
+|     conv_quant_act      | conv_worker.cpp:13    | 1,040 (4 calls) |               |              |             |               |
+|     write_nibble_group4 | conv_worker.cpp:46    |   469           |               |              |             |               |
+|  + dwconv_worker        | dwconv_worker.cpp:143 | 4,952           | 1,062         | 2,022        | 1,733       | 1,430         |
+|     dwconv_apply_act    | dwconv_worker.cpp:131 |   260           |               |              |             |               |
+|  + pwconv_worker        | pwconv_worker.cpp:50  | 3,911           |  801          | 2,855        | 3,918       | 3,983         |
+|     pwconv_apply_act    | pwconv_worker.cpp:39  | 2,080 (8 calls) |               |              |             |               |
+|    add_worker           | add_worker.cpp:20     |   617           |  196          |  200         |  200        |  213          |
+|    gelu_worker          | gelu_worker.cpp:32    |   198           |   76          |   80         |   80        |   86          |
++-------------------------+-----------------------+-----------------+---------------+--------------+-------------+---------------+
+
+* Design Size Message Settings
++---------------------------------------------+--------+------------------------------------------------------------------+
+| Message Setting                             | Value  | Description                                                      |
++---------------------------------------------+--------+------------------------------------------------------------------+
+| config_compile -design_size_maximum_warning | 100000 | Show a warning when total design instructions exceeds this value |
++---------------------------------------------+--------+------------------------------------------------------------------+
+
+

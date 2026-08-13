@@ -1,0 +1,152 @@
+
+****** Vivado v2024.2 (64-bit)
+  **** SW Build 5239630 on Fri Nov 08 22:35:27 MST 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Tue Jul 28 23:06:06 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source run_impl_unified.tcl
+# set_param general.maxThreads 1
+# set part      "xc7z020clg400-1"
+# set proj_name "fastvit_unified_proj"
+# set script_dir [file normalize [file dirname [info script]]]
+# set proj_dir   "$script_dir/$proj_name"
+# set ip_fastvit "$script_dir/../fastvit_ip/fastvit_ip_proj/solution1/impl/ip"
+# create_project $proj_name $proj_dir -part $part -force
+# set_property ip_repo_paths [list [file normalize $ip_fastvit]] [current_project]
+# update_ip_catalog -rebuild
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/fastvit_ip/fastvit_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'E:/Xilinx/Vivado/2024.2/data/ip'.
+# create_bd_design fastvit_bd
+Wrote  : <E:\codes\microzed\fastvit_hls\vivado_impl\fastvit_unified_proj\fastvit_unified_proj.srcs\sources_1\bd\fastvit_bd\fastvit_bd.bd> 
+# create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 ps7_0
+# set_property -dict [list \
+#     CONFIG.PCW_USE_S_AXI_HP0            {1} \
+#     CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ {100} \
+#     CONFIG.PCW_EN_CLK0_PORT             {1} \
+#     CONFIG.PCW_USE_M_AXI_GP0            {1} \
+# ] [get_bd_cells ps7_0]
+# make_bd_intf_pins_external [get_bd_intf_pins ps7_0/DDR]
+# make_bd_intf_pins_external [get_bd_intf_pins ps7_0/FIXED_IO]
+# create_bd_cell -type ip -vlnv user.org:hls:fastvit_ip:1.1 fastvit_ip_0
+# create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ps7_0_100M
+# create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 ps_ctrl_ic
+# set_property CONFIG.NUM_SI 1 [get_bd_cells ps_ctrl_ic]
+# set_property CONFIG.NUM_MI 2 [get_bd_cells ps_ctrl_ic]
+# create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 sc_main
+# set_property CONFIG.NUM_SI 4 [get_bd_cells sc_main]
+# set clk [get_bd_pins ps7_0/FCLK_CLK0]
+# connect_bd_net $clk [get_bd_pins rst_ps7_0_100M/slowest_sync_clk]
+# connect_bd_net $clk [get_bd_pins fastvit_ip_0/ap_clk]
+# connect_bd_net $clk [get_bd_pins ps7_0/M_AXI_GP0_ACLK]
+# connect_bd_net $clk [get_bd_pins ps7_0/S_AXI_HP0_ACLK]
+# connect_bd_net $clk [get_bd_pins ps_ctrl_ic/ACLK]
+# connect_bd_net $clk [get_bd_pins ps_ctrl_ic/S00_ACLK]
+# foreach i {00 01} {
+#     connect_bd_net $clk [get_bd_pins ps_ctrl_ic/M${i}_ACLK]
+# }
+# connect_bd_net $clk [get_bd_pins sc_main/aclk]
+# connect_bd_net [get_bd_pins ps7_0/FCLK_RESET0_N] \
+#                [get_bd_pins rst_ps7_0_100M/ext_reset_in]
+# set rstn [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
+# connect_bd_net $rstn [get_bd_pins fastvit_ip_0/ap_rst_n]
+# connect_bd_net $rstn [get_bd_pins ps_ctrl_ic/ARESETN]
+# connect_bd_net $rstn [get_bd_pins ps_ctrl_ic/S00_ARESETN]
+# foreach i {00 01} {
+#     connect_bd_net $rstn [get_bd_pins ps_ctrl_ic/M${i}_ARESETN]
+# }
+# connect_bd_net $rstn [get_bd_pins sc_main/aresetn]
+# connect_bd_intf_net [get_bd_intf_pins ps7_0/M_AXI_GP0]    [get_bd_intf_pins ps_ctrl_ic/S00_AXI]
+# connect_bd_intf_net [get_bd_intf_pins ps_ctrl_ic/M00_AXI] [get_bd_intf_pins fastvit_ip_0/s_axi_control]
+# connect_bd_intf_net [get_bd_intf_pins ps_ctrl_ic/M01_AXI] [get_bd_intf_pins fastvit_ip_0/s_axi_ctrl]
+# connect_bd_intf_net [get_bd_intf_pins fastvit_ip_0/m_axi_gmem0] [get_bd_intf_pins sc_main/S00_AXI]
+# connect_bd_intf_net [get_bd_intf_pins fastvit_ip_0/m_axi_gmem1] [get_bd_intf_pins sc_main/S01_AXI]
+# connect_bd_intf_net [get_bd_intf_pins fastvit_ip_0/m_axi_gmem2] [get_bd_intf_pins sc_main/S02_AXI]
+# connect_bd_intf_net [get_bd_intf_pins fastvit_ip_0/m_axi_gmem3] [get_bd_intf_pins sc_main/S03_AXI]
+# connect_bd_intf_net [get_bd_intf_pins sc_main/M00_AXI]          [get_bd_intf_pins ps7_0/S_AXI_HP0]
+# assign_bd_address
+INFO: [BD 41-3093] Triggering Legacy Auto Assign Algorithm
+Slave segment '/ps7_0/S_AXI_HP0/HP0_DDR_LOWOCM' is being assigned into address space '/fastvit_ip_0/Data_m_axi_gmem0' at <0x0000_0000 [ 512M ]>.
+Slave segment '/ps7_0/S_AXI_HP0/HP0_DDR_LOWOCM' is being assigned into address space '/fastvit_ip_0/Data_m_axi_gmem1' at <0x0000_0000 [ 512M ]>.
+Slave segment '/ps7_0/S_AXI_HP0/HP0_DDR_LOWOCM' is being assigned into address space '/fastvit_ip_0/Data_m_axi_gmem2' at <0x0000_0000 [ 512M ]>.
+Slave segment '/ps7_0/S_AXI_HP0/HP0_DDR_LOWOCM' is being assigned into address space '/fastvit_ip_0/Data_m_axi_gmem3' at <0x0000_0000 [ 512M ]>.
+Slave segment '/fastvit_ip_0/s_axi_control/Reg' is being assigned into address space '/ps7_0/Data' at <0x4000_0000 [ 64K ]>.
+Slave segment '/fastvit_ip_0/s_axi_ctrl/Reg' is being assigned into address space '/ps7_0/Data' at <0x4001_0000 [ 64K ]>.
+# validate_bd_design
+INFO: [BD 5-943] Reserving offset range <0x0000_0000 [ 512M ]> from slave interface '/sc_main/S00_AXI' to master interface '/sc_main/M00_AXI'. This will be used by smartconnect on path for routing.
+INFO: [BD 5-943] Reserving offset range <0x0000_0000 [ 512M ]> from slave interface '/sc_main/S01_AXI' to master interface '/sc_main/M00_AXI'. This will be used by smartconnect on path for routing.
+INFO: [BD 5-943] Reserving offset range <0x0000_0000 [ 512M ]> from slave interface '/sc_main/S02_AXI' to master interface '/sc_main/M00_AXI'. This will be used by smartconnect on path for routing.
+INFO: [BD 5-943] Reserving offset range <0x0000_0000 [ 512M ]> from slave interface '/sc_main/S03_AXI' to master interface '/sc_main/M00_AXI'. This will be used by smartconnect on path for routing.
+INFO: [xilinx.com:ip:smartconnect:1.0-1] fastvit_bd_sc_main_0: SmartConnect fastvit_bd_sc_main_0 is in High-performance Mode.
+# save_bd_design
+Wrote  : <E:\codes\microzed\fastvit_hls\vivado_impl\fastvit_unified_proj\fastvit_unified_proj.srcs\sources_1\bd\fastvit_bd\fastvit_bd.bd> 
+# make_wrapper -files [get_files fastvit_bd.bd] -top
+INFO: [BD 41-1662] The design 'fastvit_bd.bd' is already validated. Therefore parameter propagation will not be re-run.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S00_AXI_arlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem0_ARLOCK'(2) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S01_AXI_arlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem1_ARLOCK'(2) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S02_AXI_arlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem2_ARLOCK'(2) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S03_AXI_awlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem3_AWLOCK'(2) - Only lower order bits will be connected.
+Verilog Output written to : E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_unified_proj/fastvit_unified_proj.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S00_AXI_arlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem0_ARLOCK'(2) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S01_AXI_arlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem1_ARLOCK'(2) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S02_AXI_arlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem2_ARLOCK'(2) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S03_AXI_awlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem3_AWLOCK'(2) - Only lower order bits will be connected.
+Verilog Output written to : E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_unified_proj/fastvit_unified_proj.gen/sources_1/bd/fastvit_bd/sim/fastvit_bd.v
+Verilog Output written to : E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_unified_proj/fastvit_unified_proj.gen/sources_1/bd/fastvit_bd/hdl/fastvit_bd_wrapper.v
+WARNING: [Vivado 12-818] No files matched '*'
+# set wrapper_files [get_files -filter {NAME =~ *fastvit_bd_wrapper.v}]
+# if {[llength $wrapper_files] == 0} {
+#     set wrapper "$proj_dir/${proj_name}.gen/sources_1/bd/fastvit_bd/hdl/fastvit_bd_wrapper.v"
+#     add_files -norecurse $wrapper
+# }
+# set_property top fastvit_bd_wrapper [current_fileset]
+# update_compile_order -fileset sources_1
+# puts ">>> Launching Synthesis (jobs=4)..."
+>>> Launching Synthesis (jobs=4)...
+# launch_runs synth_1 -jobs 4
+INFO: [BD 41-1662] The design 'fastvit_bd.bd' is already validated. Therefore parameter propagation will not be re-run.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S00_AXI_arlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem0_ARLOCK'(2) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S01_AXI_arlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem1_ARLOCK'(2) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S02_AXI_arlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem2_ARLOCK'(2) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S03_AXI_awlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem3_AWLOCK'(2) - Only lower order bits will be connected.
+Verilog Output written to : E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_unified_proj/fastvit_unified_proj.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S00_AXI_arlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem0_ARLOCK'(2) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S01_AXI_arlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem1_ARLOCK'(2) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S02_AXI_arlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem2_ARLOCK'(2) - Only lower order bits will be connected.
+WARNING: [BD 41-2384] Width mismatch when connecting pin: '/sc_main/S03_AXI_awlock'(1) to pin: '/fastvit_ip_0/m_axi_gmem3_AWLOCK'(2) - Only lower order bits will be connected.
+Verilog Output written to : E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_unified_proj/fastvit_unified_proj.gen/sources_1/bd/fastvit_bd/sim/fastvit_bd.v
+Verilog Output written to : E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_unified_proj/fastvit_unified_proj.gen/sources_1/bd/fastvit_bd/hdl/fastvit_bd_wrapper.v
+ERROR: [Common 17-232] Could not create slave interpreter 'rodin:slave23'.
+CRITICAL WARNING: [IP_Flow 19-1747] Failed to deliver file 'e:/Xilinx/Vivado/2024.2/data/ip/xilinx/processing_system7_v5_5/xit/xdc.xit': 
+ERROR: [IP_Flow 19-167] Failed to deliver one or more file(s).
+ERROR: [IP_Flow 19-3505] IP Generation error: Failed to generate IP 'ps7_0'. Failed to generate 'Vivado Synthesis' outputs: 
+ERROR: [IP_Flow 19-98] Generation of the IP CORE failed.
+Failed to generate IP 'ps7_0'. Failed to generate 'Vivado Synthesis' outputs: 
+ERROR: [BD 41-1030] Generation failed for the IP Integrator block ps7_0 
+INFO: [BD 41-1029] Generation completed for the IP Integrator block fastvit_ip_0 .
+INFO: [BD 41-1029] Generation completed for the IP Integrator block rst_ps7_0_100M .
+INFO: [BD 41-1029] Generation completed for the IP Integrator block ps_ctrl_ic/xbar .
+WARNING: [IP_Flow 19-4994] Overwriting existing constraint file 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_unified_proj/fastvit_unified_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps_ctrl_ic_imp_auto_pc_0/fastvit_bd_ps_ctrl_ic_imp_auto_pc_0_ooc.xdc'
+INFO: [BD 41-1029] Generation completed for the IP Integrator block ps_ctrl_ic/s00_couplers/auto_pc .
+Exporting to file e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_unified_proj/fastvit_unified_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_sc_main_0/bd_0/hw_handoff/fastvit_bd_sc_main_0.hwh
+Generated Hardware Definition File e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_unified_proj/fastvit_unified_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_sc_main_0/bd_0/synth/fastvit_bd_sc_main_0.hwdef
+INFO: [BD 41-1029] Generation completed for the IP Integrator block sc_main .
+Exporting to file E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_unified_proj/fastvit_unified_proj.gen/sources_1/bd/fastvit_bd/hw_handoff/fastvit_bd.hwh
+Generated Hardware Definition File E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_unified_proj/fastvit_unified_proj.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.hwdef
+INFO: [IP_Flow 19-6930] IPCACHE: runCacheChecks() number of threads = 8
+INFO: [IP_Flow 19-6921] IPCACHE: Adding cache check func to thread queue for IP fastvit_bd_fastvit_ip_0_0
+INFO: [IP_Flow 19-6921] IPCACHE: Adding cache check func to thread queue for IP fastvit_bd_ps_ctrl_ic_imp_auto_pc_0
+INFO: [IP_Flow 19-6921] IPCACHE: Adding cache check func to thread queue for IP fastvit_bd_ps_ctrl_ic_imp_xbar_0
+INFO: [IP_Flow 19-6921] IPCACHE: Adding cache check func to thread queue for IP fastvit_bd_rst_ps7_0_100M_0
+INFO: [IP_Flow 19-6921] IPCACHE: Adding cache check func to thread queue for IP fastvit_bd_sc_main_0
+INFO: [IP_Flow 19-8020] IPCACHE: runCacheChecks() calling threadPool finishWork()
+INFO: [IP_Flow 19-6924] IPCACHE: Running cache check for IP inst: fastvit_bd_fastvit_ip_0_0
+INFO: [IP_Flow 19-6924] IPCACHE: Running cache check for IP inst: fastvit_bd_ps_ctrl_ic_imp_auto_pc_0
+INFO: [IP_Flow 19-6924] IPCACHE: Running cache check for IP inst: fastvit_bd_ps_ctrl_ic_imp_xbar_0
+INFO: [IP_Flow 19-6924] IPCACHE: Running cache check for IP inst: fastvit_bd_rst_ps7_0_100M_0
+INFO: [IP_Flow 19-6924] IPCACHE: Running cache check for IP inst: fastvit_bd_sc_main_0
+ERROR: [Vivado 12-4756] Launch of runs aborted due to earlier errors while preparing sub-designs for run execution.
+INFO: [Common 17-206] Exiting Vivado at Tue Jul 28 23:06:25 2026...

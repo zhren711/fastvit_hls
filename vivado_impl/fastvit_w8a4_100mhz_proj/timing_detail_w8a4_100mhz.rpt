@@ -1,0 +1,527 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2024.2 (win64) Build 5239630 Fri Nov 08 22:35:27 MST 2024
+| Date         : Sat Aug  1 07:23:08 2026
+| Host         : DESKTOP-GBLH5MP running 64-bit major release  (build 9200)
+| Command      : report_timing -delay_type max -max_paths 10 -sort_by group -file E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_100mhz_proj/timing_detail_w8a4_100mhz.rpt
+| Design       : fastvit_bd_wrapper
+| Device       : 7z020-clg400
+| Speed File   : -1  PRODUCTION 1.12 2019-11-22
+| Design State : Routed
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Timing Report
+
+Slack (MET) :             0.410ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_5_0_reg[7]/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk_fpga_0 rise@10.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        9.407ns  (logic 0.456ns (4.847%)  route 8.951ns (95.153%))
+  Logic Levels:           0  
+  Clock Path Skew:        -0.016ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.894ns = ( 12.894 - 10.000 ) 
+    Source Clock Delay      (SCD):    3.025ns
+    Clock Pessimism Removal (CPR):    0.115ns
+  Clock Uncertainty:      0.154ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.300ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.731     3.025    fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/ap_clk
+    SLICE_X65Y41         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X65Y41         FDRE (Prop_fdre_C_Q)         0.456     3.481 r  fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/Q
+                         net (fo=59, routed)          8.951    12.432    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_6_6_reg[7]_0[7]
+    SLICE_X62Y147        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_5_0_reg[7]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                     10.000    10.000 r  
+    PS7_X0Y0             PS7                          0.000    10.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088    11.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091    11.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.715    12.894    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_clk
+    SLICE_X62Y147        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_5_0_reg[7]/C
+                         clock pessimism              0.115    13.009    
+                         clock uncertainty           -0.154    12.855    
+    SLICE_X62Y147        FDRE (Setup_fdre_C_D)       -0.013    12.842    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_5_0_reg[7]
+  -------------------------------------------------------------------
+                         required time                         12.842    
+                         arrival time                         -12.432    
+  -------------------------------------------------------------------
+                         slack                                  0.410    
+
+Slack (MET) :             0.416ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_6_2_reg[7]/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk_fpga_0 rise@10.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        9.354ns  (logic 0.456ns (4.875%)  route 8.898ns (95.125%))
+  Logic Levels:           0  
+  Clock Path Skew:        -0.015ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.895ns = ( 12.895 - 10.000 ) 
+    Source Clock Delay      (SCD):    3.025ns
+    Clock Pessimism Removal (CPR):    0.115ns
+  Clock Uncertainty:      0.154ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.300ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.731     3.025    fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/ap_clk
+    SLICE_X65Y41         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X65Y41         FDRE (Prop_fdre_C_Q)         0.456     3.481 r  fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/Q
+                         net (fo=59, routed)          8.898    12.379    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_6_6_reg[7]_0[7]
+    SLICE_X64Y147        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_6_2_reg[7]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                     10.000    10.000 r  
+    PS7_X0Y0             PS7                          0.000    10.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088    11.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091    11.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.716    12.895    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_clk
+    SLICE_X64Y147        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_6_2_reg[7]/C
+                         clock pessimism              0.115    13.010    
+                         clock uncertainty           -0.154    12.856    
+    SLICE_X64Y147        FDRE (Setup_fdre_C_D)       -0.061    12.795    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_6_2_reg[7]
+  -------------------------------------------------------------------
+                         required time                         12.795    
+                         arrival time                         -12.379    
+  -------------------------------------------------------------------
+                         slack                                  0.416    
+
+Slack (MET) :             0.428ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_6_0_reg[7]/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk_fpga_0 rise@10.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        9.340ns  (logic 0.456ns (4.882%)  route 8.884ns (95.118%))
+  Logic Levels:           0  
+  Clock Path Skew:        -0.017ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.893ns = ( 12.893 - 10.000 ) 
+    Source Clock Delay      (SCD):    3.025ns
+    Clock Pessimism Removal (CPR):    0.115ns
+  Clock Uncertainty:      0.154ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.300ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.731     3.025    fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/ap_clk
+    SLICE_X65Y41         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X65Y41         FDRE (Prop_fdre_C_Q)         0.456     3.481 r  fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/Q
+                         net (fo=59, routed)          8.884    12.365    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_6_6_reg[7]_0[7]
+    SLICE_X60Y145        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_6_0_reg[7]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                     10.000    10.000 r  
+    PS7_X0Y0             PS7                          0.000    10.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088    11.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091    11.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.714    12.893    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_clk
+    SLICE_X60Y145        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_6_0_reg[7]/C
+                         clock pessimism              0.115    13.008    
+                         clock uncertainty           -0.154    12.854    
+    SLICE_X60Y145        FDRE (Setup_fdre_C_D)       -0.061    12.793    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_6_0_reg[7]
+  -------------------------------------------------------------------
+                         required time                         12.793    
+                         arrival time                         -12.365    
+  -------------------------------------------------------------------
+                         slack                                  0.428    
+
+Slack (MET) :             0.442ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_4_2_reg[7]/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk_fpga_0 rise@10.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        9.361ns  (logic 0.456ns (4.871%)  route 8.905ns (95.129%))
+  Logic Levels:           0  
+  Clock Path Skew:        -0.015ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.895ns = ( 12.895 - 10.000 ) 
+    Source Clock Delay      (SCD):    3.025ns
+    Clock Pessimism Removal (CPR):    0.115ns
+  Clock Uncertainty:      0.154ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.300ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.731     3.025    fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/ap_clk
+    SLICE_X65Y41         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X65Y41         FDRE (Prop_fdre_C_Q)         0.456     3.481 r  fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/Q
+                         net (fo=59, routed)          8.905    12.386    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_6_6_reg[7]_0[7]
+    SLICE_X66Y148        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_4_2_reg[7]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                     10.000    10.000 r  
+    PS7_X0Y0             PS7                          0.000    10.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088    11.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091    11.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.716    12.895    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_clk
+    SLICE_X66Y148        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_4_2_reg[7]/C
+                         clock pessimism              0.115    13.010    
+                         clock uncertainty           -0.154    12.856    
+    SLICE_X66Y148        FDRE (Setup_fdre_C_D)       -0.028    12.828    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_4_2_reg[7]
+  -------------------------------------------------------------------
+                         required time                         12.828    
+                         arrival time                         -12.386    
+  -------------------------------------------------------------------
+                         slack                                  0.442    
+
+Slack (MET) :             0.446ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[4]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_0_0_reg[4]/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk_fpga_0 rise@10.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        9.242ns  (logic 0.456ns (4.934%)  route 8.786ns (95.066%))
+  Logic Levels:           0  
+  Clock Path Skew:        -0.077ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.833ns = ( 12.833 - 10.000 ) 
+    Source Clock Delay      (SCD):    3.025ns
+    Clock Pessimism Removal (CPR):    0.115ns
+  Clock Uncertainty:      0.154ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.300ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.731     3.025    fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/ap_clk
+    SLICE_X64Y41         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[4]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X64Y41         FDRE (Prop_fdre_C_Q)         0.456     3.481 r  fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[4]/Q
+                         net (fo=59, routed)          8.786    12.267    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_6_6_reg[7]_0[4]
+    SLICE_X40Y147        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_0_0_reg[4]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                     10.000    10.000 r  
+    PS7_X0Y0             PS7                          0.000    10.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088    11.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091    11.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.654    12.833    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_clk
+    SLICE_X40Y147        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_0_0_reg[4]/C
+                         clock pessimism              0.115    12.948    
+                         clock uncertainty           -0.154    12.794    
+    SLICE_X40Y147        FDRE (Setup_fdre_C_D)       -0.081    12.713    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_0_0_reg[4]
+  -------------------------------------------------------------------
+                         required time                         12.713    
+                         arrival time                         -12.267    
+  -------------------------------------------------------------------
+                         slack                                  0.446    
+
+Slack (MET) :             0.465ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_5_2_reg[7]/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk_fpga_0 rise@10.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        9.283ns  (logic 0.456ns (4.912%)  route 8.827ns (95.088%))
+  Logic Levels:           0  
+  Clock Path Skew:        -0.017ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.893ns = ( 12.893 - 10.000 ) 
+    Source Clock Delay      (SCD):    3.025ns
+    Clock Pessimism Removal (CPR):    0.115ns
+  Clock Uncertainty:      0.154ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.300ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.731     3.025    fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/ap_clk
+    SLICE_X65Y41         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X65Y41         FDRE (Prop_fdre_C_Q)         0.456     3.481 r  fastvit_bd_i/fastvit_ip_0/inst/gmem1_m_axi_U/load_unit_0/bus_wide_gen.data_buf_reg[7]/Q
+                         net (fo=59, routed)          8.827    12.308    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_6_6_reg[7]_0[7]
+    SLICE_X63Y145        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_5_2_reg[7]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                     10.000    10.000 r  
+    PS7_X0Y0             PS7                          0.000    10.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088    11.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091    11.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.714    12.893    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_clk
+    SLICE_X63Y145        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_5_2_reg[7]/C
+                         clock pessimism              0.115    13.008    
+                         clock uncertainty           -0.154    12.854    
+    SLICE_X63Y145        FDRE (Setup_fdre_C_D)       -0.081    12.773    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_5_2_reg[7]
+  -------------------------------------------------------------------
+                         required time                         12.773    
+                         arrival time                         -12.308    
+  -------------------------------------------------------------------
+                         slack                                  0.465    
+
+Slack (MET) :             0.470ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_reg[90]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_0_0_load_load_fu_2651_p1_reg[0]/CE
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk_fpga_0 rise@10.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        8.950ns  (logic 0.419ns (4.681%)  route 8.531ns (95.319%))
+  Logic Levels:           0  
+  Clock Path Skew:        -0.046ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.833ns = ( 12.833 - 10.000 ) 
+    Source Clock Delay      (SCD):    3.008ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.154ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.300ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.714     3.008    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_clk
+    SLICE_X65Y91         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_reg[90]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X65Y91         FDRE (Prop_fdre_C_Q)         0.419     3.427 r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_reg[90]/Q
+                         net (fo=429, routed)         8.531    11.958    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_state91
+    SLICE_X41Y147        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_0_0_load_load_fu_2651_p1_reg[0]/CE
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                     10.000    10.000 r  
+    PS7_X0Y0             PS7                          0.000    10.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088    11.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091    11.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.654    12.833    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_clk
+    SLICE_X41Y147        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_0_0_load_load_fu_2651_p1_reg[0]/C
+                         clock pessimism              0.129    12.962    
+                         clock uncertainty           -0.154    12.808    
+    SLICE_X41Y147        FDRE (Setup_fdre_C_CE)      -0.380    12.428    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_0_0_load_load_fu_2651_p1_reg[0]
+  -------------------------------------------------------------------
+                         required time                         12.428    
+                         arrival time                         -11.958    
+  -------------------------------------------------------------------
+                         slack                                  0.470    
+
+Slack (MET) :             0.470ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_reg[90]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_1_0_load_load_fu_2655_p1_reg[0]/CE
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk_fpga_0 rise@10.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        8.950ns  (logic 0.419ns (4.681%)  route 8.531ns (95.319%))
+  Logic Levels:           0  
+  Clock Path Skew:        -0.046ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.833ns = ( 12.833 - 10.000 ) 
+    Source Clock Delay      (SCD):    3.008ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.154ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.300ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.714     3.008    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_clk
+    SLICE_X65Y91         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_reg[90]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X65Y91         FDRE (Prop_fdre_C_Q)         0.419     3.427 r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_reg[90]/Q
+                         net (fo=429, routed)         8.531    11.958    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_state91
+    SLICE_X41Y147        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_1_0_load_load_fu_2655_p1_reg[0]/CE
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                     10.000    10.000 r  
+    PS7_X0Y0             PS7                          0.000    10.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088    11.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091    11.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.654    12.833    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_clk
+    SLICE_X41Y147        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_1_0_load_load_fu_2655_p1_reg[0]/C
+                         clock pessimism              0.129    12.962    
+                         clock uncertainty           -0.154    12.808    
+    SLICE_X41Y147        FDRE (Setup_fdre_C_CE)      -0.380    12.428    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_1_0_load_load_fu_2655_p1_reg[0]
+  -------------------------------------------------------------------
+                         required time                         12.428    
+                         arrival time                         -11.958    
+  -------------------------------------------------------------------
+                         slack                                  0.470    
+
+Slack (MET) :             0.470ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_reg[90]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_3_0_load_load_fu_2663_p1_reg[0]/CE
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk_fpga_0 rise@10.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        8.950ns  (logic 0.419ns (4.681%)  route 8.531ns (95.319%))
+  Logic Levels:           0  
+  Clock Path Skew:        -0.046ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.833ns = ( 12.833 - 10.000 ) 
+    Source Clock Delay      (SCD):    3.008ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.154ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.300ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.714     3.008    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_clk
+    SLICE_X65Y91         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_reg[90]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X65Y91         FDRE (Prop_fdre_C_Q)         0.419     3.427 r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_reg[90]/Q
+                         net (fo=429, routed)         8.531    11.958    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_state91
+    SLICE_X41Y147        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_3_0_load_load_fu_2663_p1_reg[0]/CE
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                     10.000    10.000 r  
+    PS7_X0Y0             PS7                          0.000    10.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088    11.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091    11.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.654    12.833    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_clk
+    SLICE_X41Y147        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_3_0_load_load_fu_2663_p1_reg[0]/C
+                         clock pessimism              0.129    12.962    
+                         clock uncertainty           -0.154    12.808    
+    SLICE_X41Y147        FDRE (Setup_fdre_C_CE)      -0.380    12.428    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_3_0_load_load_fu_2663_p1_reg[0]
+  -------------------------------------------------------------------
+                         required time                         12.428    
+                         arrival time                         -11.958    
+  -------------------------------------------------------------------
+                         slack                                  0.470    
+
+Slack (MET) :             0.470ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_reg[90]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_3_0_load_load_fu_2663_p1_reg[5]/CE
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk_fpga_0 rise@10.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        8.950ns  (logic 0.419ns (4.681%)  route 8.531ns (95.319%))
+  Logic Levels:           0  
+  Clock Path Skew:        -0.046ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.833ns = ( 12.833 - 10.000 ) 
+    Source Clock Delay      (SCD):    3.008ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.154ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.300ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.714     3.008    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_clk
+    SLICE_X65Y91         FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_reg[90]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X65Y91         FDRE (Prop_fdre_C_Q)         0.419     3.427 r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_reg[90]/Q
+                         net (fo=429, routed)         8.531    11.958    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_CS_fsm_state91
+    SLICE_X41Y147        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_3_0_load_load_fu_2663_p1_reg[5]/CE
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                     10.000    10.000 r  
+    PS7_X0Y0             PS7                          0.000    10.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088    11.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091    11.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=45614, routed)       1.654    12.833    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/ap_clk
+    SLICE_X41Y147        FDRE                                         r  fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_3_0_load_load_fu_2663_p1_reg[5]/C
+                         clock pessimism              0.129    12.962    
+                         clock uncertainty           -0.154    12.808    
+    SLICE_X41Y147        FDRE (Setup_fdre_C_CE)      -0.380    12.428    fastvit_bd_i/fastvit_ip_0/inst/grp_dwconv_worker_fu_3476/p_ZL9dw_wt_buf_3_0_load_load_fu_2663_p1_reg[5]
+  -------------------------------------------------------------------
+                         required time                         12.428    
+                         arrival time                         -11.958    
+  -------------------------------------------------------------------
+                         slack                                  0.470    
+
+
+
+

@@ -1,0 +1,92 @@
+
+****** Vivado v2024.2 (64-bit)
+  **** SW Build 5239630 on Fri Nov 08 22:35:27 MST 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Fri Jun 26 17:26:08 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source update_impl.tcl
+# set script_dir [file normalize [file dirname [info script]]]
+# set_param general.maxThreads 4
+# set proj_xpr "$script_dir/fastvit_util_check/fastvit_util_check.xpr"
+# puts ">>> Opening existing project: $proj_xpr"
+>>> Opening existing project: E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.xpr
+# open_project $proj_xpr
+Scanning sources...
+Finished scanning sources
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/conv_ip/conv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/dwconv_ip/dwconv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/pwconv_ip/pwconv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/add_ip/add_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/pool_ip/pool_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'E:/Xilinx/Vivado/2024.2/data/ip'.
+WARNING: [BD 41-1661] One or more IPs have been locked in the design 'fastvit_bd.bd'. Please run report_ip_status for more details and recommendations on how to fix this issue.
+List of locked IPs:
+fastvit_bd_dwconv_ip_0_0
+
+INFO: [Project 1-5579] Found utility IPs instantiated in one or more block designs which have equivalent inline hdl with improved performance and reduced diskspace. It is recommended to migrate these utility IPs to inline hdl using the command upgrade_project -migrate_to_inline_hdl. The utility IPs may be deprecated in future releases. More information on inline hdl is available in UG994.
+open_project: Time (s): cpu = 00:00:10 ; elapsed = 00:00:11 . Memory (MB): peak = 527.234 ; gain = 234.191
+# set ip_conv   "$script_dir/../conv_ip/conv_ip_proj/solution1/impl/ip"
+# set ip_dw     "$script_dir/../dwconv_ip/dwconv_ip_proj/solution1/impl/ip"
+# set ip_pw     "$script_dir/../pwconv_ip/pwconv_ip_proj/solution1/impl/ip"
+# set ip_add    "$script_dir/../add_ip/add_ip_proj/solution1/impl/ip"
+# set ip_pool   "$script_dir/../pool_ip/pool_ip_proj/solution1/impl/ip"
+# set_property ip_repo_paths [list \
+#     [file normalize $ip_conv] \
+#     [file normalize $ip_dw]   \
+#     [file normalize $ip_pw]   \
+#     [file normalize $ip_add]  \
+#     [file normalize $ip_pool] \
+# ] [current_project]
+# puts ">>> Updating IP catalog..."
+>>> Updating IP catalog...
+# update_ip_catalog -rebuild
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/conv_ip/conv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/dwconv_ip/dwconv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/pwconv_ip/pwconv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/add_ip/add_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/pool_ip/pool_ip_proj/solution1/impl/ip'.
+# open_bd_design E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.srcs/sources_1/bd/fastvit_bd/fastvit_bd.bd
+Reading block design file <E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.srcs/sources_1/bd/fastvit_bd/fastvit_bd.bd>...
+Adding component instance block -- xilinx.com:ip:processing_system7:5.5 - ps7_0
+Adding component instance block -- user.org:hls:conv_ip:1.0 - conv_ip_0
+Adding component instance block -- user.org:hls:dwconv_ip:8.0 - dwconv_ip_0
+Adding component instance block -- user.org:hls:pwconv_ip:17.0 - pwconv_ip_0
+Adding component instance block -- user.org:hls:pool_ip:1.0 - pool_ip_0
+Adding component instance block -- user.org:hls:add_ip:1.0 - add_ip_0
+Adding component instance block -- xilinx.com:ip:proc_sys_reset:5.0 - rst_ps7_0_100M
+Adding component instance block -- xilinx.com:ip:axi_interconnect:2.1 - ps_ctrl_ic
+Adding component instance block -- xilinx.com:ip:axi_crossbar:2.1 - xbar
+Adding component instance block -- xilinx.com:ip:axi_protocol_converter:2.1 - auto_pc
+Adding component instance block -- xilinx.com:ip:smartconnect:1.0 - hp0_sc_a
+Adding component instance block -- xilinx.com:ip:smartconnect:1.0 - hp0_sc_b
+Adding component instance block -- xilinx.com:ip:smartconnect:1.0 - hp0_sc_top
+Successfully read diagram <fastvit_bd> from block design file <E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.srcs/sources_1/bd/fastvit_bd/fastvit_bd.bd>
+WARNING: [Coretcl 2-176] No IPs found
+# set upgrade_ips [get_ips -filter {UPGRADE_VERSIONS != ""}]
+# if {[llength $upgrade_ips] > 0} {
+#     puts ">>> Upgrading IPs: $upgrade_ips"
+#     upgrade_ip $upgrade_ips
+# }
+# generate_target all [get_files fastvit_bd.bd]
+CRITICAL WARNING: [filemgmt 20-1365] Unable to generate target(s) for the following file is locked: E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.srcs/sources_1/bd/fastvit_bd/fastvit_bd.bd
+Locked reason: 
+* Block design contains locked IPs. Please run report_ip_status for more details and recommendations on how to fix this issue. 
+List of locked IPs: 
+fastvit_bd_dwconv_ip_0_0
+
+# save_bd_design
+# set bd_file [get_files -of_objects [get_filesets sources_1] {*.bd}]
+# puts ">>> BD file: $bd_file"
+>>> BD file: E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.srcs/sources_1/bd/fastvit_bd/fastvit_bd.bd
+# make_wrapper -files [list $bd_file] -top -force
+ERROR: [Common 17-39] 'make_wrapper' failed due to earlier errors.
+
+    while executing
+"make_wrapper -files [list $bd_file] -top -force"
+    (file "update_impl.tcl" line 56)
+INFO: [Common 17-206] Exiting Vivado at Fri Jun 26 17:26:22 2026...

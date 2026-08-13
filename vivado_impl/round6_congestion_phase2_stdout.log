@@ -1,0 +1,397 @@
+
+****** Vivado v2024.2 (64-bit)
+  **** SW Build 5239630 on Fri Nov 08 22:35:27 MST 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Wed Aug 12 21:37:52 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source round6_congestion_phase2.tcl
+# set_param general.maxThreads 1
+# set script_dir [file normalize [file dirname [info script]]]
+# set proj_dir   "$script_dir/fastvit_dsconv_fused_only_200mhz_proj"
+# set run_dir    "$proj_dir/fastvit_dsconv_fused_only_200mhz_proj.runs/impl_1"
+# set routed_preopt_dcp "$run_dir/fastvit_bd_wrapper_routed_preopt_round6cong.dcp"
+# puts ">>> Opening routed (pre-postopt) checkpoint..."
+>>> Opening routed (pre-postopt) checkpoint...
+# open_checkpoint $routed_preopt_dcp
+Command: open_checkpoint E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_dsconv_fused_only_200mhz_proj/fastvit_dsconv_fused_only_200mhz_proj.runs/impl_1/fastvit_bd_wrapper_routed_preopt_round6cong.dcp
+
+Starting open_checkpoint Task
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.024 . Memory (MB): peak = 310.543 ; gain = 5.848
+INFO: [Device 21-403] Loading part xc7z020clg400-1
+Netlist sorting complete. Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.591 . Memory (MB): peak = 757.707 ; gain = 0.000
+INFO: [Netlist 29-17] Analyzing 5466 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2024.2
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Read ShapeDB Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.083 . Memory (MB): peak = 988.484 ; gain = 14.945
+INFO: [Timing 38-478] Restoring timing data from binary archive.
+INFO: [Timing 38-479] Binary timing data restore complete.
+INFO: [Project 1-856] Restoring constraints from binary archive.
+INFO: [Constraints 18-5170] The checkpoint was created with non-default parameter values which do not match the current Vivado settings.  Mismatching parameters are:
+  general.maxThreads
+INFO: [Project 1-853] Binary constraint restore complete.
+INFO: [Designutils 20-5722] Start Reading Physical Databases.
+Reading placement.
+Read Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.049 . Memory (MB): peak = 1727.773 ; gain = 0.000
+Reading placer database...
+Read Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.008 . Memory (MB): peak = 1727.773 ; gain = 0.000
+Read PlaceDB: Time (s): cpu = 00:00:01 ; elapsed = 00:00:01 . Memory (MB): peak = 1770.215 ; gain = 42.441
+Read PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 1770.215 ; gain = 0.000
+Reading routing.
+Read RouteStorage: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.742 . Memory (MB): peak = 1817.832 ; gain = 47.617
+Read Physdb Files: Time (s): cpu = 00:00:02 ; elapsed = 00:00:02 . Memory (MB): peak = 1817.832 ; gain = 90.059
+Restored from archive | CPU: 2.000000 secs | Memory: 0.000000 MB |
+Finished XDEF File Restore: Time (s): cpu = 00:00:02 ; elapsed = 00:00:02 . Memory (MB): peak = 1817.832 ; gain = 90.059
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.010 . Memory (MB): peak = 1817.832 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 253 instances were transformed.
+  RAM16X1D => RAM32X1D (RAMD32(x2)): 1 instance 
+  RAM16X1S => RAM32X1S (RAMS32): 48 instances
+  RAM32M => RAM32M (RAMD32(x6), RAMS32(x2)): 204 instances
+
+INFO: [Project 1-604] Checkpoint was created with Vivado v2024.2 (64-bit) build 5239630
+open_checkpoint: Time (s): cpu = 00:00:15 ; elapsed = 00:00:16 . Memory (MB): peak = 1817.832 ; gain = 1525.621
+# puts ">>> Running post-route phys_opt_design (AggressiveExplore)..."
+>>> Running post-route phys_opt_design (AggressiveExplore)...
+# phys_opt_design -directive AggressiveExplore
+Command: phys_opt_design -directive AggressiveExplore
+Attempting to get a license for feature 'Implementation' and/or device 'xc7z020'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7z020'
+INFO: [Vivado_Tcl 4-241] Physical synthesis in post route mode 
+INFO: [Vivado_Tcl 4-137] Directive used for phys_opt_design is: AggressiveExplore
+
+Starting Initial Update Timing Task
+
+Time (s): cpu = 00:00:09 ; elapsed = 00:00:10 . Memory (MB): peak = 1962.004 ; gain = 20.965
+INFO: [Vivado_Tcl 4-1435] PhysOpt_Tcl_Interface Runtime Before Starting Physical Synthesis Task | CPU: 14.00s |  WALL: 14.37s
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.014 . Memory (MB): peak = 1962.324 ; gain = 0.320
+
+Starting Physical Synthesis Task
+
+Phase 1 Physical Synthesis Initialization
+INFO: [Physopt 32-721] Multithreading enabled for phys_opt_design using a maximum of 1 CPUs
+INFO: [Physopt 32-668] Current Timing Summary | WNS=-2.040 | TNS=-12547.969 | WHS=0.050 | THS=0.000 |
+Phase 1 Physical Synthesis Initialization | Checksum: 24804cdd6
+
+Time (s): cpu = 00:00:06 ; elapsed = 00:00:06 . Memory (MB): peak = 2056.445 ; gain = 94.121
+WARNING: [Physopt 32-745] Physical Optimization has determined that the magnitude of the negative slack is too large and it is highly unlikely that slack will be improved. Post-Route Physical Optimization is most effective when WNS is above -0.5ns
+
+Phase 2 Critical Path Optimization
+INFO: [Physopt 32-668] Current Timing Summary | WNS=-2.040 | TNS=-12547.969 | WHS=0.050 | THS=0.000 |
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_60_U/pw_acc_60_q0[16].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_60_address0[3].
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 20 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.997. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_15__47_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_19_U/pw_acc_19_q0[16].
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_19_address0[3].  Re-placed instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_8__36
+INFO: [Physopt 32-952] Improved path group WNS = -1.959. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_19_address0[3].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_56_U/pw_acc_56_q0[16].
+INFO: [Physopt 32-710] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_CS_fsm_reg[324]_rep__0_7[3]. Critical path length was reduced through logic transformation on cell fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_2__100_comp.
+INFO: [Physopt 32-952] Improved path group WNS = -1.949. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_56_address0[3].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_61_U/pw_acc_61_q0[16].
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 24 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.948. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_61_address0[4].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_15__47_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_86_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_105_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_CS_fsm_reg[324]_rep__0_11[3].
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[3]_repN. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716_reg[3]_replica.
+INFO: [Physopt 32-952] Improved path group WNS = -1.925. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[3]_repN.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_46_U/pw_acc_46_q0[16].
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 24 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.912. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_46_address0[4].
+INFO: [Physopt 32-952] Improved path group WNS = -1.901. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_85_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_61_address0[4].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_13__19_n_0.
+INFO: [Physopt 32-952] Improved path group WNS = -1.898. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_76_n_0.
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 19 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.883. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_85_n_0.
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 24 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.876. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_60_address0[1].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_8_U/pw_acc_8_q0[16].
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_8_address0[3].  Re-placed instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_8__5
+INFO: [Physopt 32-952] Improved path group WNS = -1.874. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_8_address0[3].
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 19 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.842. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_84_n_0.
+INFO: [Physopt 32-952] Improved path group WNS = -1.841. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_59_n_0.
+INFO: [Physopt 32-952] Improved path group WNS = -1.826. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_58__6_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_46_address0[4].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_12__43_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_76_n_0.
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_CS_fsm_reg[324]_rep__0_4[4].  Re-placed instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_1__105
+INFO: [Physopt 32-952] Improved path group WNS = -1.825. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_CS_fsm_reg[324]_rep__0_4[4].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_58_U/pw_acc_58_q0[16].
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 17 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.820. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_58_address0[1].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/p_ZL12dw_patch_buf_5_3_U/p_ZL12dw_patch_buf_5_3_q0[0].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213_p_ZL12dw_patch_buf_5_0_ce0.
+INFO: [Physopt 32-710] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213_p_ZL12dw_patch_buf_5_0_ce0. Critical path length was reduced through logic transformation on cell fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ram_reg_i_14__125_comp.
+INFO: [Physopt 32-952] Improved path group WNS = -1.818. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ram_reg_i_26__71_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_8_address0[3].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_15__3_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_88_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_CS_fsm_reg[324]_5[3].
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[2]_repN. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716_reg[2]_replica.
+INFO: [Physopt 32-952] Improved path group WNS = -1.817. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[2]_repN.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_10_U/pw_acc_10_q0[16].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_10_address0[4].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_59_n_0.
+INFO: [Physopt 32-710] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_59_n_0. Critical path length was reduced through logic transformation on cell fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_59_comp.
+INFO: [Physopt 32-952] Improved path group WNS = -1.800. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_83_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_CS_fsm_reg[324]_rep__0_4[4].
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[6]. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716_reg[6].
+INFO: [Physopt 32-952] Improved path group WNS = -1.760. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[6].
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[3]_repN. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716_reg[3]_replica.
+INFO: [Physopt 32-952] Improved path group WNS = -1.756. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[3]_repN.
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_CS_fsm_reg[324]_3[4].  Re-placed instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_1__83
+INFO: [Physopt 32-952] Improved path group WNS = -1.746. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_CS_fsm_reg[324]_3[4].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/p_ZL12dw_patch_buf_0_2_U/p_ZL12dw_patch_buf_0_2_q0[0].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213_p_ZL12dw_patch_buf_0_0_ce0.
+INFO: [Physopt 32-710] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213_p_ZL12dw_patch_buf_0_0_ce0. Critical path length was reduced through logic transformation on cell fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ram_reg_i_19__127_comp.
+INFO: [Physopt 32-952] Improved path group WNS = -1.741. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ram_reg_i_33__13_n_0.
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_8_address0[1].  Re-placed instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_10__5
+INFO: [Physopt 32-952] Improved path group WNS = -1.734. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_8_address0[1].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_56_address0[4].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_CS_fsm_reg[324]_rep__0_7[4].
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[2]_repN. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716_reg[2]_replica.
+INFO: [Physopt 32-952] Improved path group WNS = -1.702. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[2]_repN.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_8_address0[1].
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_18__3_n_0.  Re-placed instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_18__3
+INFO: [Physopt 32-952] Improved path group WNS = -1.696. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_18__3_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_58_address0[2].
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 20 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.657. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_66_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_48_U/pw_acc_48_q0[16].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_48_address0[4].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_13__17_n_0.
+INFO: [Physopt 32-952] Improved path group WNS = -1.657. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_81_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_81_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_107_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_CS_fsm_reg[324]_14[4].
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/trunc_ln555_reg_9633_pp0_iter8_reg[1]_repN. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/trunc_ln555_reg_9633_pp0_iter8_reg_reg[1]_replica.
+INFO: [Physopt 32-952] Improved path group WNS = -1.649. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/trunc_ln555_reg_9633_pp0_iter8_reg[1]_repN.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_15_U/pw_acc_15_q0[16].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_15_address0[2].
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 24 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.638. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_54__0_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/p_ZL12dw_patch_buf_6_0_U/p_ZL12dw_patch_buf_6_0_q0[0].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213_p_ZL12dw_patch_buf_6_0_ce0.
+INFO: [Physopt 32-710] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213_p_ZL12dw_patch_buf_6_0_ce0. Critical path length was reduced through logic transformation on cell fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ram_reg_i_18__126_comp.
+INFO: [Physopt 32-952] Improved path group WNS = -1.634. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ram_reg_i_30__68_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/shl_32ns_32ns_32_2_1_U1022/buff0_reg[31]_0[26].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/shl_32ns_32ns_32_2_1_U1022/buff0[27]_i_2_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/shl_32ns_32ns_32_2_1_U1022/buff0[27]_i_3_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/shl_32ns_32ns_32_2_1_U1022/trunc_ln532_reg_9551_pp0_iter10_reg_reg[2]__0_11.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/shl_32ns_32ns_32_2_1_U1022/buff0[12]_i_5__6_n_0.
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 25 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.631. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/shl_32ns_32ns_32_2_1_U1022/tmp_product[26].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_36_U/pw_acc_36_q0[16].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_36_address0[4].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_12__38_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_CS_fsm_reg[324]_rep__1_2[4].
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[6]. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716_reg[6].
+INFO: [Physopt 32-952] Improved path group WNS = -1.623. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[6].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/shl_32ns_32ns_32_2_1_U1022/buff0_reg[31]_0[25].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/shl_32ns_32ns_32_2_1_U1022/buff0[25]_i_2_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/shl_32ns_32ns_32_2_1_U1022/tmp_product[25].
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/tmp_2_reg_12297[12]. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/tmp_2_reg_12297_reg[12].
+INFO: [Physopt 32-952] Improved path group WNS = -1.622. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/tmp_2_reg_12297[12].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_14_U/pw_acc_14_q0[16].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_14_address0[1].
+INFO: [Physopt 32-952] Improved path group WNS = -1.617. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_18__41_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_19__25_n_0.
+INFO: [Physopt 32-952] Improved path group WNS = -1.614. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_98_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_30_U/pw_acc_30_q0[16].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_30_address0[2].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_17__33_n_0.
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 20 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.603. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_92_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/shl_32ns_32ns_32_2_1_U1028/buff0_reg[31]_0[31].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/shl_32ns_32ns_32_2_1_U1028/buff0[31]_i_2_n_0.
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 20 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.603. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/shl_32ns_32ns_32_2_1_U1028/buff0[31]_i_5_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_18__41_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_94_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_CS_fsm_reg[324][1].
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/trunc_ln555_reg_9633_pp0_iter8_reg[0]_repN. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/trunc_ln555_reg_9633_pp0_iter8_reg_reg[0]_replica.
+INFO: [Physopt 32-952] Improved path group WNS = -1.603. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/trunc_ln555_reg_9633_pp0_iter8_reg[0]_repN.
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4955[3].  Re-placed instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4955_reg[3]
+INFO: [Physopt 32-952] Improved path group WNS = -1.597. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4955[3].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/shl_32ns_32ns_32_2_1_U1022/buff0[12]_i_6__6_n_0.
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/tmp_6_reg_12317[12]. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/tmp_6_reg_12317_reg[12].
+INFO: [Physopt 32-952] Improved path group WNS = -1.592. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/tmp_6_reg_12317[12].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ashr_32ns_32ns_32_2_1_U1042/buff0_reg[31]_0[4].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ashr_32ns_32ns_32_2_1_U1042/buff0[4]_i_2_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ashr_32ns_32ns_32_2_1_U1042/buff0[6]_i_3_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ashr_32ns_32ns_32_2_1_U1042/trunc_ln532_reg_9551_pp0_iter10_reg_reg[2]__0_rep_4.
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 24 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.580. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ashr_32ns_32ns_32_2_1_U1042/buff0[22]_i_7_n_0.
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4967[1].  Re-placed instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4967_reg[1]
+INFO: [Physopt 32-952] Improved path group WNS = -1.580. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4967[1].
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4979[2].  Re-placed instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4979_reg[2]
+INFO: [Physopt 32-952] Improved path group WNS = -1.572. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4979[2].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/sc_main/inst/s00_entry_pipeline/s00_mmu/inst/gen_endpoint.r_cnt_reg[0].
+INFO: [Physopt 32-710] Processed net fastvit_bd_i/sc_main/inst/s00_entry_pipeline/s00_mmu/inst/r_sreg/E[0]. Critical path length was reduced through logic transformation on cell fastvit_bd_i/sc_main/inst/s00_entry_pipeline/s00_mmu/inst/r_sreg/gen_endpoint.r_cnt[4]_i_1_comp.
+INFO: [Physopt 32-952] Improved path group WNS = -1.565. Path group: clk_fpga_0. Processed net: fastvit_bd_i/sc_main/inst/s00_entry_pipeline/s00_mmu/inst/ar_sreg/state_reg[s_ready_i]_1.
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/trunc_ln555_reg_9633_pp0_iter8_reg[1]_repN. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/trunc_ln555_reg_9633_pp0_iter8_reg_reg[1]_replica.
+INFO: [Physopt 32-952] Improved path group WNS = -1.564. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/trunc_ln555_reg_9633_pp0_iter8_reg[1]_repN.
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 20 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.563. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/shl_32ns_32ns_32_2_1_U1028/buff0[31]_i_5_n_0.
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4963[1].  Re-placed instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4963_reg[1]
+INFO: [Physopt 32-952] Improved path group WNS = -1.563. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4963[1].
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4963[3].  Re-placed instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4963_reg[3]
+INFO: [Physopt 32-952] Improved path group WNS = -1.563. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4963[3].
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4967[2].  Re-placed instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4967_reg[2]
+INFO: [Physopt 32-952] Improved path group WNS = -1.563. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4967[2].
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4971[2].  Re-placed instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4971_reg[2]
+INFO: [Physopt 32-952] Improved path group WNS = -1.563. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4971[2].
+INFO: [Physopt 32-663] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4975[1].  Re-placed instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4975_reg[1]
+INFO: [Physopt 32-952] Improved path group WNS = -1.563. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4975[1].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4975[1].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4955[3]_i_2_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_4795[3]_i_2_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/flow_control_loop_pipe_sequential_init_U/ap_block_pp0_stage0_11001_repN_1.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ap_CS_fsm[200]_i_3_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/reg_49550.
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/first_iter_1_reg_8857_pp0_iter8_reg. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/first_iter_1_reg_8857_pp0_iter8_reg_reg[0]__0.
+INFO: [Physopt 32-952] Improved path group WNS = -1.562. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/first_iter_1_reg_8857_pp0_iter8_reg.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/p_ZL12dw_patch_buf_4_1_U/p_ZL12dw_patch_buf_4_1_q0[0].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213_p_ZL12dw_patch_buf_4_1_address0[7].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ram_reg_i_31__46_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_LOOP_DS_ROW_LOOP_DS_COL_fu_1946/add_ln414_1_reg_6057_pp0_iter135_reg_reg[10]__0_1[7].
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ap_predicate_pred3082_state8. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ap_predicate_pred3082_state8_reg.
+INFO: [Physopt 32-952] Improved path group WNS = -1.555. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ap_predicate_pred3082_state8.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ashr_32ns_32ns_32_2_1_U1042/buff0_reg[31]_0[4].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ashr_32ns_32ns_32_2_1_U1042/buff0[4]_i_2_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ashr_32ns_32ns_32_2_1_U1042/buff0[6]_i_3_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ashr_32ns_32ns_32_2_1_U1042/trunc_ln532_reg_9551_pp0_iter10_reg_reg[2]__0_rep_4.
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 24 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.555. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ashr_32ns_32ns_32_2_1_U1042/buff0[22]_i_6_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/p_ZL12dw_patch_buf_6_7_U/p_ZL12dw_patch_buf_6_7_q0[0].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213_p_ZL12dw_patch_buf_6_7_address0[1].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ram_reg_i_43__59_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ram_reg_i_46__55_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_COMPUTE_PW_S_fu_2646/add_ln523_reg_4689_reg[10]_25[1].
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ap_predicate_pred3126_state8. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ap_predicate_pred3126_state8_reg.
+INFO: [Physopt 32-952] Improved path group WNS = -1.544. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ap_predicate_pred3126_state8.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ashr_32ns_32ns_32_2_1_U1042/buff0[22]_i_7_n_0.
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 21 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.536. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ashr_32ns_32ns_32_2_1_U1042/tmp_product[4].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_8_U/pw_acc_8_q0[16].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_8_address0[3].
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_15__3_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_88_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ram_reg_i_105_n_0.
+INFO: [Physopt 32-953] Path group WNS did not improve. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_CS_fsm_reg[324]_5[3].
+INFO: [Common 17-14] Message 'Physopt 32-953' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[3]_repN. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716_reg[3]_replica.
+INFO: [Physopt 32-952] Improved path group WNS = -1.532. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[3]_repN.
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 18 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.529. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/tmp_59_reg_12532[14]_i_2_n_0.
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/add_ln448_reg_8964[1]. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/add_ln448_reg_8964_reg[1].
+INFO: [Physopt 32-952] Improved path group WNS = -1.525. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/add_ln448_reg_8964[1].
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/gmem3_0_WREADY_repN. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/full_n_reg_replica.
+INFO: [Physopt 32-952] Improved path group WNS = -1.524. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/gmem3_m_axi_U/store_unit_0/buff_wdata/gmem3_0_WREADY_repN.
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ap_predicate_pred3174_state8. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ap_predicate_pred3174_state8_reg.
+INFO: [Physopt 32-952] Improved path group WNS = -1.523. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_DW_PATCH_VITIS_LOOP_444_3_fu_2213/ap_predicate_pred3174_state8.
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_COMPUTE_PW_S_fu_2646/ap_CS_fsm_pp0_stage1. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_COMPUTE_PW_S_fu_2646/ap_CS_fsm_reg[1].
+INFO: [Physopt 32-952] Improved path group WNS = -1.521. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_COMPUTE_PW_S_fu_2646/ap_CS_fsm_pp0_stage1.
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_predicate_pred2585_state10. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_predicate_pred2585_state10_reg.
+INFO: [Physopt 32-952] Improved path group WNS = -1.514. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_predicate_pred2585_state10.
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_predicate_pred2767_state10. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_predicate_pred2767_state10_reg.
+INFO: [Physopt 32-952] Improved path group WNS = -1.510. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/ap_predicate_pred2767_state10.
+INFO: [Physopt 32-608] Optimized 1 net.  Swapped 22 pins.
+INFO: [Physopt 32-952] Improved path group WNS = -1.510. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912_pw_acc_19_address0[3].
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[2]_repN. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716_reg[2]_replica.
+INFO: [Physopt 32-952] Improved path group WNS = -1.507. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[2]_repN.
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/pw_acc_27_U/pw_acc_27_q0[4]. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/pw_acc_27_U/ram_reg.
+INFO: [Physopt 32-952] Improved path group WNS = -1.507. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/pw_acc_27_U/pw_acc_27_q0[4].
+INFO: [Physopt 32-703] Processed net fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[5]. Clock skew was adjusted for instance fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716_reg[5].
+INFO: [Physopt 32-952] Improved path group WNS = -1.504. Path group: clk_fpga_0. Processed net: fastvit_bd_i/worker_0/inst/grp_dsconv_worker_Pipeline_WRITEBACK_PW_VITIS_LOOP_533_6_VITIS_LOOP_555_7_fu_2912/add_ln558_reg_9716[5].
+INFO: [Physopt 32-668] Current Timing Summary | WNS=-1.504 | TNS=-11935.434 | WHS=0.028 | THS=0.000 |
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.027 . Memory (MB): peak = 2466.602 ; gain = 0.000
+Phase 2 Critical Path Optimization | Checksum: 276ec5be4
+
+Time (s): cpu = 00:11:12 ; elapsed = 00:11:14 . Memory (MB): peak = 2466.602 ; gain = 504.277
+
+Phase 3 Hold Fix Optimization
+INFO: [Physopt 32-668] Current Timing Summary | WNS=-1.504 | TNS=-11935.434 | WHS=0.028 | THS=0.000 |
+INFO: [Physopt 32-45] Identified 0 candidate net for hold slack optimization.
+INFO: [Physopt 32-234] Optimized 0 nets. Inserted 0 new ZHOLD_DELAYs. Calibrated 0 existing ZHOLD_DELAYs. Inserted 0 buffers.
+
+INFO: [Physopt 32-668] Current Timing Summary | WNS=-1.504 | TNS=-11935.434 | WHS=0.028 | THS=0.000 |
+Phase 3 Hold Fix Optimization | Checksum: 276ec5be4
+
+Time (s): cpu = 00:11:13 ; elapsed = 00:11:15 . Memory (MB): peak = 2466.602 ; gain = 504.277
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.014 . Memory (MB): peak = 2466.602 ; gain = 0.000
+INFO: [Physopt 32-669] Post Physical Optimization Timing Summary | WNS=-1.504 | TNS=-11935.434 | WHS=0.028 | THS=0.000 |
+
+Summary of Physical Synthesis Optimizations
+============================================
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+|  Optimization   |  WNS Gain (ns)  |  TNS Gain (ns)  |  Added Cells  |  Removed Cells  |  Optimized Cells/Nets  |  Dont Touch  |  Iterations  |  Elapsed   |
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+|  Critical Path  |          0.536  |        612.535  |            0  |              0  |                    69  |           0  |           1  |  00:11:08  |
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Summary of Hold Fix Optimizations
+=================================
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+|  Optimization               |  WHS Gain (ns)  |  THS Gain (ns)  |  Added LUTs  |  Added FFs  |  Optimized Nets  |  Dont Touch  |  Iterations  |  Elapsed   |
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+|  LUT1 and ZHOLD Insertion   |          0.000  |          0.000  |           0  |          0  |               0  |           0  |           0  |  00:00:01  |
+|  Total                      |          0.000  |          0.000  |           0  |          0  |               0  |           0  |           0  |  00:00:01  |
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.012 . Memory (MB): peak = 2466.602 ; gain = 0.000
+Ending Physical Synthesis Task | Checksum: 276ec5be4
+
+Time (s): cpu = 00:11:13 ; elapsed = 00:11:15 . Memory (MB): peak = 2466.602 ; gain = 504.277
+INFO: [Common 17-83] Releasing license: Implementation
+246 Infos, 1 Warnings, 0 Critical Warnings and 0 Errors encountered.
+phys_opt_design completed successfully
+phys_opt_design: Time (s): cpu = 00:11:28 ; elapsed = 00:11:30 . Memory (MB): peak = 2466.602 ; gain = 648.770
+# puts ">>> Writing routed checkpoint..."
+>>> Writing routed checkpoint...
+# write_checkpoint -force "$run_dir/fastvit_bd_wrapper_routed_round6cong.dcp"
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Write ShapeDB Complete: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.069 . Memory (MB): peak = 2466.602 ; gain = 0.000
+Wrote PlaceDB: Time (s): cpu = 00:00:02 ; elapsed = 00:00:02 . Memory (MB): peak = 2466.602 ; gain = 0.000
+Wrote PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2466.602 ; gain = 0.000
+Writing XDEF routing.
+Writing XDEF routing logical nets.
+Writing XDEF routing special nets.
+Wrote RouteStorage: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.518 . Memory (MB): peak = 2466.602 ; gain = 0.000
+Wrote Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.082 . Memory (MB): peak = 2466.602 ; gain = 0.000
+Wrote Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.008 . Memory (MB): peak = 2466.602 ; gain = 0.000
+Write Physdb Complete: Time (s): cpu = 00:00:03 ; elapsed = 00:00:03 . Memory (MB): peak = 2466.602 ; gain = 0.000
+INFO: [Common 17-1381] The checkpoint 'E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_dsconv_fused_only_200mhz_proj/fastvit_dsconv_fused_only_200mhz_proj.runs/impl_1/fastvit_bd_wrapper_routed_round6cong.dcp' has been generated.
+write_checkpoint: Time (s): cpu = 00:00:10 ; elapsed = 00:00:12 . Memory (MB): peak = 2466.602 ; gain = 0.000
+# puts ">>> Timing summary..."
+>>> Timing summary...
+# report_timing_summary -delay_type max -max_paths 20 -file "$proj_dir/timing_summary_dsconv_fused_round6cong.rpt"
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -1, Delay Type: max.
+report_timing_summary: Time (s): cpu = 00:00:11 ; elapsed = 00:00:11 . Memory (MB): peak = 2466.602 ; gain = 0.000
+# puts ">>> Utilization..."
+>>> Utilization...
+# report_utilization -file "$proj_dir/utilization_dsconv_fused_round6cong.rpt"
+# puts ">>> Detailed worst-path timing..."
+>>> Detailed worst-path timing...
+# report_timing -delay_type max -max_paths 10 -sort_by group -file "$proj_dir/timing_detail_dsconv_fused_round6cong.rpt"
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -1, Delay Type: max.
+INFO: [Timing 38-78] ReportTimingParams: -max_paths 10 -nworst 1 -delay_type max -sort_by group.
+# puts ">>> Done."
+>>> Done.
+INFO: [Common 17-206] Exiting Vivado at Wed Aug 12 21:50:02 2026...

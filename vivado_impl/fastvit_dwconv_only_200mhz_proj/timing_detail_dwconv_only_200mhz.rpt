@@ -1,0 +1,667 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2024.2 (win64) Build 5239630 Fri Nov 08 22:35:27 MST 2024
+| Date         : Sat Aug  8 09:37:02 2026
+| Host         : DESKTOP-GBLH5MP running 64-bit major release  (build 9200)
+| Command      : report_timing -delay_type max -max_paths 10 -sort_by group -file E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_dwconv_only_200mhz_proj/timing_detail_dwconv_only_200mhz.rpt
+| Design       : fastvit_bd_wrapper
+| Device       : 7z020-clg400
+| Speed File   : -1  PRODUCTION 1.12 2019-11-22
+| Design State : Physopt postRoute
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Timing Report
+
+Slack (VIOLATED) :        -0.491ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[19]/R
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        4.906ns  (logic 1.716ns (34.976%)  route 3.190ns (65.024%))
+  Logic Levels:           6  (CARRY4=4 LUT4=2)
+  Clock Path Skew:        0.022ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.799ns = ( 7.799 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.007ns
+    Clock Pessimism Removal (CPR):    0.230ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.713     3.007    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_clk
+    SLICE_X70Y25         FDRE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X70Y25         FDRE (Prop_fdre_C_Q)         0.419     3.426 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/Q
+                         net (fo=8, routed)           0.852     4.278    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/shl_ln7_fu_2715_p3[2]
+    SLICE_X71Y23         LUT4 (Prop_lut4_I2_O)        0.299     4.577 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940[29]_i_36/O
+                         net (fo=1, routed)           0.000     4.577    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940[29]_i_36_n_0
+    SLICE_X71Y23         CARRY4 (Prop_carry4_S[0]_CO[3])
+                                                      0.532     5.109 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_20/CO[3]
+                         net (fo=1, routed)           0.000     5.109    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_20_n_0
+    SLICE_X71Y24         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.223 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_11/CO[3]
+                         net (fo=1, routed)           0.009     5.232    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_11_n_0
+    SLICE_X71Y25         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.346 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_4/CO[3]
+                         net (fo=1, routed)           0.000     5.346    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_4_n_0
+    SLICE_X71Y26         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.460 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_3/CO[3]
+                         net (fo=11, routed)          1.047     6.507    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/icmp_ln156_fu_2704_p2
+    SLICE_X83Y30         LUT4 (Prop_lut4_I3_O)        0.124     6.631 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940[29]_i_1/O
+                         net (fo=30, routed)          1.283     7.913    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940
+    SLICE_X98Y35         FDRE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[19]/R
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.620     7.799    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_clk
+    SLICE_X98Y35         FDRE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[19]/C
+                         clock pessimism              0.230     8.029    
+                         clock uncertainty           -0.083     7.946    
+    SLICE_X98Y35         FDRE (Setup_fdre_C_R)       -0.524     7.422    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[19]
+  -------------------------------------------------------------------
+                         required time                          7.422    
+                         arrival time                          -7.913    
+  -------------------------------------------------------------------
+                         slack                                 -0.491    
+
+Slack (VIOLATED) :        -0.483ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/lshr_ln_reg_5754_reg[7]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_9_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg/ADDRBWRADDR[12]
+                            (rising edge-triggered cell RAMB18E1 clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        4.810ns  (logic 1.088ns (22.619%)  route 3.722ns (77.381%))
+  Logic Levels:           4  (LUT3=1 LUT4=1 LUT5=1 LUT6=1)
+  Clock Path Skew:        -0.024ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.709ns = ( 7.709 - 5.000 ) 
+    Source Clock Delay      (SCD):    2.962ns
+    Clock Pessimism Removal (CPR):    0.230ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.668     2.962    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ap_clk
+    SLICE_X48Y2          FDRE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/lshr_ln_reg_5754_reg[7]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X48Y2          FDRE (Prop_fdre_C_Q)         0.419     3.381 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/lshr_ln_reg_5754_reg[7]/Q
+                         net (fo=12, routed)          0.732     4.113    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/lshr_ln_reg_5754[7]
+    SLICE_X49Y3          LUT4 (Prop_lut4_I3_O)        0.297     4.410 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_51__1/O
+                         net (fo=19, routed)          0.835     5.244    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_51__1_n_0
+    SLICE_X47Y7          LUT5 (Prop_lut5_I4_O)        0.124     5.368 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_42__2/O
+                         net (fo=2, routed)           0.622     5.990    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_42__2_n_0
+    SLICE_X46Y9          LUT3 (Prop_lut3_I0_O)        0.124     6.114 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_14__13/O
+                         net (fo=4, routed)           0.951     7.065    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_14__13_n_0
+    SLICE_X35Y11         LUT6 (Prop_lut6_I3_O)        0.124     7.189 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_3__10/O
+                         net (fo=1, routed)           0.583     7.772    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_9_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ADDRBWRADDR[8]
+    RAMB18_X2Y5          RAMB18E1                                     r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_9_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg/ADDRBWRADDR[12]
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.530     7.709    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_9_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ap_clk
+    RAMB18_X2Y5          RAMB18E1                                     r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_9_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg/CLKBWRCLK
+                         clock pessimism              0.230     7.938    
+                         clock uncertainty           -0.083     7.855    
+    RAMB18_X2Y5          RAMB18E1 (Setup_ramb18e1_CLKBWRCLK_ADDRBWRADDR[12])
+                                                     -0.566     7.289    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_9_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg
+  -------------------------------------------------------------------
+                         required time                          7.289    
+                         arrival time                          -7.772    
+  -------------------------------------------------------------------
+                         slack                                 -0.483    
+
+Slack (VIOLATED) :        -0.478ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[6]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_2_3_reg[23]/S
+                            (rising edge-triggered cell FDSE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        4.911ns  (logic 1.831ns (37.282%)  route 3.080ns (62.718%))
+  Logic Levels:           8  (CARRY4=4 LUT2=1 LUT3=1 LUT4=1 LUT6=1)
+  Clock Path Skew:        -0.055ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.726ns = ( 7.726 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.011ns
+    Clock Pessimism Removal (CPR):    0.230ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.717     3.011    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_clk
+    SLICE_X76Y23         FDRE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[6]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X76Y23         FDRE (Prop_fdre_C_Q)         0.419     3.430 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[6]/Q
+                         net (fo=6, routed)           0.979     4.409    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/shl_ln7_fu_2715_p3[8]
+    SLICE_X71Y23         LUT4 (Prop_lut4_I2_O)        0.297     4.706 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940[29]_i_33/O
+                         net (fo=1, routed)           0.000     4.706    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940[29]_i_33_n_0
+    SLICE_X71Y23         CARRY4 (Prop_carry4_S[3]_CO[3])
+                                                      0.401     5.107 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_20/CO[3]
+                         net (fo=1, routed)           0.000     5.107    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_20_n_0
+    SLICE_X71Y24         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.221 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_11/CO[3]
+                         net (fo=1, routed)           0.009     5.230    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_11_n_0
+    SLICE_X71Y25         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.344 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_4/CO[3]
+                         net (fo=1, routed)           0.000     5.344    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_4_n_0
+    SLICE_X71Y26         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.458 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_3/CO[3]
+                         net (fo=11, routed)          0.672     6.130    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/icmp_ln156_fu_2704_p2
+    SLICE_X70Y27         LUT2 (Prop_lut2_I1_O)        0.124     6.254 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_2_0[31]_i_3/O
+                         net (fo=138, routed)         0.275     6.529    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414/p_ZL10dw_out_buf_2_0_reg[31]
+    SLICE_X70Y27         LUT6 (Prop_lut6_I0_O)        0.124     6.653 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414/p_ZL10dw_out_buf_2_0[31]_i_1/O
+                         net (fo=135, routed)         0.615     7.268    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414/trunc_ln237_reg_4278_reg[1]_0
+    SLICE_X70Y27         LUT3 (Prop_lut3_I0_O)        0.124     7.392 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414/p_ZL10dw_out_buf_2_3[23]_i_1/O
+                         net (fo=1, routed)           0.530     7.922    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414_n_10
+    SLICE_X71Y29         FDSE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_2_3_reg[23]/S
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.547     7.727    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_clk
+    SLICE_X71Y29         FDSE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_2_3_reg[23]/C
+                         clock pessimism              0.230     7.956    
+                         clock uncertainty           -0.083     7.873    
+    SLICE_X71Y29         FDSE (Setup_fdse_C_S)       -0.429     7.444    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_2_3_reg[23]
+  -------------------------------------------------------------------
+                         required time                          7.444    
+                         arrival time                          -7.922    
+  -------------------------------------------------------------------
+                         slack                                 -0.478    
+
+Slack (VIOLATED) :        -0.472ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ap_CS_fsm_reg[0]_replica_6/C
+                            (rising edge-triggered cell FDSE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_3_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg/ADDRBWRADDR[8]
+                            (rising edge-triggered cell RAMB18E1 clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        4.757ns  (logic 0.952ns (20.011%)  route 3.805ns (79.989%))
+  Logic Levels:           4  (LUT3=1 LUT4=1 LUT5=1 LUT6=1)
+  Clock Path Skew:        -0.066ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.768ns = ( 7.768 - 5.000 ) 
+    Source Clock Delay      (SCD):    2.963ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.669     2.963    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ap_clk
+    SLICE_X44Y2          FDSE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ap_CS_fsm_reg[0]_replica_6/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X44Y2          FDSE (Prop_fdse_C_Q)         0.456     3.419 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ap_CS_fsm_reg[0]_replica_6/Q
+                         net (fo=21, routed)          0.847     4.266    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/Q[0]_repN_6
+    SLICE_X49Y2          LUT4 (Prop_lut4_I1_O)        0.124     4.390 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_70__1/O
+                         net (fo=17, routed)          0.995     5.385    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_70__1_n_0
+    SLICE_X52Y7          LUT5 (Prop_lut5_I2_O)        0.124     5.509 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_67__0_replica/O
+                         net (fo=1, routed)           0.416     5.925    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_67__0_n_0_repN
+    SLICE_X52Y8          LUT3 (Prop_lut3_I2_O)        0.124     6.049 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_31__2/O
+                         net (fo=4, routed)           0.806     6.855    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_31__2_n_0
+    SLICE_X53Y11         LUT6 (Prop_lut6_I0_O)        0.124     6.979 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_7__2/O
+                         net (fo=1, routed)           0.741     7.720    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_3_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ADDRBWRADDR[4]
+    RAMB18_X3Y6          RAMB18E1                                     r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_3_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg/ADDRBWRADDR[8]
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.589     7.768    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_3_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ap_clk
+    RAMB18_X3Y6          RAMB18E1                                     r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_3_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg/CLKBWRCLK
+                         clock pessimism              0.129     7.897    
+                         clock uncertainty           -0.083     7.814    
+    RAMB18_X3Y6          RAMB18E1 (Setup_ramb18e1_CLKBWRCLK_ADDRBWRADDR[8])
+                                                     -0.566     7.248    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_3_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg
+  -------------------------------------------------------------------
+                         required time                          7.248    
+                         arrival time                          -7.720    
+  -------------------------------------------------------------------
+                         slack                                 -0.472    
+
+Slack (VIOLATED) :        -0.470ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_0_reg[11]/CE
+                            (rising edge-triggered cell FDSE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        4.967ns  (logic 1.716ns (34.551%)  route 3.251ns (65.449%))
+  Logic Levels:           6  (CARRY4=4 LUT4=1 LUT6=1)
+  Clock Path Skew:        -0.216ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.662ns = ( 7.662 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.007ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.713     3.007    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_clk
+    SLICE_X70Y25         FDRE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X70Y25         FDRE (Prop_fdre_C_Q)         0.419     3.426 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/Q
+                         net (fo=8, routed)           0.852     4.278    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/shl_ln7_fu_2715_p3[2]
+    SLICE_X71Y23         LUT4 (Prop_lut4_I2_O)        0.299     4.577 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940[29]_i_36/O
+                         net (fo=1, routed)           0.000     4.577    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940[29]_i_36_n_0
+    SLICE_X71Y23         CARRY4 (Prop_carry4_S[0]_CO[3])
+                                                      0.532     5.109 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_20/CO[3]
+                         net (fo=1, routed)           0.000     5.109    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_20_n_0
+    SLICE_X71Y24         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.223 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_11/CO[3]
+                         net (fo=1, routed)           0.009     5.232    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_11_n_0
+    SLICE_X71Y25         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.346 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_4/CO[3]
+                         net (fo=1, routed)           0.000     5.346    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_4_n_0
+    SLICE_X71Y26         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.460 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_3/CO[3]
+                         net (fo=11, routed)          1.158     6.618    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414/icmp_ln156_fu_2704_p2_alias
+    SLICE_X61Y26         LUT6 (Prop_lut6_I3_O)        0.124     6.742 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414/p_ZL10dw_out_buf_0_0[31]_i_1_comp_1/O
+                         net (fo=128, routed)         1.232     7.974    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414_n_527
+    SLICE_X47Y20         FDSE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_0_reg[11]/CE
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.483     7.662    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_clk
+    SLICE_X47Y20         FDSE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_0_reg[11]/C
+                         clock pessimism              0.129     7.791    
+                         clock uncertainty           -0.083     7.708    
+    SLICE_X47Y20         FDSE (Setup_fdse_C_CE)      -0.205     7.503    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_0_reg[11]
+  -------------------------------------------------------------------
+                         required time                          7.503    
+                         arrival time                          -7.974    
+  -------------------------------------------------------------------
+                         slack                                 -0.470    
+
+Slack (VIOLATED) :        -0.470ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_0_reg[25]/CE
+                            (rising edge-triggered cell FDSE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        4.967ns  (logic 1.716ns (34.551%)  route 3.251ns (65.449%))
+  Logic Levels:           6  (CARRY4=4 LUT4=1 LUT6=1)
+  Clock Path Skew:        -0.216ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.662ns = ( 7.662 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.007ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.713     3.007    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_clk
+    SLICE_X70Y25         FDRE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X70Y25         FDRE (Prop_fdre_C_Q)         0.419     3.426 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/Q
+                         net (fo=8, routed)           0.852     4.278    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/shl_ln7_fu_2715_p3[2]
+    SLICE_X71Y23         LUT4 (Prop_lut4_I2_O)        0.299     4.577 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940[29]_i_36/O
+                         net (fo=1, routed)           0.000     4.577    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940[29]_i_36_n_0
+    SLICE_X71Y23         CARRY4 (Prop_carry4_S[0]_CO[3])
+                                                      0.532     5.109 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_20/CO[3]
+                         net (fo=1, routed)           0.000     5.109    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_20_n_0
+    SLICE_X71Y24         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.223 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_11/CO[3]
+                         net (fo=1, routed)           0.009     5.232    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_11_n_0
+    SLICE_X71Y25         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.346 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_4/CO[3]
+                         net (fo=1, routed)           0.000     5.346    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_4_n_0
+    SLICE_X71Y26         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.460 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_3/CO[3]
+                         net (fo=11, routed)          1.158     6.618    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414/icmp_ln156_fu_2704_p2_alias
+    SLICE_X61Y26         LUT6 (Prop_lut6_I3_O)        0.124     6.742 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414/p_ZL10dw_out_buf_0_0[31]_i_1_comp_1/O
+                         net (fo=128, routed)         1.232     7.974    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414_n_527
+    SLICE_X47Y20         FDSE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_0_reg[25]/CE
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.483     7.662    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_clk
+    SLICE_X47Y20         FDSE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_0_reg[25]/C
+                         clock pessimism              0.129     7.791    
+                         clock uncertainty           -0.083     7.708    
+    SLICE_X47Y20         FDSE (Setup_fdse_C_CE)      -0.205     7.503    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_0_reg[25]
+  -------------------------------------------------------------------
+                         required time                          7.503    
+                         arrival time                          -7.974    
+  -------------------------------------------------------------------
+                         slack                                 -0.470    
+
+Slack (VIOLATED) :        -0.470ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_1_reg[11]/CE
+                            (rising edge-triggered cell FDSE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        4.967ns  (logic 1.716ns (34.551%)  route 3.251ns (65.449%))
+  Logic Levels:           6  (CARRY4=4 LUT4=1 LUT6=1)
+  Clock Path Skew:        -0.216ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.662ns = ( 7.662 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.007ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.713     3.007    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_clk
+    SLICE_X70Y25         FDRE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X70Y25         FDRE (Prop_fdre_C_Q)         0.419     3.426 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/Q
+                         net (fo=8, routed)           0.852     4.278    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/shl_ln7_fu_2715_p3[2]
+    SLICE_X71Y23         LUT4 (Prop_lut4_I2_O)        0.299     4.577 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940[29]_i_36/O
+                         net (fo=1, routed)           0.000     4.577    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940[29]_i_36_n_0
+    SLICE_X71Y23         CARRY4 (Prop_carry4_S[0]_CO[3])
+                                                      0.532     5.109 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_20/CO[3]
+                         net (fo=1, routed)           0.000     5.109    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_20_n_0
+    SLICE_X71Y24         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.223 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_11/CO[3]
+                         net (fo=1, routed)           0.009     5.232    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_11_n_0
+    SLICE_X71Y25         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.346 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_4/CO[3]
+                         net (fo=1, routed)           0.000     5.346    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_4_n_0
+    SLICE_X71Y26         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.460 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_3/CO[3]
+                         net (fo=11, routed)          1.158     6.618    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414/icmp_ln156_fu_2704_p2_alias
+    SLICE_X61Y26         LUT6 (Prop_lut6_I3_O)        0.124     6.742 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414/p_ZL10dw_out_buf_0_0[31]_i_1_comp_1/O
+                         net (fo=128, routed)         1.232     7.974    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414_n_527
+    SLICE_X47Y20         FDSE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_1_reg[11]/CE
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.483     7.662    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_clk
+    SLICE_X47Y20         FDSE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_1_reg[11]/C
+                         clock pessimism              0.129     7.791    
+                         clock uncertainty           -0.083     7.708    
+    SLICE_X47Y20         FDSE (Setup_fdse_C_CE)      -0.205     7.503    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_1_reg[11]
+  -------------------------------------------------------------------
+                         required time                          7.503    
+                         arrival time                          -7.974    
+  -------------------------------------------------------------------
+                         slack                                 -0.470    
+
+Slack (VIOLATED) :        -0.470ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_1_reg[25]/CE
+                            (rising edge-triggered cell FDSE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        4.967ns  (logic 1.716ns (34.551%)  route 3.251ns (65.449%))
+  Logic Levels:           6  (CARRY4=4 LUT4=1 LUT6=1)
+  Clock Path Skew:        -0.216ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.662ns = ( 7.662 - 5.000 ) 
+    Source Clock Delay      (SCD):    3.007ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.713     3.007    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_clk
+    SLICE_X70Y25         FDRE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X70Y25         FDRE (Prop_fdre_C_Q)         0.419     3.426 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tc_reg_952_reg[0]/Q
+                         net (fo=8, routed)           0.852     4.278    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/shl_ln7_fu_2715_p3[2]
+    SLICE_X71Y23         LUT4 (Prop_lut4_I2_O)        0.299     4.577 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940[29]_i_36/O
+                         net (fo=1, routed)           0.000     4.577    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940[29]_i_36_n_0
+    SLICE_X71Y23         CARRY4 (Prop_carry4_S[0]_CO[3])
+                                                      0.532     5.109 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_20/CO[3]
+                         net (fo=1, routed)           0.000     5.109    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_20_n_0
+    SLICE_X71Y24         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.223 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_11/CO[3]
+                         net (fo=1, routed)           0.009     5.232    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_11_n_0
+    SLICE_X71Y25         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.346 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_4/CO[3]
+                         net (fo=1, routed)           0.000     5.346    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_4_n_0
+    SLICE_X71Y26         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.114     5.460 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/tr_reg_940_reg[29]_i_3/CO[3]
+                         net (fo=11, routed)          1.158     6.618    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414/icmp_ln156_fu_2704_p2_alias
+    SLICE_X61Y26         LUT6 (Prop_lut6_I3_O)        0.124     6.742 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414/p_ZL10dw_out_buf_0_0[31]_i_1_comp_1/O
+                         net (fo=128, routed)         1.232     7.974    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Outline_COMPUTE_DW_TR_fu_1414_n_527
+    SLICE_X47Y20         FDSE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_1_reg[25]/CE
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.483     7.662    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_clk
+    SLICE_X47Y20         FDSE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_1_reg[25]/C
+                         clock pessimism              0.129     7.791    
+                         clock uncertainty           -0.083     7.708    
+    SLICE_X47Y20         FDSE (Setup_fdse_C_CE)      -0.205     7.503    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/p_ZL10dw_out_buf_0_1_reg[25]
+  -------------------------------------------------------------------
+                         required time                          7.503    
+                         arrival time                          -7.974    
+  -------------------------------------------------------------------
+                         slack                                 -0.470    
+
+Slack (VIOLATED) :        -0.467ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/int_CHin_reg[4]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/int_ap_ready_reg/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        5.266ns  (logic 1.626ns (30.880%)  route 3.640ns (69.120%))
+  Logic Levels:           6  (CARRY4=1 LUT4=1 LUT6=4)
+  Clock Path Skew:        -0.147ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.652ns = ( 7.652 - 5.000 ) 
+    Source Clock Delay      (SCD):    2.928ns
+    Clock Pessimism Removal (CPR):    0.129ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.634     2.928    fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/ap_clk
+    SLICE_X52Y85         FDRE                                         r  fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/int_CHin_reg[4]/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X52Y85         FDRE (Prop_fdre_C_Q)         0.456     3.384 r  fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/int_CHin_reg[4]/Q
+                         net (fo=5, routed)           1.032     4.416    fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/CHin_w[4]
+    SLICE_X53Y85         LUT6 (Prop_lut6_I0_O)        0.124     4.540 r  fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/ap_done_reg_i_10/O
+                         net (fo=2, routed)           0.653     5.192    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_done_reg_reg_i_2_2
+    SLICE_X52Y83         LUT6 (Prop_lut6_I2_O)        0.124     5.316 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_done_reg_i_5/O
+                         net (fo=1, routed)           0.000     5.316    fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/S[1]
+    SLICE_X52Y83         CARRY4 (Prop_carry4_S[1]_CO[3])
+                                                      0.550     5.866 r  fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/ap_done_reg_reg_i_2/CO[3]
+                         net (fo=3, routed)           0.636     6.502    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/CO[0]
+    SLICE_X53Y82         LUT4 (Prop_lut4_I3_O)        0.124     6.626 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/int_ap_start_i_2/O
+                         net (fo=9, routed)           0.999     7.625    fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/dwconv_worker_ap_done
+    SLICE_X47Y86         LUT6 (Prop_lut6_I5_O)        0.124     7.749 r  fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/int_ap_ready_i_2_comp_1/O
+                         net (fo=1, routed)           0.321     8.070    fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/int_ap_ready_i_2_n_0
+    SLICE_X49Y87         LUT6 (Prop_lut6_I1_O)        0.124     8.194 r  fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/int_ap_ready_i_1/O
+                         net (fo=1, routed)           0.000     8.194    fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/int_ap_ready_i_1_n_0
+    SLICE_X49Y87         FDRE                                         r  fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/int_ap_ready_reg/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.473     7.652    fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/ap_clk
+    SLICE_X49Y87         FDRE                                         r  fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/int_ap_ready_reg/C
+                         clock pessimism              0.129     7.781    
+                         clock uncertainty           -0.083     7.698    
+    SLICE_X49Y87         FDRE (Setup_fdre_C_D)        0.029     7.727    fastvit_bd_i/worker_0/inst/ctrl_s_axi_U/int_ap_ready_reg
+  -------------------------------------------------------------------
+                         required time                          7.727    
+                         arrival time                          -8.194    
+  -------------------------------------------------------------------
+                         slack                                 -0.467    
+
+Slack (VIOLATED) :        -0.464ns  (required time - arrival time)
+  Source:                 fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ap_CS_fsm_reg[0]_replica_6/C
+                            (rising edge-triggered cell FDSE clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Destination:            fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_6_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg/ADDRBWRADDR[8]
+                            (rising edge-triggered cell RAMB18E1 clocked by clk_fpga_0  {rise@0.000ns fall@2.500ns period=5.000ns})
+  Path Group:             clk_fpga_0
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            5.000ns  (clk_fpga_0 rise@5.000ns - clk_fpga_0 rise@0.000ns)
+  Data Path Delay:        4.794ns  (logic 0.952ns (19.859%)  route 3.842ns (80.141%))
+  Logic Levels:           4  (LUT3=1 LUT4=1 LUT5=1 LUT6=1)
+  Clock Path Skew:        -0.022ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    2.712ns = ( 7.712 - 5.000 ) 
+    Source Clock Delay      (SCD):    2.963ns
+    Clock Pessimism Removal (CPR):    0.230ns
+  Clock Uncertainty:      0.083ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.150ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk_fpga_0 rise edge)
+                                                      0.000     0.000 r  
+    PS7_X0Y0             PS7                          0.000     0.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.193     1.193    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.101     1.294 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.669     2.963    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ap_clk
+    SLICE_X44Y2          FDSE                                         r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ap_CS_fsm_reg[0]_replica_6/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X44Y2          FDSE (Prop_fdse_C_Q)         0.456     3.419 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ap_CS_fsm_reg[0]_replica_6/Q
+                         net (fo=21, routed)          0.847     4.266    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/Q[0]_repN_6
+    SLICE_X49Y2          LUT4 (Prop_lut4_I1_O)        0.124     4.390 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_70__1/O
+                         net (fo=17, routed)          0.710     5.100    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_70__1_n_0
+    SLICE_X46Y9          LUT5 (Prop_lut5_I2_O)        0.124     5.224 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_63/O
+                         net (fo=3, routed)           0.622     5.847    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_63_n_0
+    SLICE_X43Y11         LUT3 (Prop_lut3_I2_O)        0.124     5.971 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_28__0/O
+                         net (fo=3, routed)           1.076     7.047    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_28__0_n_0
+    SLICE_X32Y6          LUT6 (Prop_lut6_I0_O)        0.124     7.171 r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_LOAD_DW_IN_fu_984/ram_reg_i_7__4/O
+                         net (fo=1, routed)           0.586     7.757    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_6_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ADDRBWRADDR[4]
+    RAMB18_X2Y1          RAMB18E1                                     r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_6_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg/ADDRBWRADDR[8]
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk_fpga_0 rise edge)
+                                                      5.000     5.000 r  
+    PS7_X0Y0             PS7                          0.000     5.000 r  fastvit_bd_i/ps7_0/inst/PS7_i/FCLKCLK[0]
+                         net (fo=1, routed)           1.088     6.088    fastvit_bd_i/ps7_0/inst/FCLK_CLK_unbuffered[0]
+    BUFGCTRL_X0Y16       BUFG (Prop_bufg_I_O)         0.091     6.179 r  fastvit_bd_i/ps7_0/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
+                         net (fo=25010, routed)       1.533     7.712    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_6_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ap_clk
+    RAMB18_X2Y1          RAMB18E1                                     r  fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_6_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg/CLKBWRCLK
+                         clock pessimism              0.230     7.941    
+                         clock uncertainty           -0.083     7.858    
+    RAMB18_X2Y1          RAMB18E1 (Setup_ramb18e1_CLKBWRCLK_ADDRBWRADDR[8])
+                                                     -0.566     7.292    fastvit_bd_i/worker_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_6_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg
+  -------------------------------------------------------------------
+                         required time                          7.292    
+                         arrival time                          -7.757    
+  -------------------------------------------------------------------
+                         slack                                 -0.464    
+
+
+
+

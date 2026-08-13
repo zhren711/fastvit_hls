@@ -1,0 +1,92 @@
+
+****** Vitis HLS - High-Level Synthesis from C, C++ and OpenCL v2024.2 (64-bit)
+  **** SW Build 5238294 on Nov  8 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Wed Aug 12 10:08:33 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source E:/Xilinx/Vitis/2024.2/scripts/vitis_hls/hls.tcl -notrace
+INFO: [HLS 200-10] For user 'zhren' on host 'desktop-gblh5mp' (Windows NT_amd64 version 10.0) on Wed Aug 12 10:08:34 -0400 2026
+INFO: [HLS 200-10] In directory 'E:/codes/microzed/fastvit_hls/fastvit_ip_w8a4/dsconv_fused'
+WARNING: [HLS 200-2053] The vitis_hls executable is deprecated. Consider using vitis-run --mode hls --tcl
+Sourcing Tcl script 'run_csim.tcl'
+INFO: [HLS 200-1510] Running: open_project -reset dsconv_fused_proj 
+INFO: [HLS 200-10] Opening and resetting project 'E:/codes/microzed/fastvit_hls/fastvit_ip_w8a4/dsconv_fused/dsconv_fused_proj'.
+INFO: [HLS 200-1510] Running: set_top dsconv_worker 
+INFO: [HLS 200-1510] Running: add_files dsconv_worker.cpp -cflags -std=c++14 
+INFO: [HLS 200-10] Adding design file 'dsconv_worker.cpp' to the project
+INFO: [HLS 200-1510] Running: add_files -tb tb_dsconv_worker.cpp -cflags -std=c++14 
+INFO: [HLS 200-10] Adding test bench file 'tb_dsconv_worker.cpp' to the project
+INFO: [HLS 200-1510] Running: open_solution solution1 -flow_target vivado 
+INFO: [HLS 200-10] Creating and opening solution 'E:/codes/microzed/fastvit_hls/fastvit_ip_w8a4/dsconv_fused/dsconv_fused_proj/solution1'.
+INFO: [HLS 200-1505] Using flow_target 'vivado'
+Resolution: For help on HLS 200-1505 see docs.xilinx.com/access/sources/dita/topic?Doc_Version=2024.2%20English&url=ug1448-hls-guidance&resourceid=200-1505.html
+INFO: [HLS 200-1510] Running: set_part xc7z020clg400-1 
+INFO: [HLS 200-1611] Setting target device to 'xc7z020-clg400-1'
+INFO: [HLS 200-1510] Running: create_clock -period 5 -name default 
+INFO: [SYN 201-201] Setting up clock 'default' with a period of 5ns.
+>>> Running C Simulation...
+INFO: [HLS 200-1510] Running: csim_design 
+INFO: [SIM 211-2] *************** CSIM start ***************
+INFO: [SIM 211-4] CSIM will launch CLANG as the compiler.
+INFO: [HLS 200-2036] Building debug C Simulation binaries
+   Compiling ../../../../tb_dsconv_worker.cpp in debug mode
+   Compiling ../../../../dsconv_worker.cpp in debug mode
+   Generating csim.exe
+In file included from ../../../../tb_dsconv_worker.cpp:29:
+In file included from ../../../../dsconv_worker.h:4:
+In file included from E:/Xilinx/Vitis/2024.2/include/ap_int.h:10:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_common.h:658:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_private.h:68:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_half.h:26:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/hls_half_fpo.h:19:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_fpo.h:140:
+In file included from E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:150:
+E:/Xilinx/Vitis/2024.2/include/gmp.h:58:9: warning: '__GMP_LIBGMP_DLL' macro redefined [-Wmacro-redefined]
+#define __GMP_LIBGMP_DLL  0
+        ^
+E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:142:9: note: previous definition is here
+#define __GMP_LIBGMP_DLL 1
+        ^
+1 warning generated.
+In file included from ../../../../dsconv_worker.cpp:87:
+In file included from ../../../../dsconv_worker.h:4:
+In file included from E:/Xilinx/Vitis/2024.2/include/ap_int.h:10:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_common.h:658:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_private.h:68:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_half.h:26:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/hls_half_fpo.h:19:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_fpo.h:140:
+In file included from E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:150:
+E:/Xilinx/Vitis/2024.2/include/gmp.h:58:9: warning: '__GMP_LIBGMP_DLL' macro redefined [-Wmacro-redefined]
+#define __GMP_LIBGMP_DLL  0
+        ^
+E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:142:9: note: previous definition is here
+#define __GMP_LIBGMP_DLL 1
+        ^
+1 warning generated.
+--- S1B0: CHin=48 H=W=64 CHout=144 ---
+[PASS] S1B0 (DW residual copy) (196608 points)
+[PASS] S1B0 (fused PW1 result) (589824 points)
+--- S2B0_pruned: CHin=96 H=W=32 CHout=240 ---
+[PASS] S2B0_pruned (DW residual copy) (98304 points)
+[PASS] S2B0_pruned (fused PW1 result) (245760 points)
+--- S3B0: CHin=192 H=W=16 CHout=576 ---
+[PASS] S3B0 (DW residual copy) (49152 points)
+[PASS] S3B0 (fused PW1 result) (147456 points)
+--- S4B1_pruned: CHin=384 H=W=8 CHout=960 ---
+[PASS] S4B1_pruned (DW residual copy) (24576 points)
+[PASS] S4B1_pruned (fused PW1 result) (61440 points)
+--- SYNTH_GAP_cache_miss_multipatch: CHin=128 H=W=32 CHout=384 ---
+[PASS] SYNTH_GAP_cache_miss_multipatch (DW residual copy) (131072 points)
+[PASS] SYNTH_GAP_cache_miss_multipatch (fused PW1 result) (393216 points)
+=== TOTAL ERRORS: 0 ===
+ALL TESTS PASSED
+INFO: [SIM 211-1] CSim done with 0 errors.
+INFO: [SIM 211-3] *************** CSIM finish ***************
+INFO: [HLS 200-2161] Finished Command csim_design Elapsed time: 00:00:55; Allocated memory: 0.551 MB.
+>>> Done. Check dsconv_fused_proj/solution1/csim/report
+INFO: [HLS 200-1510] Running: close_project 
+INFO: [HLS 200-112] Total CPU user time: 0 seconds. Total CPU system time: 1 seconds. Total elapsed time: 57.637 seconds; peak allocated memory: 151.246 MB.

@@ -1,0 +1,271 @@
+
+****** Vitis HLS - High-Level Synthesis from C, C++ and OpenCL v2024.2 (64-bit)
+  **** SW Build 5238294 on Nov  8 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Fri Aug  7 00:07:01 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source E:/Xilinx/Vitis/2024.2/scripts/vitis_hls/hls.tcl -notrace
+INFO: [HLS 200-10] For user 'zhren' on host 'desktop-gblh5mp' (Windows NT_amd64 version 10.0) on Fri Aug 07 00:07:02 -0400 2026
+INFO: [HLS 200-10] In directory 'E:/codes/microzed/fastvit_hls/fastvit_ip_w8a4'
+WARNING: [HLS 200-2053] The vitis_hls executable is deprecated. Consider using vitis-run --mode hls --tcl
+Sourcing Tcl script 'run_hls_200mhz.tcl'
+INFO: [HLS 200-1510] Running: open_project fastvit_ip_w8a4_proj_200mhz 
+INFO: [HLS 200-10] Creating and opening project 'E:/codes/microzed/fastvit_hls/fastvit_ip_w8a4/fastvit_ip_w8a4_proj_200mhz'.
+INFO: [HLS 200-1510] Running: set_top fastvit_ip 
+INFO: [HLS 200-1510] Running: add_files fastvit_ip.cpp -cflags -std=c++14 
+INFO: [HLS 200-10] Adding design file 'fastvit_ip.cpp' to the project
+INFO: [HLS 200-1510] Running: add_files conv_worker.cpp -cflags -std=c++14 
+INFO: [HLS 200-10] Adding design file 'conv_worker.cpp' to the project
+INFO: [HLS 200-1510] Running: add_files dwconv_worker.cpp -cflags -std=c++14 
+INFO: [HLS 200-10] Adding design file 'dwconv_worker.cpp' to the project
+INFO: [HLS 200-1510] Running: add_files pwconv_worker.cpp -cflags -std=c++14 
+INFO: [HLS 200-10] Adding design file 'pwconv_worker.cpp' to the project
+INFO: [HLS 200-1510] Running: add_files add_worker.cpp -cflags -std=c++14 
+INFO: [HLS 200-10] Adding design file 'add_worker.cpp' to the project
+INFO: [HLS 200-1510] Running: add_files gelu_worker.cpp -cflags -std=c++14 
+INFO: [HLS 200-10] Adding design file 'gelu_worker.cpp' to the project
+INFO: [HLS 200-1510] Running: add_files -tb fastvit_ip_tb.cpp -cflags -std=c++14 
+INFO: [HLS 200-10] Adding test bench file 'fastvit_ip_tb.cpp' to the project
+INFO: [HLS 200-1510] Running: open_solution solution1 -flow_target vivado 
+INFO: [HLS 200-10] Creating and opening solution 'E:/codes/microzed/fastvit_hls/fastvit_ip_w8a4/fastvit_ip_w8a4_proj_200mhz/solution1'.
+INFO: [HLS 200-1505] Using flow_target 'vivado'
+Resolution: For help on HLS 200-1505 see docs.xilinx.com/access/sources/dita/topic?Doc_Version=2024.2%20English&url=ug1448-hls-guidance&resourceid=200-1505.html
+INFO: [HLS 200-1510] Running: set_part xc7z020clg400-1 
+INFO: [HLS 200-1611] Setting target device to 'xc7z020-clg400-1'
+INFO: [HLS 200-1510] Running: create_clock -period 5 -name default 
+INFO: [SYN 201-201] Setting up clock 'default' with a period of 5ns.
+>>> Running C Simulation...
+INFO: [HLS 200-1510] Running: csim_design 
+INFO: [SIM 211-2] *************** CSIM start ***************
+INFO: [SIM 211-4] CSIM will launch CLANG as the compiler.
+INFO: [HLS 200-2036] Building debug C Simulation binaries
+   Compiling ../../../../fastvit_ip_tb.cpp in debug mode
+   Compiling ../../../../gelu_worker.cpp in debug mode
+   Compiling ../../../../add_worker.cpp in debug mode
+   Compiling ../../../../pwconv_worker.cpp in debug mode
+   Compiling ../../../../dwconv_worker.cpp in debug mode
+   Compiling ../../../../conv_worker.cpp in debug mode
+   Compiling ../../../../fastvit_ip.cpp in debug mode
+   Generating csim.exe
+In file included from ../../../../fastvit_ip_tb.cpp:13:
+In file included from ../../../../fastvit_ip.h:65:
+In file included from E:/Xilinx/Vitis/2024.2/include/ap_int.h:10:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_common.h:658:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_private.h:68:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_half.h:26:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/hls_half_fpo.h:19:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_fpo.h:140:
+In file included from E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:150:
+E:/Xilinx/Vitis/2024.2/include/gmp.h:58:9: warning: '__GMP_LIBGMP_DLL' macro redefined [-Wmacro-redefined]
+#define __GMP_LIBGMP_DLL  0
+        ^
+E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:142:9: note: previous definition is here
+#define __GMP_LIBGMP_DLL 1
+        ^
+1 warning generated.
+In file included from ../../../../gelu_worker.cpp:24:
+In file included from ../../../../gelu_worker.h:4:
+In file included from ../../../../fastvit_ip.h:65:
+In file included from E:/Xilinx/Vitis/2024.2/include/ap_int.h:10:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_common.h:658:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_private.h:68:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_half.h:26:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/hls_half_fpo.h:19:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_fpo.h:140:
+In file included from E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:150:
+E:/Xilinx/Vitis/2024.2/include/gmp.h:58:9: warning: '__GMP_LIBGMP_DLL' macro redefined [-Wmacro-redefined]
+#define __GMP_LIBGMP_DLL  0
+        ^
+E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:142:9: note: previous definition is here
+#define __GMP_LIBGMP_DLL 1
+        ^
+1 warning generated.
+In file included from ../../../../add_worker.cpp:18:
+In file included from ../../../../add_worker.h:4:
+In file included from ../../../../fastvit_ip.h:65:
+In file included from E:/Xilinx/Vitis/2024.2/include/ap_int.h:10:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_common.h:658:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_private.h:68:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_half.h:26:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/hls_half_fpo.h:19:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_fpo.h:140:
+In file included from E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:150:
+E:/Xilinx/Vitis/2024.2/include/gmp.h:58:9: warning: '__GMP_LIBGMP_DLL' macro redefined [-Wmacro-redefined]
+#define __GMP_LIBGMP_DLL  0
+        ^
+E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:142:9: note: previous definition is here
+#define __GMP_LIBGMP_DLL 1
+        ^
+1 warning generated.
+In file included from ../../../../pwconv_worker.cpp:33:
+In file included from ../../../../pwconv_worker.h:4:
+In file included from ../../../../fastvit_ip.h:65:
+In file included from E:/Xilinx/Vitis/2024.2/include/ap_int.h:10:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_common.h:658:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_private.h:68:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_half.h:26:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/hls_half_fpo.h:19:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_fpo.h:140:
+In file included from E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:150:
+E:/Xilinx/Vitis/2024.2/include/gmp.h:58:9: warning: '__GMP_LIBGMP_DLL' macro redefined [-Wmacro-redefined]
+#define __GMP_LIBGMP_DLL  0
+        ^
+E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:142:9: note: previous definition is here
+#define __GMP_LIBGMP_DLL 1
+        ^
+1 warning generated.
+In file included from ../../../../dwconv_worker.cpp:13:
+In file included from ../../../../dwconv_worker.h:4:
+In file included from ../../../../fastvit_ip.h:65:
+In file included from E:/Xilinx/Vitis/2024.2/include/ap_int.h:10:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_common.h:658:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_private.h:68:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_half.h:26:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/hls_half_fpo.h:19:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_fpo.h:140:
+In file included from E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:150:
+E:/Xilinx/Vitis/2024.2/include/gmp.h:58:9: warning: '__GMP_LIBGMP_DLL' macro redefined [-Wmacro-redefined]
+#define __GMP_LIBGMP_DLL  0
+        ^
+E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:142:9: note: previous definition is here
+#define __GMP_LIBGMP_DLL 1
+        ^
+1 warning generated.
+In file included from ../../../../conv_worker.cpp:7:
+In file included from ../../../../conv_worker.h:4:
+In file included from ../../../../fastvit_ip.h:65:
+In file included from E:/Xilinx/Vitis/2024.2/include/ap_int.h:10:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_common.h:658:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_private.h:68:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_half.h:26:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/hls_half_fpo.h:19:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_fpo.h:140:
+In file included from E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:150:
+E:/Xilinx/Vitis/2024.2/include/gmp.h:58:9: warning: '__GMP_LIBGMP_DLL' macro redefined [-Wmacro-redefined]
+#define __GMP_LIBGMP_DLL  0
+        ^
+E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:142:9: note: previous definition is here
+#define __GMP_LIBGMP_DLL 1
+        ^
+1 warning generated.
+In file included from ../../../../fastvit_ip.cpp:12:
+In file included from ../../../../fastvit_ip.h:65:
+In file included from E:/Xilinx/Vitis/2024.2/include/ap_int.h:10:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_common.h:658:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_private.h:68:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_half.h:26:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/hls_half_fpo.h:19:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_fpo.h:140:
+In file included from E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:150:
+E:/Xilinx/Vitis/2024.2/include/gmp.h:58:9: warning: '__GMP_LIBGMP_DLL' macro redefined [-Wmacro-redefined]
+#define __GMP_LIBGMP_DLL  0
+        ^
+E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:142:9: note: previous definition is here
+#define __GMP_LIBGMP_DLL 1
+        ^
+1 warning generated.
+=== fastvit_ip unified testbench ===
+
+--- Tier B Phase B3 golden vector dump ---
+[golden] conv: CHin=2 Hin=4 Win=4 CHout=2 Hout=4 Wout=4 n_in=32 n_out=32 n_wt=36 shift=4 relu=1 sh=1 sw=1 ph=1 pw=1
+[golden] dwconv: CH=2 H=4 W=4 Kh=3 Kw=3 pad=1 n=32 n_wt=18 shift=2 act_mode=0
+[golden] pwconv: CHin=16 H=4 W=4 CHout=32 n_in=256 n_out=512 n_wt=512 shift=6 act_mode=1
+[golden] add: CH=1 H=4 W=4 n=16
+[golden] gelu: CHin=8 H=1 W=1 n=8
+
+--- OP_CONV ---
+[PASS] 3x3 s1 CHin=4 CHout=8 ReLU (512 points)
+[PASS] 3x3 s2 CHin=8 CHout=16 NoReLU (1024 points)
+[PASS] 3x3 s1 CHin=16 CHout=32 ReLU (8192 points)
+
+--- OP_DWCONV ---
+  MISMATCH[3080]: hw=2 ref=3
+  MISMATCH[3081]: hw=3 ref=0
+  MISMATCH[3085]: hw=7 ref=5
+  MISMATCH[3087]: hw=0 ref=1
+  MISMATCH[3089]: hw=2 ref=0
+[FAIL] DW3_s1_CH32 (100352 points)
+  MISMATCH[1]: hw=6 ref=3
+  MISMATCH[3]: hw=7 ref=0
+  MISMATCH[4]: hw=-7 ref=-6
+  MISMATCH[5]: hw=-6 ref=-7
+  MISMATCH[6]: hw=-7 ref=-3
+[FAIL] DW3_FastVIT_S1 (196608 points)
+  MISMATCH[1]: hw=7 ref=2
+  MISMATCH[2]: hw=-7 ref=2
+  MISMATCH[4]: hw=1 ref=5
+  MISMATCH[5]: hw=5 ref=-6
+  MISMATCH[7]: hw=7 ref=5
+[FAIL] DW7_s1_CH16 (12544 points)
+  MISMATCH[0]: hw=1 ref=5
+  MISMATCH[2]: hw=-7 ref=-1
+  MISMATCH[5]: hw=2 ref=6
+  MISMATCH[6]: hw=2 ref=7
+  MISMATCH[13]: hw=3 ref=7
+[FAIL] DW7_FastVIT_S3 (12288 points)
+  MISMATCH[0]: hw=2 ref=7
+  MISMATCH[13]: hw=7 ref=5
+  MISMATCH[29]: hw=0 ref=7
+  MISMATCH[33]: hw=0 ref=7
+  MISMATCH[44]: hw=3 ref=2
+[FAIL] DW3_small (128 points)
+  MISMATCH[0]: hw=-2 ref=-3
+  MISMATCH[1]: hw=7 ref=-7
+  MISMATCH[2]: hw=-7 ref=-6
+  MISMATCH[4]: hw=-4 ref=-6
+  MISMATCH[56]: hw=7 ref=-1
+[FAIL] DW3_CH3_odd (192 points)
+  MISMATCH[4]: hw=7 ref=-7
+  MISMATCH[6]: hw=-7 ref=-2
+  MISMATCH[7]: hw=1 ref=0
+  MISMATCH[14]: hw=7 ref=0
+  MISMATCH[15]: hw=-7 ref=-6
+[FAIL] DW7_CH5_odd (320 points)
+
+--- OP_PWCONV ---
+[PASS] PW_32to64_56x56 (200704 points)
+[PASS] PW_64to128_28x28 (100352 points)
+[PASS] PW_128to256_16x16 (65536 points)
+[PASS] PW_small (512 points)
+[PASS] Stem_PW48to48 (196608 points)
+[PASS] Stage2_expand_96to288 (294912 points)
+[PASS] Stage4_expand_384to1152_sp64 (73728 points)
+[PASS] Stage1_project_144to48 (196608 points)
+[PASS] Stage2_project_288to96 (98304 points)
+
+--- OP_ADD ---
+[PASS] Normal Addition (200704 points)
+[PASS] Positive Overflow (200704 points)
+[PASS] Negative Overflow (200704 points)
+[PASS] Non-divisible Tile Size (4199 points)
+[PASS] Single Channel (100 points)
+
+--- OP_GELU ---
+[PASS] Stem_DW3_48_64x64 (196608 points)
+[PASS] S1_expand_144_64x64 (589824 points)
+[PASS] Trans1_96_32x32 (98304 points)
+[PASS] S2_expand_288_32x32 (294912 points)
+[PASS] Trans2_192_16x16 (49152 points)
+[PASS] S3_expand_576_16x16 (147456 points)
+[PASS] Trans3_384_8x8 (24576 points)
+[PASS] S4_expand_1152_8x8 (73728 points)
+[PASS] Non-divisible Tile Size (4199 points)
+[PASS] Boundary values (5 points)
+
+=====================================
+TOTAL ERRORS: 8931
+@E Simulation failed: Function 'main' returns nonzero value '1'.
+ERROR: [SIM 211-100] 'csim_design' failed: nonzero return value.
+INFO: [SIM 211-3] *************** CSIM finish ***************
+INFO: [HLS 200-2161] Finished Command csim_design Elapsed time: 00:00:44; Allocated memory: 0.922 MB.
+4
+    while executing
+"source run_hls_200mhz.tcl"
+    ("uplevel" body line 1)
+    invoked from within
+"uplevel \#0 [list source $tclfile] "
+
+INFO: [HLS 200-112] Total CPU user time: 1 seconds. Total CPU system time: 1 seconds. Total elapsed time: 46.304 seconds; peak allocated memory: 152.090 MB.

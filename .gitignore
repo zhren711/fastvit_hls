@@ -1,0 +1,54 @@
+# Vitis HLS solution build artifacts (regenerable from .cpp/.h + .tcl source)
+**/.autopilot/
+**/.debug/
+**/csim/build/
+**/sim/
+**/syn/verilog/
+**/syn/vhdl/
+**/impl/verilog/
+**/impl/vhdl/
+**/impl/ip/
+**/impl/misc/
+*.log.autopilotdb
+
+# Vivado project artifacts (regenerable from .tcl + IP catalog; keep .xpr/.srcs/*.rpt)
+**/*.cache/
+**/*.gen/
+**/*.hw/
+**/*.ip_user_files/
+**/*.runs/
+**/*.sim/
+**/*.srcs/**/incremental_db/
+
+# Vivado/Vitis binary artifacts -- big, regenerable, never worth diffing
+*.dcp
+*.bit
+*.wdb
+*.wcfg
+*.jou
+.Xil/
+**/.Xil/
+
+# IP export zips (regenerable from HLS csynth+export_design)
+**/impl/ip/*.zip
+*_v1_0.zip
+
+# Oversized raw tool-output dumps (multi-hundred-MB unfiltered stdout).
+# The compact round-tagged *_stdout.log/*_stderr.log files this project
+# actually cites as evidence, and every *.rpt report, are NOT matched by
+# these patterns and stay tracked.
+hls_*.log
+vitis_hls.log
+csim_*_run.log
+hls_*_run.log
+run_csim_only.log
+xsim_*.txt
+xsim_*.log
+xsim*.backup.log
+**/xsim.dir/
+*.dbg
+xsimk.exe
+
+# Editor/OS noise
+.DS_Store
+Thumbs.db

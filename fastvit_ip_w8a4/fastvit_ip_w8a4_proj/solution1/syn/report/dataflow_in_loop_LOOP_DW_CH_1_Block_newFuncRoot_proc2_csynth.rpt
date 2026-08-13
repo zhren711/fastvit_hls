@@ -1,0 +1,186 @@
+
+
+================================================================
+== Vitis HLS Report for 'dataflow_in_loop_LOOP_DW_CH_1_Block_newFuncRoot_proc2'
+================================================================
+* Date:           Sat Aug  1 22:20:18 2026
+
+* Version:        2024.2 (Build 5238294 on Nov  8 2024)
+* Project:        fastvit_ip_w8a4_proj
+* Solution:       solution1 (Vivado IP Flow Target)
+* Product family: zynq
+* Target device:  xc7z020-clg400-1
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+---------+----------+------------+
+    |  Clock |  Target | Estimated| Uncertainty|
+    +--------+---------+----------+------------+
+    |ap_clk  |  7.00 ns|  4.371 ns|     1.89 ns|
+    +--------+---------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+----------+-----+-----+---------+
+    |  Latency (cycles) |  Latency (absolute) |  Interval | Pipeline|
+    |   min   |   max   |    min   |    max   | min | max |   Type  |
+    +---------+---------+----------+----------+-----+-----+---------+
+    |       43|       43|  0.301 us|  0.301 us|   43|   43|       no|
+    +---------+---------+----------+----------+-----+-----+---------+
+
+    + Detail: 
+        * Instance: 
+        N/A
+
+        * Loop: 
+        N/A
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++-----------------+---------+-----+--------+-------+-----+
+|       Name      | BRAM_18K| DSP |   FF   |  LUT  | URAM|
++-----------------+---------+-----+--------+-------+-----+
+|DSP              |        -|    -|       -|      -|    -|
+|Expression       |        -|    -|       0|    502|    -|
+|FIFO             |        -|    -|       -|      -|    -|
+|Instance         |        -|    3|    1003|    477|    -|
+|Memory           |        -|    -|       -|      -|    -|
+|Multiplexer      |        -|    -|       0|    251|    -|
+|Register         |        -|    -|     641|      -|    -|
++-----------------+---------+-----+--------+-------+-----+
+|Total            |        0|    3|    1644|   1230|    0|
++-----------------+---------+-----+--------+-------+-----+
+|Available        |      280|  220|  106400|  53200|    0|
++-----------------+---------+-----+--------+-------+-----+
+|Utilization (%)  |        0|    1|       1|      2|    0|
++-----------------+---------+-----+--------+-------+-----+
+
++ Detail: 
+    * Instance: 
+    +----------------------------------+----------------------------+---------+----+-----+-----+-----+
+    |             Instance             |           Module           | BRAM_18K| DSP|  FF | LUT | URAM|
+    +----------------------------------+----------------------------+---------+----+-----+-----+-----+
+    |mul_32s_32s_32_5_1_U1549          |mul_32s_32s_32_5_1          |        0|   3|  215|    1|    0|
+    |sdiv_32ns_32ns_32_36_seq_1_U1550  |sdiv_32ns_32ns_32_36_seq_1  |        0|   0|  394|  238|    0|
+    |sdiv_32ns_32ns_32_36_seq_1_U1551  |sdiv_32ns_32ns_32_36_seq_1  |        0|   0|  394|  238|    0|
+    +----------------------------------+----------------------------+---------+----+-----+-----+-----+
+    |Total                             |                            |        0|   3| 1003|  477|    0|
+    +----------------------------------+----------------------------+---------+----+-----+-----+-----+
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +------------------------+----------+----+---+----+------------+------------+
+    |      Variable Name     | Operation| DSP| FF| LUT| Bitwidth P0| Bitwidth P1|
+    +------------------------+----------+----+---+----+------------+------------+
+    |add_ln296_fu_142_p2     |         +|   0|  0|  39|          32|           1|
+    |add_ln297_fu_147_p2     |         +|   0|  0|  39|          32|           1|
+    |add_ln298_fu_152_p2     |         +|   0|  0|  39|          32|           3|
+    |add_ln299_fu_190_p2     |         +|   0|  0|  39|          32|           3|
+    |sub4_i_fu_126_p2        |         +|   0|  0|  32|          32|          32|
+    |sub_i_fu_107_p2         |         +|   0|  0|  32|          32|          32|
+    |add3_i_fu_113_p2        |         -|   0|  0|  32|          32|          32|
+    |add_i_fu_94_p2          |         -|   0|  0|  32|          32|          32|
+    |sub_ln298_1_fu_231_p2   |         -|   0|  0|  38|           1|          31|
+    |sub_ln298_fu_165_p2     |         -|   0|  0|  39|           4|          32|
+    |sub_ln299_1_fu_250_p2   |         -|   0|  0|  38|           1|          31|
+    |sub_ln299_fu_203_p2     |         -|   0|  0|  39|           4|          32|
+    |ap_block_state1         |        or|   0|  0|   2|           1|           1|
+    |select_ln298_fu_240_p3  |    select|   0|  0|  31|           1|          31|
+    |select_ln299_fu_259_p3  |    select|   0|  0|  31|           1|          31|
+    +------------------------+----------+----+---+----+------------+------------+
+    |Total                   |          |   0|  0| 502|         269|         325|
+    +------------------------+----------+----+---+----+------------+------------+
+
+    * Multiplexer: 
+    +-------------+-----+-----------+-----+-----------+
+    |     Name    | LUT | Input Size| Bits| Total Bits|
+    +-------------+-----+-----------+-----+-----------+
+    |ap_NS_fsm    |  197|         45|    1|         45|
+    |ap_done      |    9|          2|    1|          2|
+    |ap_return_0  |    9|          2|   32|         64|
+    |ap_return_1  |    9|          2|   32|         64|
+    |ap_return_2  |    9|          2|   31|         62|
+    |ap_return_3  |    9|          2|   31|         62|
+    |ap_return_4  |    9|          2|   32|         64|
+    +-------------+-----+-----------+-----+-----------+
+    |Total        |  251|         57|  160|        363|
+    +-------------+-----+-----------+-----+-----------+
+
+    * Register: 
+    +----------------------+----+----+-----+-----------+
+    |         Name         | FF | LUT| Bits| Const Bits|
+    +----------------------+----+----+-----+-----------+
+    |add_ln296_reg_336     |  32|   0|   32|          0|
+    |add_ln297_reg_342     |  32|   0|   32|          0|
+    |ap_CS_fsm             |  44|   0|   44|          0|
+    |ap_done_reg           |   1|   0|    1|          0|
+    |ap_return_0_preg      |  32|   0|   32|          0|
+    |ap_return_1_preg      |  32|   0|   32|          0|
+    |ap_return_2_preg      |  31|   0|   31|          0|
+    |ap_return_3_preg      |  31|   0|   31|          0|
+    |ap_return_4_preg      |  32|   0|   32|          0|
+    |pad_h_read_reg_297    |  31|   0|   31|          0|
+    |pad_w_read_reg_292    |  31|   0|   31|          0|
+    |sdiv_ln296_reg_322    |  32|   0|   32|          0|
+    |sdiv_ln297_reg_329    |  32|   0|   32|          0|
+    |select_ln298_reg_378  |  31|   0|   31|          0|
+    |select_ln299_reg_383  |  31|   0|   31|          0|
+    |sub4_i_reg_307        |  32|   0|   32|          0|
+    |sub_i_reg_302         |  32|   0|   32|          0|
+    |tmp_39_i_reg_358      |  30|   0|   30|          0|
+    |tmp_40_i_reg_368      |  30|   0|   30|          0|
+    |tmp_41_i_reg_373      |  30|   0|   30|          0|
+    |tmp_90_reg_348        |   1|   0|    1|          0|
+    |tmp_91_reg_363        |   1|   0|    1|          0|
+    |tmp_i_reg_353         |  30|   0|   30|          0|
+    +----------------------+----+----+-----+-----------+
+    |Total                 | 641|   0|  641|          0|
+    +----------------------+----+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++-------------+-----+-----+------------+-------------------------------------------------------+--------------+
+|  RTL Ports  | Dir | Bits|  Protocol  |                     Source Object                     |    C Type    |
++-------------+-----+-----+------------+-------------------------------------------------------+--------------+
+|ap_clk       |   in|    1|  ap_ctrl_hs|  dataflow_in_loop_LOOP_DW_CH.1_Block_newFuncRoot_proc2|  return value|
+|ap_rst       |   in|    1|  ap_ctrl_hs|  dataflow_in_loop_LOOP_DW_CH.1_Block_newFuncRoot_proc2|  return value|
+|ap_start     |   in|    1|  ap_ctrl_hs|  dataflow_in_loop_LOOP_DW_CH.1_Block_newFuncRoot_proc2|  return value|
+|ap_done      |  out|    1|  ap_ctrl_hs|  dataflow_in_loop_LOOP_DW_CH.1_Block_newFuncRoot_proc2|  return value|
+|ap_continue  |   in|    1|  ap_ctrl_hs|  dataflow_in_loop_LOOP_DW_CH.1_Block_newFuncRoot_proc2|  return value|
+|ap_idle      |  out|    1|  ap_ctrl_hs|  dataflow_in_loop_LOOP_DW_CH.1_Block_newFuncRoot_proc2|  return value|
+|ap_ready     |  out|    1|  ap_ctrl_hs|  dataflow_in_loop_LOOP_DW_CH.1_Block_newFuncRoot_proc2|  return value|
+|ap_return_0  |  out|   32|  ap_ctrl_hs|  dataflow_in_loop_LOOP_DW_CH.1_Block_newFuncRoot_proc2|  return value|
+|ap_return_1  |  out|   32|  ap_ctrl_hs|  dataflow_in_loop_LOOP_DW_CH.1_Block_newFuncRoot_proc2|  return value|
+|ap_return_2  |  out|   31|  ap_ctrl_hs|  dataflow_in_loop_LOOP_DW_CH.1_Block_newFuncRoot_proc2|  return value|
+|ap_return_3  |  out|   31|  ap_ctrl_hs|  dataflow_in_loop_LOOP_DW_CH.1_Block_newFuncRoot_proc2|  return value|
+|ap_return_4  |  out|   32|  ap_ctrl_hs|  dataflow_in_loop_LOOP_DW_CH.1_Block_newFuncRoot_proc2|  return value|
+|Hin          |   in|   32|     ap_none|                                                    Hin|        scalar|
+|Kh           |   in|   32|     ap_none|                                                     Kh|        scalar|
+|pad_h        |   in|   31|     ap_none|                                                  pad_h|        scalar|
+|stride_h     |   in|   32|     ap_none|                                               stride_h|        scalar|
+|Win          |   in|   32|     ap_none|                                                    Win|        scalar|
+|Kw           |   in|   32|     ap_none|                                                     Kw|        scalar|
+|pad_w        |   in|   31|     ap_none|                                                  pad_w|        scalar|
+|stride_w     |   in|   32|     ap_none|                                               stride_w|        scalar|
++-------------+-----+-----+------------+-------------------------------------------------------+--------------+
+

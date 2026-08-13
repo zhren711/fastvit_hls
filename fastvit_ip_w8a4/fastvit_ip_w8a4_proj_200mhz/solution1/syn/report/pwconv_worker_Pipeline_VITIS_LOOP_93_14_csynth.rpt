@@ -1,0 +1,171 @@
+
+
+================================================================
+== Vitis HLS Report for 'pwconv_worker_Pipeline_VITIS_LOOP_93_14'
+================================================================
+* Date:           Tue Aug 11 02:53:50 2026
+
+* Version:        2024.2 (Build 5238294 on Nov  8 2024)
+* Project:        fastvit_ip_w8a4_proj_200mhz
+* Solution:       solution1 (Vivado IP Flow Target)
+* Product family: zynq
+* Target device:  xc7z020-clg400-1
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+---------+----------+------------+
+    |  Clock |  Target | Estimated| Uncertainty|
+    +--------+---------+----------+------------+
+    |ap_clk  |  5.00 ns|  5.728 ns|     1.35 ns|
+    +--------+---------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+    |  Latency (cycles) |  Latency (absolute) |  Interval |                    Pipeline                    |
+    |   min   |   max   |    min   |    max   | min | max |                      Type                      |
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+    |        ?|        ?|         ?|         ?|    0|    0|  loop auto-rewind stp (delay=0 clock cycles(s))|
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+
+    + Detail: 
+        * Instance: 
+        N/A
+
+        * Loop: 
+        +-------------------+---------+---------+----------+-----------+-----------+------+----------+
+        |                   |  Latency (cycles) | Iteration|  Initiation Interval  | Trip |          |
+        |     Loop Name     |   min   |   max   |  Latency |  achieved |   target  | Count| Pipelined|
+        +-------------------+---------+---------+----------+-----------+-----------+------+----------+
+        |- VITIS_LOOP_93_1  |        ?|        ?|         2|          1|          1|     ?|       yes|
+        +-------------------+---------+---------+----------+-----------+-----------+------+----------+
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++-----------------+---------+-----+--------+-------+-----+
+|       Name      | BRAM_18K| DSP |   FF   |  LUT  | URAM|
++-----------------+---------+-----+--------+-------+-----+
+|DSP              |        -|    -|       -|      -|    -|
+|Expression       |        -|    -|       0|     79|    -|
+|FIFO             |        -|    -|       -|      -|    -|
+|Instance         |        -|    -|       -|      -|    -|
+|Memory           |        -|    -|       -|      -|    -|
+|Multiplexer      |        -|    -|       0|     36|    -|
+|Register         |        -|    -|      46|      -|    -|
++-----------------+---------+-----+--------+-------+-----+
+|Total            |        0|    0|      46|    115|    0|
++-----------------+---------+-----+--------+-------+-----+
+|Available        |      280|  220|  106400|  53200|    0|
++-----------------+---------+-----+--------+-------+-----+
+|Utilization (%)  |        0|    0|      ~0|     ~0|    0|
++-----------------+---------+-----+--------+-------+-----+
+
++ Detail: 
+    * Instance: 
+    N/A
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +---------------------+----------+----+---+----+------------+------------+
+    |    Variable Name    | Operation| DSP| FF| LUT| Bitwidth P0| Bitwidth P1|
+    +---------------------+----------+----+---+----+------------+------------+
+    |add_ln93_fu_206_p2   |         +|   0|  0|  38|          31|           1|
+    |icmp_ln93_fu_200_p2  |      icmp|   0|  0|  39|          32|          32|
+    |ap_enable_pp0        |       xor|   0|  0|   2|           1|           2|
+    +---------------------+----------+----+---+----+------------+------------+
+    |Total                |          |   0|  0|  79|          64|          35|
+    +---------------------+----------+----+---+----+------------+------------+
+
+    * Multiplexer: 
+    +-------------------------+----+-----------+-----+-----------+
+    |           Name          | LUT| Input Size| Bits| Total Bits|
+    +-------------------------+----+-----------+-----+-----------+
+    |ap_done_int              |   9|          2|    1|          2|
+    |ap_enable_reg_pp0_iter1  |   9|          2|    1|          2|
+    |ap_sig_allocacmp_s       |   9|          2|   31|         62|
+    |s_4_fu_68                |   9|          2|   31|         62|
+    +-------------------------+----+-----------+-----+-----------+
+    |Total                    |  36|          8|   64|        128|
+    +-------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +-------------------------+----+----+-----+-----------+
+    |           Name          | FF | LUT| Bits| Const Bits|
+    +-------------------------+----+----+-----+-----------+
+    |ap_CS_fsm                |   1|   0|    1|          0|
+    |ap_done_reg              |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter1  |   1|   0|    1|          0|
+    |lshr_ln93_4_reg_268      |   9|   0|    9|          0|
+    |s_4_fu_68                |  31|   0|   31|          0|
+    |trunc_ln93_reg_264       |   3|   0|    3|          0|
+    +-------------------------+----+----+-----+-----------+
+    |Total                    |  46|   0|   46|          0|
+    +-------------------------+----+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++-------------------------------+-----+-----+------------+-----------------------------------------+--------------+
+|           RTL Ports           | Dir | Bits|  Protocol  |              Source Object              |    C Type    |
++-------------------------------+-----+-----+------------+-----------------------------------------+--------------+
+|ap_clk                         |   in|    1|  ap_ctrl_hs|  pwconv_worker_Pipeline_VITIS_LOOP_93_14|  return value|
+|ap_rst                         |   in|    1|  ap_ctrl_hs|  pwconv_worker_Pipeline_VITIS_LOOP_93_14|  return value|
+|ap_start                       |   in|    1|  ap_ctrl_hs|  pwconv_worker_Pipeline_VITIS_LOOP_93_14|  return value|
+|ap_done                        |  out|    1|  ap_ctrl_hs|  pwconv_worker_Pipeline_VITIS_LOOP_93_14|  return value|
+|ap_idle                        |  out|    1|  ap_ctrl_hs|  pwconv_worker_Pipeline_VITIS_LOOP_93_14|  return value|
+|ap_ready                       |  out|    1|  ap_ctrl_hs|  pwconv_worker_Pipeline_VITIS_LOOP_93_14|  return value|
+|spatial                        |   in|   32|     ap_none|                                  spatial|        scalar|
+|b_9                            |   in|   32|     ap_none|                                      b_9|        scalar|
+|p_ZL10pw_out_buf_4_0_address0  |  out|    9|   ap_memory|                     p_ZL10pw_out_buf_4_0|         array|
+|p_ZL10pw_out_buf_4_0_ce0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_0|         array|
+|p_ZL10pw_out_buf_4_0_we0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_0|         array|
+|p_ZL10pw_out_buf_4_0_d0        |  out|   32|   ap_memory|                     p_ZL10pw_out_buf_4_0|         array|
+|p_ZL10pw_out_buf_4_1_address0  |  out|    9|   ap_memory|                     p_ZL10pw_out_buf_4_1|         array|
+|p_ZL10pw_out_buf_4_1_ce0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_1|         array|
+|p_ZL10pw_out_buf_4_1_we0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_1|         array|
+|p_ZL10pw_out_buf_4_1_d0        |  out|   32|   ap_memory|                     p_ZL10pw_out_buf_4_1|         array|
+|p_ZL10pw_out_buf_4_2_address0  |  out|    9|   ap_memory|                     p_ZL10pw_out_buf_4_2|         array|
+|p_ZL10pw_out_buf_4_2_ce0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_2|         array|
+|p_ZL10pw_out_buf_4_2_we0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_2|         array|
+|p_ZL10pw_out_buf_4_2_d0        |  out|   32|   ap_memory|                     p_ZL10pw_out_buf_4_2|         array|
+|p_ZL10pw_out_buf_4_3_address0  |  out|    9|   ap_memory|                     p_ZL10pw_out_buf_4_3|         array|
+|p_ZL10pw_out_buf_4_3_ce0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_3|         array|
+|p_ZL10pw_out_buf_4_3_we0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_3|         array|
+|p_ZL10pw_out_buf_4_3_d0        |  out|   32|   ap_memory|                     p_ZL10pw_out_buf_4_3|         array|
+|p_ZL10pw_out_buf_4_4_address0  |  out|    9|   ap_memory|                     p_ZL10pw_out_buf_4_4|         array|
+|p_ZL10pw_out_buf_4_4_ce0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_4|         array|
+|p_ZL10pw_out_buf_4_4_we0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_4|         array|
+|p_ZL10pw_out_buf_4_4_d0        |  out|   32|   ap_memory|                     p_ZL10pw_out_buf_4_4|         array|
+|p_ZL10pw_out_buf_4_5_address0  |  out|    9|   ap_memory|                     p_ZL10pw_out_buf_4_5|         array|
+|p_ZL10pw_out_buf_4_5_ce0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_5|         array|
+|p_ZL10pw_out_buf_4_5_we0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_5|         array|
+|p_ZL10pw_out_buf_4_5_d0        |  out|   32|   ap_memory|                     p_ZL10pw_out_buf_4_5|         array|
+|p_ZL10pw_out_buf_4_6_address0  |  out|    9|   ap_memory|                     p_ZL10pw_out_buf_4_6|         array|
+|p_ZL10pw_out_buf_4_6_ce0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_6|         array|
+|p_ZL10pw_out_buf_4_6_we0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_6|         array|
+|p_ZL10pw_out_buf_4_6_d0        |  out|   32|   ap_memory|                     p_ZL10pw_out_buf_4_6|         array|
+|p_ZL10pw_out_buf_4_7_address0  |  out|    9|   ap_memory|                     p_ZL10pw_out_buf_4_7|         array|
+|p_ZL10pw_out_buf_4_7_ce0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_7|         array|
+|p_ZL10pw_out_buf_4_7_we0       |  out|    1|   ap_memory|                     p_ZL10pw_out_buf_4_7|         array|
+|p_ZL10pw_out_buf_4_7_d0        |  out|   32|   ap_memory|                     p_ZL10pw_out_buf_4_7|         array|
++-------------------------------+-----+-----+------------+-----------------------------------------+--------------+
+

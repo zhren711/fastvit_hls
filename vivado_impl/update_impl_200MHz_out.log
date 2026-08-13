@@ -1,0 +1,1195 @@
+
+****** Vivado v2024.2 (64-bit)
+  **** SW Build 5239630 on Fri Nov 08 22:35:27 MST 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Sun Jun 21 20:22:06 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source update_impl.tcl
+# set script_dir [file normalize [file dirname [info script]]]
+# set_param general.maxThreads 4
+# set proj_xpr "$script_dir/fastvit_util_check/fastvit_util_check.xpr"
+# puts ">>> Opening existing project: $proj_xpr"
+>>> Opening existing project: E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.xpr
+# open_project $proj_xpr
+Scanning sources...
+Finished scanning sources
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/conv_ip/conv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/dwconv_ip/dwconv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/pwconv_ip/pwconv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/add_ip/add_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/pool_ip/pool_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'E:/Xilinx/Vivado/2024.2/data/ip'.
+INFO: [Project 1-5579] Found utility IPs instantiated in one or more block designs which have equivalent inline hdl with improved performance and reduced diskspace. It is recommended to migrate these utility IPs to inline hdl using the command upgrade_project -migrate_to_inline_hdl. The utility IPs may be deprecated in future releases. More information on inline hdl is available in UG994.
+open_project: Time (s): cpu = 00:00:07 ; elapsed = 00:00:07 . Memory (MB): peak = 504.328 ; gain = 210.051
+# set ip_conv   "$script_dir/../conv_ip/conv_ip_proj/solution1/impl/ip"
+# set ip_dw     "$script_dir/../dwconv_ip/dwconv_ip_proj/solution1/impl/ip"
+# set ip_pw     "$script_dir/../pwconv_ip/pwconv_ip_proj/solution1/impl/ip"
+# set ip_add    "$script_dir/../add_ip/add_ip_proj/solution1/impl/ip"
+# set ip_pool   "$script_dir/../pool_ip/pool_ip_proj/solution1/impl/ip"
+# set_property ip_repo_paths [list \
+#     [file normalize $ip_conv] \
+#     [file normalize $ip_dw]   \
+#     [file normalize $ip_pw]   \
+#     [file normalize $ip_add]  \
+#     [file normalize $ip_pool] \
+# ] [current_project]
+# puts ">>> Updating IP catalog..."
+>>> Updating IP catalog...
+# update_ip_catalog -rebuild
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/conv_ip/conv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/dwconv_ip/dwconv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/pwconv_ip/pwconv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/add_ip/add_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/pool_ip/pool_ip_proj/solution1/impl/ip'.
+# open_bd_design E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.srcs/sources_1/bd/fastvit_bd/fastvit_bd.bd
+Reading block design file <E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.srcs/sources_1/bd/fastvit_bd/fastvit_bd.bd>...
+Adding component instance block -- xilinx.com:ip:processing_system7:5.5 - ps7_0
+Adding component instance block -- user.org:hls:conv_ip:1.0 - conv_ip_0
+Adding component instance block -- user.org:hls:dwconv_ip:1.0 - dwconv_ip_0
+Adding component instance block -- user.org:hls:pwconv_ip:1.0 - pwconv_ip_0
+Adding component instance block -- user.org:hls:pool_ip:1.0 - pool_ip_0
+Adding component instance block -- user.org:hls:add_ip:1.0 - add_ip_0
+Adding component instance block -- xilinx.com:ip:proc_sys_reset:5.0 - rst_ps7_0_100M
+Adding component instance block -- xilinx.com:ip:axi_interconnect:2.1 - ps_ctrl_ic
+Adding component instance block -- xilinx.com:ip:axi_crossbar:2.1 - xbar
+Adding component instance block -- xilinx.com:ip:axi_protocol_converter:2.1 - auto_pc
+Adding component instance block -- xilinx.com:ip:smartconnect:1.0 - hp0_sc_a
+Adding component instance block -- xilinx.com:ip:smartconnect:1.0 - hp0_sc_b
+Adding component instance block -- xilinx.com:ip:smartconnect:1.0 - hp0_sc_top
+Successfully read diagram <fastvit_bd> from block design file <E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.srcs/sources_1/bd/fastvit_bd/fastvit_bd.bd>
+WARNING: [Coretcl 2-176] No IPs found
+# set upgrade_ips [get_ips -filter {UPGRADE_VERSIONS != ""}]
+# if {[llength $upgrade_ips] > 0} {
+#     puts ">>> Upgrading IPs: $upgrade_ips"
+#     upgrade_ip $upgrade_ips
+# }
+# generate_target all [get_files fastvit_bd.bd]
+INFO: [BD 41-1637] Generated targets are already up-to-date for block design 'fastvit_bd' - hence not re-generating.
+# save_bd_design
+# set bd_file [get_files -of_objects [get_filesets sources_1] {*.bd}]
+# puts ">>> BD file: $bd_file"
+>>> BD file: E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.srcs/sources_1/bd/fastvit_bd/fastvit_bd.bd
+# make_wrapper -files [list $bd_file] -top -force
+# set proj_dir [get_property DIRECTORY [current_project]]
+# set wrapper_search [glob -nocomplain "$proj_dir/*.gen/sources_1/bd/fastvit_bd/hdl/fastvit_bd_wrapper.v"]
+# if {[llength $wrapper_search] > 0} {
+#     set wrapper_file [lindex $wrapper_search 0]
+#     if {[llength [get_files $wrapper_file]] == 0} {
+#         add_files -norecurse $wrapper_file
+#     }
+# }
+WARNING: [Vivado 12-818] No files matched 'E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/hdl/fastvit_bd_wrapper.v'
+# set_property top fastvit_bd_wrapper [current_fileset]
+# update_compile_order -fileset sources_1
+# puts ">>> BD wrapper regenerated"
+>>> BD wrapper regenerated
+# puts ">>> Resetting synth_1 run..."
+>>> Resetting synth_1 run...
+# reset_run synth_1
+# puts ">>> Launching Synthesis (jobs=4)..."
+>>> Launching Synthesis (jobs=4)...
+# launch_runs synth_1 -jobs 4
+[Sun Jun 21 20:22:17 2026] Launched synth_1...
+Run output will be captured here: E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/runme.log
+# wait_on_run synth_1
+[Sun Jun 21 20:22:17 2026] Waiting for synth_1 to finish...
+
+
+*** Running vivado
+    with args -log fastvit_bd_wrapper.vds -m64 -product Vivado -mode batch -messageDb vivado.pb -notrace -source fastvit_bd_wrapper.tcl
+
+
+
+****** Vivado v2024.2 (64-bit)
+  **** SW Build 5239630 on Fri Nov 08 22:35:27 MST 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Sun Jun 21 20:22:19 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source fastvit_bd_wrapper.tcl -notrace
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/conv_ip/conv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/dwconv_ip/dwconv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/pwconv_ip/pwconv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/add_ip/add_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/pool_ip/pool_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'E:/Xilinx/Vivado/2024.2/data/ip'.
+WARNING: [IP_Flow 19-4995] The host OS only allows 260 characters in a normal path. The IP cache path is more than 80 characters. If you experience issues with IP caching, please consider changing the IP cache to a location with a shorter path. Alternately consider using the OS subst command to map part of the path to a drive letter. 
+Current IP cache path is e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.cache/ip 
+add_files: Time (s): cpu = 00:00:05 ; elapsed = 00:00:06 . Memory (MB): peak = 495.141 ; gain = 138.742
+Command: read_checkpoint -auto_incremental -incremental E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.srcs/utils_1/imports/synth_1/fastvit_bd_wrapper.dcp
+INFO: [Vivado 12-5825] Read reference checkpoint from E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.srcs/utils_1/imports/synth_1/fastvit_bd_wrapper.dcp for incremental synthesis
+INFO: [Vivado 12-7989] Please ensure there are no constraint changes
+Command: synth_design -top fastvit_bd_wrapper -part xc7z020clg400-1
+Starting synth_design
+Attempting to get a license for feature 'Synthesis' and/or device 'xc7z020'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xc7z020'
+INFO: [Device 21-403] Loading part xc7z020clg400-1
+INFO: [Designutils 20-5440] No compile time benefit to using incremental synthesis; A full resynthesis will be run
+INFO: [Designutils 20-4379] Flow is switching to default flow due to incremental criteria not met. If you would like to alter this behaviour and have the flow terminate instead, please set the following parameter config_implementation {autoIncr.Synth.RejectBehavior Terminate}
+INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 4 processes.
+INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
+INFO: [Synth 8-7075] Helper process launched with PID 153972
+---------------------------------------------------------------------------------
+Starting RTL Elaboration : Time (s): cpu = 00:00:02 ; elapsed = 00:00:03 . Memory (MB): peak = 1225.180 ; gain = 468.449
+---------------------------------------------------------------------------------
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd_wrapper' [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/hdl/fastvit_bd_wrapper.v:13]
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:13]
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd_add_ip_0_0' [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_add_ip_0_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd_add_ip_0_0' (0#1) [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_add_ip_0_0_stub.v:6]
+WARNING: [Synth 8-7071] port 'interrupt' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_ARREGION' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWADDR' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWBURST' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWCACHE' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWID' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWLEN' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWLOCK' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWPROT' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWQOS' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWREGION' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWSIZE' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWVALID' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_BREADY' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_WDATA' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_WID' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_WLAST' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_WSTRB' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_WVALID' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_ARREGION' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWADDR' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWBURST' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWCACHE' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWID' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWLEN' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWLOCK' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWPROT' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWQOS' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWREGION' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWSIZE' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWVALID' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_BREADY' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_WDATA' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_WID' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_WLAST' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_WSTRB' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_WVALID' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_ARADDR' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_ARBURST' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_ARCACHE' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_ARID' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_ARLEN' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_ARLOCK' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_ARPROT' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_ARQOS' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_ARREGION' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_ARSIZE' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_ARVALID' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_AWREGION' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_RREADY' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_WID' of module 'fastvit_bd_add_ip_0_0' is unconnected for instance 'add_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+WARNING: [Synth 8-7023] instance 'add_ip_0' of module 'fastvit_bd_add_ip_0_0' has 157 connections declared, but only 106 given [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:712]
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd_conv_ip_0_0' [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_conv_ip_0_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd_conv_ip_0_0' (0#1) [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_conv_ip_0_0_stub.v:6]
+WARNING: [Synth 8-7071] port 'interrupt' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_ARREGION' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWADDR' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWBURST' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWCACHE' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWID' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWLEN' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWLOCK' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWPROT' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWQOS' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWREGION' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWSIZE' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_AWVALID' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_BREADY' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_WDATA' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_WID' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_WLAST' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_WSTRB' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem0_WVALID' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_ARREGION' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWADDR' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWBURST' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWCACHE' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWID' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWLEN' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWLOCK' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWPROT' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWQOS' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWREGION' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWSIZE' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_AWVALID' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_BREADY' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_WDATA' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_WID' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_WLAST' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_WSTRB' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem1_WVALID' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_ARREGION' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_AWADDR' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_AWBURST' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_AWCACHE' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_AWID' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_AWLEN' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_AWLOCK' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_AWPROT' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_AWQOS' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_AWREGION' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_AWSIZE' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+WARNING: [Synth 8-7071] port 'm_axi_gmem2_AWVALID' of module 'fastvit_bd_conv_ip_0_0' is unconnected for instance 'conv_ip_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+INFO: [Common 17-14] Message 'Synth 8-7071' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
+WARNING: [Synth 8-7023] instance 'conv_ip_0' of module 'fastvit_bd_conv_ip_0_0' has 197 connections declared, but only 128 given [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:819]
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd_dwconv_ip_0_0' [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_dwconv_ip_0_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd_dwconv_ip_0_0' (0#1) [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_dwconv_ip_0_0_stub.v:6]
+WARNING: [Synth 8-7023] instance 'dwconv_ip_0' of module 'fastvit_bd_dwconv_ip_0_0' has 197 connections declared, but only 128 given [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:948]
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd_hp0_sc_a_0' [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_hp0_sc_a_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd_hp0_sc_a_0' (0#1) [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_hp0_sc_a_0_stub.v:6]
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd_hp0_sc_b_0' [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_hp0_sc_b_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd_hp0_sc_b_0' (0#1) [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_hp0_sc_b_0_stub.v:6]
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd_hp0_sc_top_0' [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_hp0_sc_top_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd_hp0_sc_top_0' (0#1) [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_hp0_sc_top_0_stub.v:6]
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd_pool_ip_0_0' [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_pool_ip_0_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd_pool_ip_0_0' (0#1) [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_pool_ip_0_0_stub.v:6]
+WARNING: [Synth 8-7023] instance 'pool_ip_0' of module 'fastvit_bd_pool_ip_0_0' has 117 connections declared, but only 84 given [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:1591]
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd_ps7_0_0' [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_ps7_0_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd_ps7_0_0' (0#1) [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_ps7_0_0_stub.v:6]
+WARNING: [Synth 8-7023] instance 'ps7_0' of module 'fastvit_bd_ps7_0_0' has 107 connections declared, but only 101 given [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:1676]
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd_ps_ctrl_ic_0' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:2149]
+INFO: [Synth 8-6157] synthesizing module 'm00_couplers_imp_6S90OJ' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:3508]
+INFO: [Synth 8-6155] done synthesizing module 'm00_couplers_imp_6S90OJ' (0#1) [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:3508]
+INFO: [Synth 8-6157] synthesizing module 'm01_couplers_imp_YPELF9' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:3623]
+INFO: [Synth 8-6155] done synthesizing module 'm01_couplers_imp_YPELF9' (0#1) [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:3623]
+INFO: [Synth 8-6157] synthesizing module 'm02_couplers_imp_1MH154V' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:3738]
+INFO: [Synth 8-6155] done synthesizing module 'm02_couplers_imp_1MH154V' (0#1) [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:3738]
+INFO: [Synth 8-6157] synthesizing module 'm03_couplers_imp_1F0GPRT' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:3853]
+INFO: [Synth 8-6155] done synthesizing module 'm03_couplers_imp_1F0GPRT' (0#1) [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:3853]
+INFO: [Synth 8-6157] synthesizing module 'm04_couplers_imp_O17B3E' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:3968]
+INFO: [Synth 8-6155] done synthesizing module 'm04_couplers_imp_O17B3E' (0#1) [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:3968]
+INFO: [Synth 8-6157] synthesizing module 'm05_couplers_imp_EF550S' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:4083]
+INFO: [Synth 8-6155] done synthesizing module 'm05_couplers_imp_EF550S' (0#1) [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:4083]
+INFO: [Synth 8-6157] synthesizing module 'm06_couplers_imp_17DDE92' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:4198]
+INFO: [Synth 8-6155] done synthesizing module 'm06_couplers_imp_17DDE92' (0#1) [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:4198]
+INFO: [Synth 8-6157] synthesizing module 'm07_couplers_imp_1X5CTGG' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:4313]
+INFO: [Synth 8-6155] done synthesizing module 'm07_couplers_imp_1X5CTGG' (0#1) [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:4313]
+INFO: [Synth 8-6157] synthesizing module 'm08_couplers_imp_1132135' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:4428]
+INFO: [Synth 8-6155] done synthesizing module 'm08_couplers_imp_1132135' (0#1) [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:4428]
+INFO: [Synth 8-6157] synthesizing module 'm09_couplers_imp_1QDK37R' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:4543]
+INFO: [Synth 8-6155] done synthesizing module 'm09_couplers_imp_1QDK37R' (0#1) [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:4543]
+INFO: [Synth 8-6157] synthesizing module 's00_couplers_imp_XWRLGY' [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:4658]
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd_ps_ctrl_ic_imp_auto_pc_0' [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_ps_ctrl_ic_imp_auto_pc_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd_ps_ctrl_ic_imp_auto_pc_0' (0#1) [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_ps_ctrl_ic_imp_auto_pc_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 's00_couplers_imp_XWRLGY' (0#1) [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:4658]
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd_ps_ctrl_ic_imp_xbar_0' [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_ps_ctrl_ic_imp_xbar_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd_ps_ctrl_ic_imp_xbar_0' (0#1) [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_ps_ctrl_ic_imp_xbar_0_stub.v:6]
+WARNING: [Synth 8-7023] instance 'xbar' of module 'fastvit_bd_ps_ctrl_ic_imp_xbar_0' has 40 connections declared, but only 38 given [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:3467]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd_ps_ctrl_ic_0' (0#1) [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:2149]
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd_pwconv_ip_0_0' [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_pwconv_ip_0_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd_pwconv_ip_0_0' (0#1) [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_pwconv_ip_0_0_stub.v:6]
+WARNING: [Synth 8-7023] instance 'pwconv_ip_0' of module 'fastvit_bd_pwconv_ip_0_0' has 197 connections declared, but only 128 given [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:2011]
+INFO: [Synth 8-6157] synthesizing module 'fastvit_bd_rst_ps7_0_100M_0' [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_rst_ps7_0_100M_0_stub.v:6]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd_rst_ps7_0_100M_0' (0#1) [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/.Xil/Vivado-264072-DESKTOP-GBLH5MP/realtime/fastvit_bd_rst_ps7_0_100M_0_stub.v:6]
+WARNING: [Synth 8-7023] instance 'rst_ps7_0_100M' of module 'fastvit_bd_rst_ps7_0_100M_0' has 10 connections declared, but only 6 given [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:2140]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd' (0#1) [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/synth/fastvit_bd.v:13]
+INFO: [Synth 8-6155] done synthesizing module 'fastvit_bd_wrapper' (0#1) [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/hdl/fastvit_bd_wrapper.v:13]
+WARNING: [Synth 8-7129] Port M_ACLK in module s00_couplers_imp_XWRLGY is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ARESETN in module s00_couplers_imp_XWRLGY is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ACLK in module m09_couplers_imp_1QDK37R is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ARESETN in module m09_couplers_imp_1QDK37R is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ACLK in module m09_couplers_imp_1QDK37R is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ARESETN in module m09_couplers_imp_1QDK37R is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ACLK in module m08_couplers_imp_1132135 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ARESETN in module m08_couplers_imp_1132135 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ACLK in module m08_couplers_imp_1132135 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ARESETN in module m08_couplers_imp_1132135 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ACLK in module m07_couplers_imp_1X5CTGG is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ARESETN in module m07_couplers_imp_1X5CTGG is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ACLK in module m07_couplers_imp_1X5CTGG is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ARESETN in module m07_couplers_imp_1X5CTGG is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ACLK in module m06_couplers_imp_17DDE92 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ARESETN in module m06_couplers_imp_17DDE92 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ACLK in module m06_couplers_imp_17DDE92 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ARESETN in module m06_couplers_imp_17DDE92 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ACLK in module m05_couplers_imp_EF550S is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ARESETN in module m05_couplers_imp_EF550S is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ACLK in module m05_couplers_imp_EF550S is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ARESETN in module m05_couplers_imp_EF550S is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ACLK in module m04_couplers_imp_O17B3E is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ARESETN in module m04_couplers_imp_O17B3E is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ACLK in module m04_couplers_imp_O17B3E is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ARESETN in module m04_couplers_imp_O17B3E is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ACLK in module m03_couplers_imp_1F0GPRT is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ARESETN in module m03_couplers_imp_1F0GPRT is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ACLK in module m03_couplers_imp_1F0GPRT is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ARESETN in module m03_couplers_imp_1F0GPRT is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ACLK in module m02_couplers_imp_1MH154V is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ARESETN in module m02_couplers_imp_1MH154V is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ACLK in module m02_couplers_imp_1MH154V is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ARESETN in module m02_couplers_imp_1MH154V is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ACLK in module m01_couplers_imp_YPELF9 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ARESETN in module m01_couplers_imp_YPELF9 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ACLK in module m01_couplers_imp_YPELF9 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ARESETN in module m01_couplers_imp_YPELF9 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ACLK in module m00_couplers_imp_6S90OJ is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M_ARESETN in module m00_couplers_imp_6S90OJ is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ACLK in module m00_couplers_imp_6S90OJ is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S_ARESETN in module m00_couplers_imp_6S90OJ is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M00_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M00_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M01_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M01_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M02_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M02_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M03_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M03_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M04_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M04_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M05_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M05_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M06_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M06_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M07_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M07_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M08_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M08_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M09_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M09_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S00_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S00_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+---------------------------------------------------------------------------------
+Finished RTL Elaboration : Time (s): cpu = 00:00:04 ; elapsed = 00:00:04 . Memory (MB): peak = 1357.832 ; gain = 601.102
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Handling Custom Attributes
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Handling Custom Attributes : Time (s): cpu = 00:00:04 ; elapsed = 00:00:04 . Memory (MB): peak = 1357.832 ; gain = 601.102
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished RTL Optimization Phase 1 : Time (s): cpu = 00:00:04 ; elapsed = 00:00:04 . Memory (MB): peak = 1357.832 ; gain = 601.102
+---------------------------------------------------------------------------------
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.040 . Memory (MB): peak = 1357.832 ; gain = 0.000
+INFO: [Project 1-570] Preparing netlist for logic optimization
+
+Processing XDC Constraints
+Initializing timing engine
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc] for cell 'fastvit_bd_i/ps7_0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc] for cell 'fastvit_bd_i/ps7_0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_conv_ip_0_0/fastvit_bd_conv_ip_0_0/fastvit_bd_conv_ip_0_0_in_context.xdc] for cell 'fastvit_bd_i/conv_ip_0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_conv_ip_0_0/fastvit_bd_conv_ip_0_0/fastvit_bd_conv_ip_0_0_in_context.xdc] for cell 'fastvit_bd_i/conv_ip_0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_dwconv_ip_0_0/fastvit_bd_dwconv_ip_0_0/fastvit_bd_dwconv_ip_0_0_in_context.xdc] for cell 'fastvit_bd_i/dwconv_ip_0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_dwconv_ip_0_0/fastvit_bd_dwconv_ip_0_0/fastvit_bd_dwconv_ip_0_0_in_context.xdc] for cell 'fastvit_bd_i/dwconv_ip_0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_pwconv_ip_0_0/fastvit_bd_pwconv_ip_0_0/fastvit_bd_pwconv_ip_0_0_in_context.xdc] for cell 'fastvit_bd_i/pwconv_ip_0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_pwconv_ip_0_0/fastvit_bd_pwconv_ip_0_0/fastvit_bd_pwconv_ip_0_0_in_context.xdc] for cell 'fastvit_bd_i/pwconv_ip_0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_pool_ip_0_0/fastvit_bd_pool_ip_0_0/fastvit_bd_pool_ip_0_0_in_context.xdc] for cell 'fastvit_bd_i/pool_ip_0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_pool_ip_0_0/fastvit_bd_pool_ip_0_0/fastvit_bd_pool_ip_0_0_in_context.xdc] for cell 'fastvit_bd_i/pool_ip_0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_add_ip_0_0/fastvit_bd_add_ip_0_0/fastvit_bd_add_ip_0_0_in_context.xdc] for cell 'fastvit_bd_i/add_ip_0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_add_ip_0_0/fastvit_bd_add_ip_0_0/fastvit_bd_add_ip_0_0_in_context.xdc] for cell 'fastvit_bd_i/add_ip_0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_rst_ps7_0_100M_0/fastvit_bd_rst_ps7_0_100M_0/fastvit_bd_rst_ps7_0_100M_0_in_context.xdc] for cell 'fastvit_bd_i/rst_ps7_0_100M'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_rst_ps7_0_100M_0/fastvit_bd_rst_ps7_0_100M_0/fastvit_bd_rst_ps7_0_100M_0_in_context.xdc] for cell 'fastvit_bd_i/rst_ps7_0_100M'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps_ctrl_ic_imp_xbar_0/fastvit_bd_ps_ctrl_ic_imp_xbar_0/fastvit_bd_ps_ctrl_ic_imp_xbar_0_in_context.xdc] for cell 'fastvit_bd_i/ps_ctrl_ic/xbar'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps_ctrl_ic_imp_xbar_0/fastvit_bd_ps_ctrl_ic_imp_xbar_0/fastvit_bd_ps_ctrl_ic_imp_xbar_0_in_context.xdc] for cell 'fastvit_bd_i/ps_ctrl_ic/xbar'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps_ctrl_ic_imp_auto_pc_0/fastvit_bd_ps_ctrl_ic_imp_auto_pc_0/fastvit_bd_ps_ctrl_ic_imp_auto_pc_0_in_context.xdc] for cell 'fastvit_bd_i/ps_ctrl_ic/s00_couplers/auto_pc'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps_ctrl_ic_imp_auto_pc_0/fastvit_bd_ps_ctrl_ic_imp_auto_pc_0/fastvit_bd_ps_ctrl_ic_imp_auto_pc_0_in_context.xdc] for cell 'fastvit_bd_i/ps_ctrl_ic/s00_couplers/auto_pc'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_a_0/fastvit_bd_hp0_sc_a_0/fastvit_bd_hp0_sc_a_0_in_context.xdc] for cell 'fastvit_bd_i/hp0_sc_a'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_a_0/fastvit_bd_hp0_sc_a_0/fastvit_bd_hp0_sc_a_0_in_context.xdc] for cell 'fastvit_bd_i/hp0_sc_a'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_b_0/fastvit_bd_hp0_sc_b_0/fastvit_bd_hp0_sc_b_0_in_context.xdc] for cell 'fastvit_bd_i/hp0_sc_b'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_b_0/fastvit_bd_hp0_sc_b_0/fastvit_bd_hp0_sc_b_0_in_context.xdc] for cell 'fastvit_bd_i/hp0_sc_b'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_top_0/fastvit_bd_hp0_sc_top_0/fastvit_bd_hp0_sc_top_0_in_context.xdc] for cell 'fastvit_bd_i/hp0_sc_top'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_top_0/fastvit_bd_hp0_sc_top_0/fastvit_bd_hp0_sc_top_0_in_context.xdc] for cell 'fastvit_bd_i/hp0_sc_top'
+Parsing XDC File [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/dont_touch.xdc]
+Finished Parsing XDC File [E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/dont_touch.xdc]
+Completed Processing XDC Constraints
+
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 1357.832 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+No Unisim elements were transformed.
+
+Constraint Validation Runtime : Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.012 . Memory (MB): peak = 1357.832 ; gain = 0.000
+INFO: [Designutils 20-5440] No compile time benefit to using incremental synthesis; A full resynthesis will be run
+INFO: [Designutils 20-4379] Flow is switching to default flow due to incremental criteria not met. If you would like to alter this behaviour and have the flow terminate instead, please set the following parameter config_implementation {autoIncr.Synth.RejectBehavior Terminate}
+---------------------------------------------------------------------------------
+Finished Constraint Validation : Time (s): cpu = 00:00:09 ; elapsed = 00:00:09 . Memory (MB): peak = 1357.832 ; gain = 601.102
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Loading Part and Timing Information
+---------------------------------------------------------------------------------
+Loading part: xc7z020clg400-1
+---------------------------------------------------------------------------------
+Finished Loading Part and Timing Information : Time (s): cpu = 00:00:09 ; elapsed = 00:00:09 . Memory (MB): peak = 1357.832 ; gain = 601.102
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Applying 'set_property' XDC Constraints
+---------------------------------------------------------------------------------
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[0]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 2).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[0]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 3).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[10]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 4).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[10]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 5).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[11]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 6).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[11]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 7).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[12]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 8).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[12]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 9).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[13]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 10).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[13]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 11).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[14]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 12).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[14]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 13).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[1]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 14).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[1]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 15).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[2]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 16).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[2]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 17).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[3]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 18).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[3]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 19).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[4]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 20).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[4]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 21).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[5]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 22).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[5]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 23).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[6]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 24).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[6]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 25).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[7]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 26).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[7]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 27).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[8]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 28).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[8]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 29).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_addr[9]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 30).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_addr[9]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 31).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_ba[0]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 32).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_ba[0]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 33).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_ba[1]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 34).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_ba[1]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 35).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_ba[2]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 36).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_ba[2]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 37).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_cas_n. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 38).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_cas_n. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 39).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_cke. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 40).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_cke. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 41).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_cs_n. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 42).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_cs_n. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 43).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_ck_p. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 44).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_ck_p. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 45).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_ck_n. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 46).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_ck_n. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 47).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dm[0]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 48).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dm[0]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 49).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dm[1]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 50).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dm[1]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 51).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dm[2]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 52).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dm[2]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 53).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dm[3]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 54).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dm[3]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 55).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dqs_p[0]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 56).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dqs_p[0]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 57).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dqs_p[1]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 58).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dqs_p[1]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 59).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dqs_p[2]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 60).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dqs_p[2]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 61).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dqs_p[3]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 62).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dqs_p[3]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 63).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dqs_n[0]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 64).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dqs_n[0]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 65).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dqs_n[1]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 66).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dqs_n[1]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 67).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dqs_n[2]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 68).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dqs_n[2]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 69).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dqs_n[3]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 70).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dqs_n[3]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 71).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[0]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 72).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[0]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 73).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[10]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 74).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[10]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 75).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[11]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 76).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[11]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 77).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[12]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 78).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[12]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 79).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[13]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 80).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[13]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 81).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[14]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 82).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[14]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 83).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[15]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 84).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[15]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 85).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[16]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 86).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[16]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 87).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[17]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 88).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[17]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 89).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[18]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 90).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[18]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 91).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[19]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 92).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[19]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 93).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[1]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 94).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[1]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 95).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[20]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 96).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[20]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 97).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[21]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 98).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[21]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 99).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[22]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 100).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[22]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 101).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[23]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 102).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[23]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 103).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[24]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 104).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[24]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 105).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[25]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 106).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[25]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 107).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[26]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 108).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[26]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 109).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[27]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 110).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[27]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 111).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[28]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 112).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[28]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 113).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[29]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 114).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[29]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 115).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[2]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 116).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[2]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 117).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[30]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 118).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[30]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 119).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[31]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 120).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[31]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 121).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[3]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 122).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[3]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 123).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[4]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 124).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[4]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 125).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[5]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 126).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[5]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 127).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[6]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 128).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[6]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 129).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[7]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 130).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[7]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 131).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[8]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 132).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[8]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 133).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_dq[9]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 134).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_dq[9]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 135).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_reset_n. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 136).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_reset_n. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 137).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_odt. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 138).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_odt. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 139).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_ras_n. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 140).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_ras_n. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 141).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_ddr_vrn. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 142).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_ddr_vrn. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 143).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_ddr_vrp. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 144).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_ddr_vrp. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 145).
+Applied set_property IO_BUFFER_TYPE = NONE for DDR_0_we_n. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 146).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for DDR_0_we_n. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 147).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[0]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 148).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[0]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 149).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[10]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 150).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[10]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 151).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[11]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 152).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[11]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 153).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[12]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 154).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[12]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 155).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[13]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 156).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[13]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 157).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[14]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 158).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[14]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 159).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[15]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 160).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[15]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 161).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[16]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 162).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[16]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 163).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[17]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 164).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[17]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 165).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[18]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 166).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[18]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 167).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[19]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 168).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[19]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 169).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[1]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 170).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[1]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 171).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[20]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 172).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[20]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 173).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[21]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 174).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[21]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 175).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[22]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 176).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[22]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 177).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[23]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 178).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[23]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 179).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[24]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 180).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[24]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 181).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[25]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 182).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[25]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 183).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[26]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 184).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[26]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 185).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[27]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 186).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[27]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 187).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[28]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 188).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[28]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 189).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[29]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 190).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[29]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 191).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[2]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 192).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[2]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 193).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[30]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 194).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[30]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 195).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[31]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 196).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[31]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 197).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[32]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 198).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[32]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 199).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[33]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 200).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[33]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 201).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[34]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 202).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[34]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 203).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[35]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 204).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[35]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 205).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[36]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 206).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[36]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 207).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[37]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 208).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[37]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 209).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[38]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 210).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[38]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 211).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[39]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 212).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[39]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 213).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[3]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 214).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[3]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 215).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[40]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 216).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[40]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 217).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[41]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 218).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[41]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 219).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[42]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 220).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[42]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 221).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[43]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 222).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[43]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 223).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[44]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 224).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[44]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 225).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[45]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 226).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[45]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 227).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[46]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 228).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[46]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 229).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[47]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 230).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[47]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 231).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[48]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 232).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[48]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 233).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[49]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 234).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[49]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 235).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[4]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 236).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[4]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 237).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[50]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 238).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[50]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 239).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[51]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 240).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[51]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 241).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[52]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 242).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[52]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 243).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[53]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 244).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[53]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 245).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[5]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 246).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[5]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 247).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[6]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 248).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[6]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 249).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[7]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 250).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[7]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 251).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[8]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 252).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[8]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 253).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_mio[9]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 254).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_mio[9]. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 255).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_ps_clk. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 256).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_ps_clk. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 257).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_ps_porb. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 258).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_ps_porb. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 259).
+Applied set_property IO_BUFFER_TYPE = NONE for FIXED_IO_0_ps_srstb. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 260).
+Applied set_property CLOCK_BUFFER_TYPE = NONE for FIXED_IO_0_ps_srstb. (constraint file  e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0_in_context.xdc, line 261).
+Applied set_property KEEP_HIERARCHY = SOFT for fastvit_bd_i. (constraint file  auto generated constraint).
+Applied set_property KEEP_HIERARCHY = SOFT for fastvit_bd_i/ps7_0. (constraint file  auto generated constraint).
+Applied set_property KEEP_HIERARCHY = SOFT for fastvit_bd_i/conv_ip_0. (constraint file  auto generated constraint).
+Applied set_property KEEP_HIERARCHY = SOFT for fastvit_bd_i/dwconv_ip_0. (constraint file  auto generated constraint).
+Applied set_property KEEP_HIERARCHY = SOFT for fastvit_bd_i/pwconv_ip_0. (constraint file  auto generated constraint).
+Applied set_property KEEP_HIERARCHY = SOFT for fastvit_bd_i/pool_ip_0. (constraint file  auto generated constraint).
+Applied set_property KEEP_HIERARCHY = SOFT for fastvit_bd_i/add_ip_0. (constraint file  auto generated constraint).
+Applied set_property KEEP_HIERARCHY = SOFT for fastvit_bd_i/rst_ps7_0_100M. (constraint file  auto generated constraint).
+Applied set_property KEEP_HIERARCHY = SOFT for fastvit_bd_i/ps_ctrl_ic/xbar. (constraint file  auto generated constraint).
+Applied set_property KEEP_HIERARCHY = SOFT for fastvit_bd_i/ps_ctrl_ic/s00_couplers/auto_pc. (constraint file  auto generated constraint).
+Applied set_property KEEP_HIERARCHY = SOFT for fastvit_bd_i/ps_ctrl_ic. (constraint file  auto generated constraint).
+Applied set_property KEEP_HIERARCHY = SOFT for fastvit_bd_i/hp0_sc_a. (constraint file  auto generated constraint).
+Applied set_property KEEP_HIERARCHY = SOFT for fastvit_bd_i/hp0_sc_b. (constraint file  auto generated constraint).
+Applied set_property KEEP_HIERARCHY = SOFT for fastvit_bd_i/hp0_sc_top. (constraint file  auto generated constraint).
+---------------------------------------------------------------------------------
+Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:00:09 ; elapsed = 00:00:09 . Memory (MB): peak = 1357.832 ; gain = 601.102
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished RTL Optimization Phase 2 : Time (s): cpu = 00:00:09 ; elapsed = 00:00:10 . Memory (MB): peak = 1357.832 ; gain = 601.102
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start RTL Component Statistics 
+---------------------------------------------------------------------------------
+Detailed RTL Component Info : 
+---------------------------------------------------------------------------------
+Finished RTL Component Statistics 
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Part Resource Summary
+---------------------------------------------------------------------------------
+Part Resources:
+DSPs: 220 (col length:60)
+BRAMs: 280 (col length: RAMB18 60 RAMB36 30)
+---------------------------------------------------------------------------------
+Finished Part Resource Summary
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Cross Boundary and Area Optimization
+---------------------------------------------------------------------------------
+WARNING: [Synth 8-7080] Parallel synthesis criteria is not met
+WARNING: [Synth 8-7129] Port M00_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M00_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M01_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M01_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M02_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M02_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M03_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M03_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M04_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M04_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M05_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M05_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M06_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M06_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M07_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M07_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M08_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M08_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M09_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port M09_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S00_ACLK in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+WARNING: [Synth 8-7129] Port S00_ARESETN in module fastvit_bd_ps_ctrl_ic_0 is either unconnected or has no load
+---------------------------------------------------------------------------------
+Finished Cross Boundary and Area Optimization : Time (s): cpu = 00:00:10 ; elapsed = 00:00:11 . Memory (MB): peak = 1357.832 ; gain = 601.102
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Applying XDC Timing Constraints
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Applying XDC Timing Constraints : Time (s): cpu = 00:00:13 ; elapsed = 00:00:14 . Memory (MB): peak = 1521.250 ; gain = 764.520
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Timing Optimization
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Timing Optimization : Time (s): cpu = 00:00:13 ; elapsed = 00:00:14 . Memory (MB): peak = 1522.391 ; gain = 765.660
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Technology Mapping
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Technology Mapping : Time (s): cpu = 00:00:13 ; elapsed = 00:00:14 . Memory (MB): peak = 1535.289 ; gain = 778.559
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Flattening Before IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Flattening Before IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Final Netlist Cleanup
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Final Netlist Cleanup
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished IO Insertion : Time (s): cpu = 00:00:15 ; elapsed = 00:00:16 . Memory (MB): peak = 1749.125 ; gain = 992.395
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Instances
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Instances : Time (s): cpu = 00:00:15 ; elapsed = 00:00:16 . Memory (MB): peak = 1749.125 ; gain = 992.395
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Rebuilding User Hierarchy
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Rebuilding User Hierarchy : Time (s): cpu = 00:00:15 ; elapsed = 00:00:16 . Memory (MB): peak = 1749.125 ; gain = 992.395
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Ports
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Ports : Time (s): cpu = 00:00:15 ; elapsed = 00:00:16 . Memory (MB): peak = 1749.125 ; gain = 992.395
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Handling Custom Attributes
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Handling Custom Attributes : Time (s): cpu = 00:00:15 ; elapsed = 00:00:16 . Memory (MB): peak = 1749.125 ; gain = 992.395
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Nets
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Nets : Time (s): cpu = 00:00:15 ; elapsed = 00:00:16 . Memory (MB): peak = 1749.125 ; gain = 992.395
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Writing Synthesis Report
+---------------------------------------------------------------------------------
+
+Report BlackBoxes: 
++------+------------------------------------+----------+
+|      |BlackBox name                       |Instances |
++------+------------------------------------+----------+
+|1     |fastvit_bd_add_ip_0_0               |         1|
+|2     |fastvit_bd_conv_ip_0_0              |         1|
+|3     |fastvit_bd_dwconv_ip_0_0            |         1|
+|4     |fastvit_bd_hp0_sc_a_0               |         1|
+|5     |fastvit_bd_hp0_sc_b_0               |         1|
+|6     |fastvit_bd_hp0_sc_top_0             |         1|
+|7     |fastvit_bd_pool_ip_0_0              |         1|
+|8     |fastvit_bd_ps7_0_0                  |         1|
+|9     |fastvit_bd_ps_ctrl_ic_imp_xbar_0    |         1|
+|10    |fastvit_bd_ps_ctrl_ic_imp_auto_pc_0 |         1|
+|11    |fastvit_bd_pwconv_ip_0_0            |         1|
+|12    |fastvit_bd_rst_ps7_0_100M_0         |         1|
++------+------------------------------------+----------+
+
+Report Cell Usage: 
++------+----------------------------------+------+
+|      |Cell                              |Count |
++------+----------------------------------+------+
+|1     |fastvit_bd_add_ip_0               |     1|
+|2     |fastvit_bd_conv_ip_0              |     1|
+|3     |fastvit_bd_dwconv_ip_0            |     1|
+|4     |fastvit_bd_hp0_sc_a               |     1|
+|5     |fastvit_bd_hp0_sc_b               |     1|
+|6     |fastvit_bd_hp0_sc_top             |     1|
+|7     |fastvit_bd_pool_ip_0              |     1|
+|8     |fastvit_bd_ps7_0                  |     1|
+|9     |fastvit_bd_ps_ctrl_ic_imp_auto_pc |     1|
+|10    |fastvit_bd_ps_ctrl_ic_imp_xbar    |     1|
+|11    |fastvit_bd_pwconv_ip_0            |     1|
+|12    |fastvit_bd_rst_ps7_0_100M         |     1|
++------+----------------------------------+------+
+---------------------------------------------------------------------------------
+Finished Writing Synthesis Report : Time (s): cpu = 00:00:15 ; elapsed = 00:00:16 . Memory (MB): peak = 1749.125 ; gain = 992.395
+---------------------------------------------------------------------------------
+Synthesis finished with 0 errors, 0 critical warnings and 23 warnings.
+Synthesis Optimization Runtime : Time (s): cpu = 00:00:10 ; elapsed = 00:00:15 . Memory (MB): peak = 1749.125 ; gain = 992.395
+Synthesis Optimization Complete : Time (s): cpu = 00:00:15 ; elapsed = 00:00:16 . Memory (MB): peak = 1749.125 ; gain = 992.395
+INFO: [Project 1-571] Translating synthesized netlist
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.022 . Memory (MB): peak = 1749.125 ; gain = 0.000
+INFO: [Project 1-570] Preparing netlist for logic optimization
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 1761.918 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+No Unisim elements were transformed.
+
+Synth Design complete | Checksum: b95600dd
+INFO: [Common 17-83] Releasing license: Synthesis
+78 Infos, 196 Warnings, 0 Critical Warnings and 0 Errors encountered.
+synth_design completed successfully
+synth_design: Time (s): cpu = 00:00:18 ; elapsed = 00:00:21 . Memory (MB): peak = 1765.910 ; gain = 1243.406
+INFO: [Common 17-1381] The checkpoint 'E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/synth_1/fastvit_bd_wrapper.dcp' has been generated.
+INFO: [Vivado 12-24828] Executing command : report_utilization -file fastvit_bd_wrapper_utilization_synth.rpt -pb fastvit_bd_wrapper_utilization_synth.pb
+INFO: [Common 17-206] Exiting Vivado at Sun Jun 21 20:22:49 2026...
+[Sun Jun 21 20:22:52 2026] synth_1 finished
+wait_on_runs: Time (s): cpu = 00:00:00 ; elapsed = 00:00:35 . Memory (MB): peak = 657.887 ; gain = 0.000
+# puts "Synthesis status: [get_property STATUS [get_runs synth_1]]"
+Synthesis status: synth_design Complete!
+# if {[get_property PROGRESS [get_runs synth_1]] != "100%"} { error "Synthesis FAILED" }
+# set_property STEPS.OPT_DESIGN.ARGS.DIRECTIVE ExploreWithRemap    [get_runs impl_1]
+# set_property STEPS.PHYS_OPT_DESIGN.IS_ENABLED true               [get_runs impl_1]
+# set_property STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
+# set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE ExtraNetDelay_high [get_runs impl_1]
+# puts ">>> Resetting impl_1 run..."
+>>> Resetting impl_1 run...
+# reset_run impl_1
+# puts ">>> Launching Implementation + Bitstream (AggressiveExplore retiming, jobs=4)..."
+>>> Launching Implementation + Bitstream (AggressiveExplore retiming, jobs=4)...
+# launch_runs impl_1 -to_step write_bitstream -jobs 4
+[Sun Jun 21 20:22:55 2026] Launched impl_1...
+Run output will be captured here: E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/impl_1/runme.log
+# wait_on_run impl_1
+[Sun Jun 21 20:22:55 2026] Waiting for impl_1 to finish...
+
+
+*** Running vivado
+    with args -log fastvit_bd_wrapper.vdi -applog -m64 -product Vivado -messageDb vivado.pb -mode batch -source fastvit_bd_wrapper.tcl -notrace
+
+
+
+****** Vivado v2024.2 (64-bit)
+  **** SW Build 5239630 on Fri Nov 08 22:35:27 MST 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Sun Jun 21 20:23:01 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source fastvit_bd_wrapper.tcl -notrace
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/conv_ip/conv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/dwconv_ip/dwconv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/pwconv_ip/pwconv_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/add_ip/add_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/pool_ip/pool_ip_proj/solution1/impl/ip'.
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'E:/Xilinx/Vivado/2024.2/data/ip'.
+WARNING: [IP_Flow 19-4995] The host OS only allows 260 characters in a normal path. The IP cache path is more than 80 characters. If you experience issues with IP caching, please consider changing the IP cache to a location with a shorter path. Alternately consider using the OS subst command to map part of the path to a drive letter. 
+Current IP cache path is E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.cache/ip 
+add_files: Time (s): cpu = 00:00:06 ; elapsed = 00:00:06 . Memory (MB): peak = 519.664 ; gain = 162.543
+Command: link_design -top fastvit_bd_wrapper -part xc7z020clg400-1
+Design is defaulting to srcset: sources_1
+Design is defaulting to constrset: constrs_1
+INFO: [Device 21-403] Loading part xc7z020clg400-1
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_add_ip_0_0/fastvit_bd_add_ip_0_0.dcp' for cell 'fastvit_bd_i/add_ip_0'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_conv_ip_0_0/fastvit_bd_conv_ip_0_0.dcp' for cell 'fastvit_bd_i/conv_ip_0'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_dwconv_ip_0_0/fastvit_bd_dwconv_ip_0_0.dcp' for cell 'fastvit_bd_i/dwconv_ip_0'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_a_0/fastvit_bd_hp0_sc_a_0.dcp' for cell 'fastvit_bd_i/hp0_sc_a'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_b_0/fastvit_bd_hp0_sc_b_0.dcp' for cell 'fastvit_bd_i/hp0_sc_b'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_top_0/fastvit_bd_hp0_sc_top_0.dcp' for cell 'fastvit_bd_i/hp0_sc_top'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_pool_ip_0_0/fastvit_bd_pool_ip_0_0.dcp' for cell 'fastvit_bd_i/pool_ip_0'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0.dcp' for cell 'fastvit_bd_i/ps7_0'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_pwconv_ip_0_0/fastvit_bd_pwconv_ip_0_0.dcp' for cell 'fastvit_bd_i/pwconv_ip_0'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_rst_ps7_0_100M_0/fastvit_bd_rst_ps7_0_100M_0.dcp' for cell 'fastvit_bd_i/rst_ps7_0_100M'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps_ctrl_ic_imp_xbar_0/fastvit_bd_ps_ctrl_ic_imp_xbar_0.dcp' for cell 'fastvit_bd_i/ps_ctrl_ic/xbar'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps_ctrl_ic_imp_auto_pc_0/fastvit_bd_ps_ctrl_ic_imp_auto_pc_0.dcp' for cell 'fastvit_bd_i/ps_ctrl_ic/s00_couplers/auto_pc'
+Netlist sorting complete. Time (s): cpu = 00:00:02 ; elapsed = 00:00:02 . Memory (MB): peak = 1240.293 ; gain = 14.215
+INFO: [Netlist 29-17] Analyzing 14260 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2024.2
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0.xdc] for cell 'fastvit_bd_i/ps7_0/inst'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0.xdc] for cell 'fastvit_bd_i/ps7_0/inst'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_rst_ps7_0_100M_0/fastvit_bd_rst_ps7_0_100M_0_board.xdc] for cell 'fastvit_bd_i/rst_ps7_0_100M/U0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_rst_ps7_0_100M_0/fastvit_bd_rst_ps7_0_100M_0_board.xdc] for cell 'fastvit_bd_i/rst_ps7_0_100M/U0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_rst_ps7_0_100M_0/fastvit_bd_rst_ps7_0_100M_0.xdc] for cell 'fastvit_bd_i/rst_ps7_0_100M/U0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_rst_ps7_0_100M_0/fastvit_bd_rst_ps7_0_100M_0.xdc] for cell 'fastvit_bd_i/rst_ps7_0_100M/U0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_a_0/bd_0/ip/ip_1/bd_bac5_psr_aclk_0_board.xdc] for cell 'fastvit_bd_i/hp0_sc_a/inst/clk_map/psr_aclk/U0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_a_0/bd_0/ip/ip_1/bd_bac5_psr_aclk_0_board.xdc] for cell 'fastvit_bd_i/hp0_sc_a/inst/clk_map/psr_aclk/U0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_a_0/bd_0/ip/ip_1/bd_bac5_psr_aclk_0.xdc] for cell 'fastvit_bd_i/hp0_sc_a/inst/clk_map/psr_aclk/U0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_a_0/bd_0/ip/ip_1/bd_bac5_psr_aclk_0.xdc] for cell 'fastvit_bd_i/hp0_sc_a/inst/clk_map/psr_aclk/U0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_a_0/smartconnect.xdc] for cell 'fastvit_bd_i/hp0_sc_a/inst'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_a_0/smartconnect.xdc] for cell 'fastvit_bd_i/hp0_sc_a/inst'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_b_0/bd_0/ip/ip_1/bd_ba35_psr_aclk_0_board.xdc] for cell 'fastvit_bd_i/hp0_sc_b/inst/clk_map/psr_aclk/U0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_b_0/bd_0/ip/ip_1/bd_ba35_psr_aclk_0_board.xdc] for cell 'fastvit_bd_i/hp0_sc_b/inst/clk_map/psr_aclk/U0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_b_0/bd_0/ip/ip_1/bd_ba35_psr_aclk_0.xdc] for cell 'fastvit_bd_i/hp0_sc_b/inst/clk_map/psr_aclk/U0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_b_0/bd_0/ip/ip_1/bd_ba35_psr_aclk_0.xdc] for cell 'fastvit_bd_i/hp0_sc_b/inst/clk_map/psr_aclk/U0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_b_0/smartconnect.xdc] for cell 'fastvit_bd_i/hp0_sc_b/inst'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_b_0/smartconnect.xdc] for cell 'fastvit_bd_i/hp0_sc_b/inst'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_top_0/bd_0/ip/ip_1/bd_10e8_psr_aclk_0_board.xdc] for cell 'fastvit_bd_i/hp0_sc_top/inst/clk_map/psr_aclk/U0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_top_0/bd_0/ip/ip_1/bd_10e8_psr_aclk_0_board.xdc] for cell 'fastvit_bd_i/hp0_sc_top/inst/clk_map/psr_aclk/U0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_top_0/bd_0/ip/ip_1/bd_10e8_psr_aclk_0.xdc] for cell 'fastvit_bd_i/hp0_sc_top/inst/clk_map/psr_aclk/U0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_top_0/bd_0/ip/ip_1/bd_10e8_psr_aclk_0.xdc] for cell 'fastvit_bd_i/hp0_sc_top/inst/clk_map/psr_aclk/U0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_top_0/smartconnect.xdc] for cell 'fastvit_bd_i/hp0_sc_top/inst'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_hp0_sc_top_0/smartconnect.xdc] for cell 'fastvit_bd_i/hp0_sc_top/inst'
+INFO: [Project 1-1714] 278 XPM XDC files have been applied to the design.
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.030 . Memory (MB): peak = 2509.809 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 2059 instances were transformed.
+  RAM16X1D => RAM32X1D (RAMD32(x2)): 775 instances
+  RAM16X1S => RAM32X1S (RAMS32): 64 instances
+  RAM32M => RAM32M (RAMD32(x6), RAMS32(x2)): 1184 instances
+  RAM32X1D => RAM32X1D (RAMD32(x2)): 4 instances
+  RAM32X1S => RAM32X1S (RAMS32): 32 instances
+
+27 Infos, 1 Warnings, 0 Critical Warnings and 0 Errors encountered.
+link_design completed successfully
+link_design: Time (s): cpu = 00:00:38 ; elapsed = 00:00:34 . Memory (MB): peak = 2509.809 ; gain = 1990.145
+Command: opt_design -directive ExploreWithRemap
+INFO: [Vivado_Tcl 4-136] Directive used for opt_design is: ExploreWithRemap
+Attempting to get a license for feature 'Implementation' and/or device 'xc7z020'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7z020'
+Running DRC as a precondition to command opt_design
+
+Starting DRC Task
+INFO: [DRC 23-27] Running DRC with 4 threads
+INFO: [Project 1-461] DRC finished with 0 Errors
+INFO: [Project 1-462] Please refer to the DRC report (report_drc) for more information.
+
+Time (s): cpu = 00:00:02 ; elapsed = 00:00:00.985 . Memory (MB): peak = 2509.809 ; gain = 0.000
+
+Starting Logic Optimization Task
+
+Phase 1 Initialization
+
+Phase 1.1 Core Generation And Design Setup
+Phase 1.1 Core Generation And Design Setup | Checksum: 1a339757b
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.135 . Memory (MB): peak = 2654.719 ; gain = 0.000
+
+Phase 1.2 Setup Constraints And Sort Netlist
+Phase 1.2 Setup Constraints And Sort Netlist | Checksum: 1a339757b
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.202 . Memory (MB): peak = 2654.719 ; gain = 0.000
+Phase 1 Initialization | Checksum: 1a339757b
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.210 . Memory (MB): peak = 2654.719 ; gain = 0.000
+
+Phase 2 Timer Update And Timing Data Collection
+
+Phase 2.1 Timer Update
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+Phase 2.1 Timer Update | Checksum: 1a339757b
+
+Time (s): cpu = 00:00:14 ; elapsed = 00:00:07 . Memory (MB): peak = 2859.961 ; gain = 205.242
+
+Phase 2.2 Timing Data Collection
+Phase 2.2 Timing Data Collection | Checksum: 1a339757b
+
+Time (s): cpu = 00:00:14 ; elapsed = 00:00:08 . Memory (MB): peak = 2859.961 ; gain = 205.242
+Phase 2 Timer Update And Timing Data Collection | Checksum: 1a339757b
+
+Time (s): cpu = 00:00:14 ; elapsed = 00:00:08 . Memory (MB): peak = 2859.961 ; gain = 205.242
+
+Phase 3 Retarget
+INFO: [Opt 31-1851] Number of loadless carry chains removed were: 0
+INFO: [Opt 31-1834] Total Chains To Be Transformed Were: 0 AND Number of Transformed insts Created are: 0
+INFO: [Opt 31-1566] Pulled 3 inverters resulting in an inversion of 154 pins
+INFO: [Opt 31-138] Pushed 90 inverter(s) to 392 load pin(s).
+INFO: [Opt 31-49] Retargeted 0 cell(s).
+Phase 3 Retarget | Checksum: 1b6b96e88
+
+Time (s): cpu = 00:00:16 ; elapsed = 00:00:09 . Memory (MB): peak = 2859.961 ; gain = 205.242
+Retarget | Checksum: 1b6b96e88
+INFO: [Opt 31-389] Phase Retarget created 410 cells and removed 601 cells
+INFO: [Opt 31-1021] In phase Retarget, 256 netlist objects are constrained preventing optimization. Please run opt_design with -debug_log to get more detail. 
+
+Phase 4 Constant propagation
+INFO: [Opt 31-138] Pushed 2 inverter(s) to 3 load pin(s).
+Phase 4 Constant propagation | Checksum: 1f7ae40bf
+
+Time (s): cpu = 00:00:17 ; elapsed = 00:00:10 . Memory (MB): peak = 2859.961 ; gain = 205.242
+Constant propagation | Checksum: 1f7ae40bf
+INFO: [Opt 31-389] Phase Constant propagation created 268 cells and removed 2511 cells
+INFO: [Opt 31-1021] In phase Constant propagation, 256 netlist objects are constrained preventing optimization. Please run opt_design with -debug_log to get more detail. 
+
+Phase 5 Sweep
+INFO: [Constraints 18-11670] Building netlist checker database with flags, 0x8
+Done building netlist checker database: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.091 . Memory (MB): peak = 2859.961 ; gain = 0.000
+INFO: [Constraints 18-11670] Building netlist checker database with flags, 0x8
+Done building netlist checker database: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.080 . Memory (MB): peak = 2859.961 ; gain = 0.000
+Phase 5 Sweep | Checksum: 1bdec0280
+
+Time (s): cpu = 00:00:22 ; elapsed = 00:00:15 . Memory (MB): peak = 2859.961 ; gain = 205.242
+Sweep | Checksum: 1bdec0280
+INFO: [Opt 31-389] Phase Sweep created 0 cells and removed 6705 cells
+INFO: [Opt 31-1021] In phase Sweep, 320 netlist objects are constrained preventing optimization. Please run opt_design with -debug_log to get more detail. 
+
+Phase 6 BUFG optimization
+Phase 6 BUFG optimization | Checksum: 1bdec0280
+
+Time (s): cpu = 00:00:24 ; elapsed = 00:00:16 . Memory (MB): peak = 2859.961 ; gain = 205.242
+BUFG optimization | Checksum: 1bdec0280
+INFO: [Opt 31-662] Phase BUFG optimization created 0 cells of which 0 are BUFGs and removed 0 cells.
+
+Phase 7 Shift Register Optimization
+INFO: [Opt 31-1064] SRL Remap converted 0 SRLs to 0 registers and converted 0 registers of register chains to 0 SRLs
+Phase 7 Shift Register Optimization | Checksum: 1ffadc49b
+
+Time (s): cpu = 00:00:24 ; elapsed = 00:00:17 . Memory (MB): peak = 2859.961 ; gain = 205.242
+Shift Register Optimization | Checksum: 1ffadc49b
+INFO: [Opt 31-389] Phase Shift Register Optimization created 6 cells and removed 0 cells
+INFO: [Opt 31-1555] control_set_opt supports Versal devices only, and device 7z020 is unsupported
+
+Phase 8 Remap
+Phase 8 Remap | Checksum: 1e3a79739
+
+Time (s): cpu = 00:00:35 ; elapsed = 00:00:29 . Memory (MB): peak = 3284.859 ; gain = 630.141
+Remap | Checksum: 1e3a79739
+INFO: [Opt 31-389] Phase Remap created 919 cells and removed 1025 cells
+INFO: [Opt 31-1021] In phase Remap, 66 netlist objects are constrained preventing optimization. Please run opt_design with -debug_log to get more detail. 
+
+Phase 9 Post Processing Netlist
+Phase 9 Post Processing Netlist | Checksum: 2787f1399
+
+Time (s): cpu = 00:00:36 ; elapsed = 00:00:29 . Memory (MB): peak = 3284.859 ; gain = 630.141
+Post Processing Netlist | Checksum: 2787f1399
+INFO: [Opt 31-389] Phase Post Processing Netlist created 0 cells and removed 0 cells
+INFO: [Opt 31-1021] In phase Post Processing Netlist, 256 netlist objects are constrained preventing optimization. Please run opt_design with -debug_log to get more detail. 
+
+Phase 10 Finalization
+
+Phase 10.1 Finalizing Design Cores and Updating Shapes
+Phase 10.1 Finalizing Design Cores and Updating Shapes | Checksum: 156a8b115
+
+Time (s): cpu = 00:00:38 ; elapsed = 00:00:31 . Memory (MB): peak = 3284.859 ; gain = 630.141
+
+Phase 10.2 Verifying Netlist Connectivity
+
+Starting Connectivity Check Task
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.241 . Memory (MB): peak = 3284.859 ; gain = 0.000
+Phase 10.2 Verifying Netlist Connectivity | Checksum: 156a8b115
+
+Time (s): cpu = 00:00:38 ; elapsed = 00:00:31 . Memory (MB): peak = 3284.859 ; gain = 630.141
+Phase 10 Finalization | Checksum: 156a8b115
+
+Time (s): cpu = 00:00:38 ; elapsed = 00:00:31 . Memory (MB): peak = 3284.859 ; gain = 630.141
+Opt_design Change Summary
+=========================
+
+
+-------------------------------------------------------------------------------------------------------------------------
+|  Phase                        |  #Cells created  |  #Cells Removed  |  #Constrained objects preventing optimizations  |
+-------------------------------------------------------------------------------------------------------------------------
+|  Retarget                     |             410  |             601  |                                            256  |
+|  Constant propagation         |             268  |            2511  |                                            256  |
+|  Sweep                        |               0  |            6705  |                                            320  |
+|  BUFG optimization            |               0  |               0  |                                              0  |
+|  Shift Register Optimization  |               6  |               0  |                                              0  |
+|  Remap                        |             919  |            1025  |                                             66  |
+|  Post Processing Netlist      |               0  |               0  |                                            256  |
+-------------------------------------------------------------------------------------------------------------------------
+
+
+Ending Logic Optimization Task | Checksum: 156a8b115
+
+Time (s): cpu = 00:00:38 ; elapsed = 00:00:32 . Memory (MB): peak = 3284.859 ; gain = 630.141
+
+Starting Netlist Obfuscation Task
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.040 . Memory (MB): peak = 3284.859 ; gain = 0.000
+Ending Netlist Obfuscation Task | Checksum: 156a8b115
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.051 . Memory (MB): peak = 3284.859 ; gain = 0.000
+INFO: [Common 17-83] Releasing license: Implementation
+56 Infos, 1 Warnings, 0 Critical Warnings and 0 Errors encountered.
+opt_design completed successfully
+opt_design: Time (s): cpu = 00:00:43 ; elapsed = 00:00:35 . Memory (MB): peak = 3284.859 ; gain = 775.051
+INFO: [Vivado 12-24828] Executing command : report_drc -file fastvit_bd_wrapper_drc_opted.rpt -pb fastvit_bd_wrapper_drc_opted.pb -rpx fastvit_bd_wrapper_drc_opted.rpx
+Command: report_drc -file fastvit_bd_wrapper_drc_opted.rpt -pb fastvit_bd_wrapper_drc_opted.pb -rpx fastvit_bd_wrapper_drc_opted.rpx
+INFO: [IP_Flow 19-1839] IP Catalog is up to date.
+INFO: [DRC 23-27] Running DRC with 4 threads
+INFO: [Vivado_Tcl 2-168] The results of DRC are in file E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/impl_1/fastvit_bd_wrapper_drc_opted.rpt.
+report_drc completed successfully
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Wrote PlaceDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.009 . Memory (MB): peak = 3284.859 ; gain = 0.000
+Wrote PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 3284.859 ; gain = 0.000
+Writing XDEF routing.
+Writing XDEF routing logical nets.
+Writing XDEF routing special nets.
+Wrote RouteStorage: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.246 . Memory (MB): peak = 3284.859 ; gain = 0.000
+Wrote Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 3284.859 ; gain = 0.000
+Wrote Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.013 . Memory (MB): peak = 3284.859 ; gain = 0.000
+Write Physdb Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.276 . Memory (MB): peak = 3284.859 ; gain = 0.000
+Write ShapeDB Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.299 . Memory (MB): peak = 3284.859 ; gain = 0.000
+INFO: [Common 17-1381] The checkpoint 'E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_util_check/fastvit_util_check.runs/impl_1/fastvit_bd_wrapper_opt.dcp' has been generated.
+write_checkpoint: Time (s): cpu = 00:00:13 ; elapsed = 00:00:08 . Memory (MB): peak = 3317.871 ; gain = 33.012
+Command: place_design -directive ExtraNetDelay_high
+Attempting to get a license for feature 'Implementation' and/or device 'xc7z020'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7z020'
+INFO: [Common 17-83] Releasing license: Implementation
+INFO: [DRC 23-27] Running DRC with 4 threads
+INFO: [Vivado_Tcl 4-198] DRC finished with 0 Errors
+INFO: [Vivado_Tcl 4-199] Please refer to the DRC report (report_drc) for more information.
+INFO: [Vivado_Tcl 4-2302] The placer was invoked with the 'ExtraNetDelay_high' directive.
+Running DRC as a precondition to command place_design
+INFO: [DRC 23-27] Running DRC with 4 threads
+ERROR: [DRC UTLZ-1] Resource utilization: LUT as Logic over-utilized in Top Level Design (This design requires more LUT as Logic cells than are available in the target device. This design requires 72689 of such cell types but only 53200 compatible sites are available in the target device. Please analyze your synthesis results and constraints to ensure the design is mapped to Xilinx primitives as expected. If so, please consider targeting a larger device. Please set tcl parameter "drc.disableLUTOverUtilError" to 1 to change this error to warning.)
+INFO: [Vivado_Tcl 4-198] DRC finished with 1 Errors
+INFO: [Vivado_Tcl 4-199] Please refer to the DRC report (report_drc) for more information.
+ERROR: [Vivado_Tcl 4-23] Error(s) found during DRC. Placer not run.
+71 Infos, 1 Warnings, 0 Critical Warnings and 2 Errors encountered.
+place_design failed
+ERROR: [Common 17-39] 'place_design' failed due to earlier errors.
+
+INFO: [Common 17-206] Exiting Vivado at Sun Jun 21 20:24:34 2026...
+[Sun Jun 21 20:24:35 2026] impl_1 finished
+ERROR: [Vivado 12-13638] Failed runs(s) : 'impl_1'
+wait_on_runs: Time (s): cpu = 00:00:00 ; elapsed = 00:01:41 . Memory (MB): peak = 657.887 ; gain = 0.000
+ERROR: [Common 17-39] 'wait_on_runs' failed due to earlier errors.
+
+    while executing
+"wait_on_run impl_1"
+    (file "update_impl.tcl" line 90)
+INFO: [Common 17-206] Exiting Vivado at Sun Jun 21 20:24:35 2026...

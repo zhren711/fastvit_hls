@@ -1,0 +1,879 @@
+
+****** Vivado v2024.2 (64-bit)
+  **** SW Build 5239630 on Fri Nov 08 22:35:27 MST 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Sun Aug  9 03:20:13 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source run_impl_w8a4_tierb_step2_200mhz_resume.tcl
+# set_param general.maxThreads 1
+# set script_dir [file normalize [file dirname [info script]]]
+# set proj_name "fastvit_w8a4_tierb_step2_200mhz_proj"
+# set proj_dir   "$script_dir/$proj_name"
+# open_project "$proj_dir/${proj_name}.xpr"
+Scanning sources...
+Finished scanning sources
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/fastvit_ip_w8a4/tier_b_rtl_ip_step2'.
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'E:/Xilinx/Vivado/2024.2/data/ip'.
+INFO: [Project 1-5579] Found utility IPs instantiated in one or more block designs which have equivalent inline hdl with improved performance and reduced diskspace. It is recommended to migrate these utility IPs to inline hdl using the command upgrade_project -migrate_to_inline_hdl. The utility IPs may be deprecated in future releases. More information on inline hdl is available in UG994.
+# puts "Synthesis status: [get_property STATUS [get_runs synth_1]]"
+Synthesis status: synth_design Complete!
+# if {[get_property PROGRESS [get_runs synth_1]] != "100%"} { error "synth_1 did not complete previously -- cannot resume" }
+# open_run synth_1
+Design is defaulting to impl run constrset: constrs_1
+Design is defaulting to synth run part: xc7z020clg400-1
+INFO: [Device 21-403] Loading part xc7z020clg400-1
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0.dcp' for cell 'fastvit_bd_i/ps7_0'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_rst_ps7_0_200M_0/fastvit_bd_rst_ps7_0_200M_0.dcp' for cell 'fastvit_bd_i/rst_ps7_0_200M'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_sc_main_0/fastvit_bd_sc_main_0.dcp' for cell 'fastvit_bd_i/sc_main'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_tierb_0_0/fastvit_bd_tierb_0_0.dcp' for cell 'fastvit_bd_i/tierb_0'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps_ctrl_ic_imp_xbar_0/fastvit_bd_ps_ctrl_ic_imp_xbar_0.dcp' for cell 'fastvit_bd_i/ps_ctrl_ic/xbar'
+INFO: [Project 1-454] Reading design checkpoint 'e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps_ctrl_ic_imp_auto_pc_0/fastvit_bd_ps_ctrl_ic_imp_auto_pc_0.dcp' for cell 'fastvit_bd_i/ps_ctrl_ic/s00_couplers/auto_pc'
+Netlist sorting complete. Time (s): cpu = 00:00:01 ; elapsed = 00:00:01 . Memory (MB): peak = 1014.246 ; gain = 0.000
+INFO: [Netlist 29-17] Analyzing 9710 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2024.2
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0.xdc] for cell 'fastvit_bd_i/ps7_0/inst'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_ps7_0_0/fastvit_bd_ps7_0_0.xdc] for cell 'fastvit_bd_i/ps7_0/inst'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_rst_ps7_0_200M_0/fastvit_bd_rst_ps7_0_200M_0_board.xdc] for cell 'fastvit_bd_i/rst_ps7_0_200M/U0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_rst_ps7_0_200M_0/fastvit_bd_rst_ps7_0_200M_0_board.xdc] for cell 'fastvit_bd_i/rst_ps7_0_200M/U0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_rst_ps7_0_200M_0/fastvit_bd_rst_ps7_0_200M_0.xdc] for cell 'fastvit_bd_i/rst_ps7_0_200M/U0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_rst_ps7_0_200M_0/fastvit_bd_rst_ps7_0_200M_0.xdc] for cell 'fastvit_bd_i/rst_ps7_0_200M/U0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_sc_main_0/bd_0/ip/ip_1/bd_2149_psr_aclk_0_board.xdc] for cell 'fastvit_bd_i/sc_main/inst/clk_map/psr_aclk/U0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_sc_main_0/bd_0/ip/ip_1/bd_2149_psr_aclk_0_board.xdc] for cell 'fastvit_bd_i/sc_main/inst/clk_map/psr_aclk/U0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_sc_main_0/bd_0/ip/ip_1/bd_2149_psr_aclk_0.xdc] for cell 'fastvit_bd_i/sc_main/inst/clk_map/psr_aclk/U0'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_sc_main_0/bd_0/ip/ip_1/bd_2149_psr_aclk_0.xdc] for cell 'fastvit_bd_i/sc_main/inst/clk_map/psr_aclk/U0'
+Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_sc_main_0/smartconnect.xdc] for cell 'fastvit_bd_i/sc_main/inst'
+Finished Parsing XDC File [e:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.gen/sources_1/bd/fastvit_bd/ip/fastvit_bd_sc_main_0/smartconnect.xdc] for cell 'fastvit_bd_i/sc_main/inst'
+INFO: [Project 1-1714] 151 XPM XDC files have been applied to the design.
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.020 . Memory (MB): peak = 2031.559 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 742 instances were transformed.
+  RAM16X1D => RAM32X1D (RAMD32(x2)): 261 instances
+  RAM16X1S => RAM32X1S (RAMS32): 60 instances
+  RAM32M => RAM32M (RAMD32(x6), RAMS32(x2)): 387 instances
+  RAM32X1D => RAM32X1D (RAMD32(x2)): 26 instances
+  RAM64X1S => RAM64X1S (RAMS64E): 8 instances
+
+open_run: Time (s): cpu = 00:00:22 ; elapsed = 00:00:24 . Memory (MB): peak = 2031.559 ; gain = 1578.953
+# puts ""
+
+# puts "========================================"
+========================================
+# puts " POST-SYNTHESIS UTILIZATION (Step 2, 200MHz)"
+ POST-SYNTHESIS UTILIZATION (Step 2, 200MHz)
+# puts "========================================"
+========================================
+# report_utilization
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2024.2 (win64) Build 5239630 Fri Nov 08 22:35:27 MST 2024
+| Date         : Sun Aug  9 03:20:42 2026
+| Host         : DESKTOP-GBLH5MP running 64-bit major release  (build 9200)
+| Command      : report_utilization
+| Design       : fastvit_bd_wrapper
+| Device       : xc7z020clg400-1
+| Speed File   : -1
+| Design State : Synthesized
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Utilization Design Information
+
+Table of Contents
+-----------------
+1. Slice Logic
+1.1 Summary of Registers by Type
+2. Memory
+3. DSP
+4. IO and GT Specific
+5. Clocking
+6. Specific Feature
+7. Primitives
+8. Black Boxes
+9. Instantiated Netlists
+
+1. Slice Logic
+--------------
+
++----------------------------+-------+-------+------------+-----------+-------+
+|          Site Type         |  Used | Fixed | Prohibited | Available | Util% |
++----------------------------+-------+-------+------------+-----------+-------+
+| Slice LUTs*                | 52816 |     0 |          0 |     53200 | 99.28 |
+|   LUT as Logic             | 45079 |     0 |          0 |     53200 | 84.73 |
+|   LUT as Memory            |  7737 |     0 |          0 |     17400 | 44.47 |
+|     LUT as Distributed RAM |  2190 |     0 |            |           |       |
+|     LUT as Shift Register  |  5547 |     0 |            |           |       |
+| Slice Registers            | 64439 |     0 |          0 |    106400 | 60.56 |
+|   Register as Flip Flop    | 64439 |     0 |          0 |    106400 | 60.56 |
+|   Register as Latch        |     0 |     0 |          0 |    106400 |  0.00 |
+| F7 Muxes                   |  2858 |     0 |          0 |     26600 | 10.74 |
+| F8 Muxes                   |   503 |     0 |          0 |     13300 |  3.78 |
++----------------------------+-------+-------+------------+-----------+-------+
+* Warning! The Final LUT count, after physical optimizations and full implementation, is typically lower. Run opt_design after synthesis, if not already completed, for a more realistic count.
+Warning! LUT value is adjusted to account for LUT combining.
+Warning! For any ECO changes, please run place_design if there are unplaced instances
+
+
+1.1 Summary of Registers by Type
+--------------------------------
+
++-------+--------------+-------------+--------------+
+| Total | Clock Enable | Synchronous | Asynchronous |
++-------+--------------+-------------+--------------+
+| 0     |            _ |           - |            - |
+| 0     |            _ |           - |          Set |
+| 0     |            _ |           - |        Reset |
+| 0     |            _ |         Set |            - |
+| 0     |            _ |       Reset |            - |
+| 0     |          Yes |           - |            - |
+| 0     |          Yes |           - |          Set |
+| 315   |          Yes |           - |        Reset |
+| 1022  |          Yes |         Set |            - |
+| 63102 |          Yes |       Reset |            - |
++-------+--------------+-------------+--------------+
+
+
+2. Memory
+---------
+
++-------------------+------+-------+------------+-----------+-------+
+|     Site Type     | Used | Fixed | Prohibited | Available | Util% |
++-------------------+------+-------+------------+-----------+-------+
+| Block RAM Tile    | 62.5 |     0 |          0 |       140 | 44.64 |
+|   RAMB36/FIFO*    |   10 |     0 |          0 |       140 |  7.14 |
+|     RAMB36E1 only |   10 |       |            |           |       |
+|   RAMB18          |  105 |     0 |          0 |       280 | 37.50 |
+|     RAMB18E1 only |  105 |       |            |           |       |
++-------------------+------+-------+------------+-----------+-------+
+* Note: Each Block RAM Tile only has one FIFO logic available and therefore can accommodate only one FIFO36E1 or one FIFO18E1. However, if a FIFO18E1 occupies a Block RAM Tile, that tile can still accommodate a RAMB18E1
+
+
+3. DSP
+------
+
++----------------+------+-------+------------+-----------+-------+
+|    Site Type   | Used | Fixed | Prohibited | Available | Util% |
++----------------+------+-------+------------+-----------+-------+
+| DSPs           |   85 |     0 |          0 |       220 | 38.64 |
+|   DSP48E1 only |   85 |       |            |           |       |
++----------------+------+-------+------------+-----------+-------+
+
+
+4. IO and GT Specific
+---------------------
+
++-----------------------------+------+-------+------------+-----------+--------+
+|          Site Type          | Used | Fixed | Prohibited | Available |  Util% |
++-----------------------------+------+-------+------------+-----------+--------+
+| Bonded IOB                  |    0 |     0 |          0 |       125 |   0.00 |
+| Bonded IPADs                |    0 |     0 |          0 |         2 |   0.00 |
+| Bonded IOPADs               |  130 |   130 |          0 |       130 | 100.00 |
+| PHY_CONTROL                 |    0 |     0 |          0 |         4 |   0.00 |
+| PHASER_REF                  |    0 |     0 |          0 |         4 |   0.00 |
+| OUT_FIFO                    |    0 |     0 |          0 |        16 |   0.00 |
+| IN_FIFO                     |    0 |     0 |          0 |        16 |   0.00 |
+| IDELAYCTRL                  |    0 |     0 |          0 |         4 |   0.00 |
+| IBUFDS                      |    0 |     0 |          0 |       121 |   0.00 |
+| PHASER_OUT/PHASER_OUT_PHY   |    0 |     0 |          0 |        16 |   0.00 |
+| PHASER_IN/PHASER_IN_PHY     |    0 |     0 |          0 |        16 |   0.00 |
+| IDELAYE2/IDELAYE2_FINEDELAY |    0 |     0 |          0 |       200 |   0.00 |
+| ILOGIC                      |    0 |     0 |          0 |       125 |   0.00 |
+| OLOGIC                      |    0 |     0 |          0 |       125 |   0.00 |
++-----------------------------+------+-------+------------+-----------+--------+
+
+
+5. Clocking
+-----------
+
++------------+------+-------+------------+-----------+-------+
+|  Site Type | Used | Fixed | Prohibited | Available | Util% |
++------------+------+-------+------------+-----------+-------+
+| BUFGCTRL   |    1 |     0 |          0 |        32 |  3.13 |
+| BUFIO      |    0 |     0 |          0 |        16 |  0.00 |
+| MMCME2_ADV |    0 |     0 |          0 |         4 |  0.00 |
+| PLLE2_ADV  |    0 |     0 |          0 |         4 |  0.00 |
+| BUFMRCE    |    0 |     0 |          0 |         8 |  0.00 |
+| BUFHCE     |    0 |     0 |          0 |        72 |  0.00 |
+| BUFR       |    0 |     0 |          0 |        16 |  0.00 |
++------------+------+-------+------------+-----------+-------+
+
+
+6. Specific Feature
+-------------------
+
++-------------+------+-------+------------+-----------+-------+
+|  Site Type  | Used | Fixed | Prohibited | Available | Util% |
++-------------+------+-------+------------+-----------+-------+
+| BSCANE2     |    0 |     0 |          0 |         4 |  0.00 |
+| CAPTUREE2   |    0 |     0 |          0 |         1 |  0.00 |
+| DNA_PORT    |    0 |     0 |          0 |         1 |  0.00 |
+| EFUSE_USR   |    0 |     0 |          0 |         1 |  0.00 |
+| FRAME_ECCE2 |    0 |     0 |          0 |         1 |  0.00 |
+| ICAPE2      |    0 |     0 |          0 |         2 |  0.00 |
+| STARTUPE2   |    0 |     0 |          0 |         1 |  0.00 |
+| XADC        |    0 |     0 |          0 |         1 |  0.00 |
++-------------+------+-------+------------+-----------+-------+
+
+
+7. Primitives
+-------------
+
++----------+-------+----------------------+
+| Ref Name |  Used |  Functional Category |
++----------+-------+----------------------+
+| FDRE     | 63102 |         Flop & Latch |
+| LUT3     | 13907 |                  LUT |
+| LUT6     | 12705 |                  LUT |
+| LUT2     | 11457 |                  LUT |
+| LUT4     |  8629 |                  LUT |
+| LUT5     |  7150 |                  LUT |
+| CARRY4   |  5407 |           CarryLogic |
+| SRLC32E  |  4831 |   Distributed Memory |
+| RAMD32   |  2896 |   Distributed Memory |
+| MUXF7    |  2858 |                MuxFx |
+| LUT1     |  2387 |                  LUT |
+| FDSE     |  1022 |         Flop & Latch |
+| RAMS32   |   834 |   Distributed Memory |
+| SRL16E   |   716 |   Distributed Memory |
+| MUXF8    |   503 |                MuxFx |
+| FDCE     |   315 |         Flop & Latch |
+| BIBUF    |   130 |                   IO |
+| RAMB18E1 |   105 |         Block Memory |
+| DSP48E1  |    85 |     Block Arithmetic |
+| RAMB36E1 |    10 |         Block Memory |
+| RAMS64E  |     8 |   Distributed Memory |
+| PS7      |     1 | Specialized Resource |
+| BUFG     |     1 |                Clock |
++----------+-------+----------------------+
+
+
+8. Black Boxes
+--------------
+
++----------+------+
+| Ref Name | Used |
++----------+------+
+
+
+9. Instantiated Netlists
+------------------------
+
++-------------------------------------+------+
+|               Ref Name              | Used |
++-------------------------------------+------+
+| fastvit_bd_tierb_0_0                |    1 |
+| fastvit_bd_sc_main_0                |    1 |
+| fastvit_bd_rst_ps7_0_200M_0         |    1 |
+| fastvit_bd_ps_ctrl_ic_imp_xbar_0    |    1 |
+| fastvit_bd_ps_ctrl_ic_imp_auto_pc_0 |    1 |
+| fastvit_bd_ps7_0_0                  |    1 |
++-------------------------------------+------+
+
+
+# set_property STEPS.OPT_DESIGN.ARGS.DIRECTIVE ExploreWithRemap       [get_runs impl_1]
+# set_property STEPS.PHYS_OPT_DESIGN.IS_ENABLED true                  [get_runs impl_1]
+# set_property STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
+# set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE ExtraTimingOpt       [get_runs impl_1]
+# set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED true                  [get_runs impl_1]
+# set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
+# puts ">>> Launching Implementation + Bitstream (jobs=4)..."
+>>> Launching Implementation + Bitstream (jobs=4)...
+# launch_runs impl_1 -to_step write_bitstream -jobs 4
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Write ShapeDB Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.135 . Memory (MB): peak = 2031.559 ; gain = 0.000
+Wrote PlaceDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.018 . Memory (MB): peak = 2031.559 ; gain = 0.000
+Wrote PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2031.559 ; gain = 0.000
+Writing XDEF routing.
+Writing XDEF routing logical nets.
+Writing XDEF routing special nets.
+Wrote RouteStorage: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.014 . Memory (MB): peak = 2031.559 ; gain = 0.000
+Wrote Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.001 . Memory (MB): peak = 2031.559 ; gain = 0.000
+Wrote Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.007 . Memory (MB): peak = 2031.559 ; gain = 0.000
+Write Physdb Complete: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.044 . Memory (MB): peak = 2031.559 ; gain = 0.000
+WARNING: [Common 17-210] 'write_hwdef' is deprecated.
+[Sun Aug  9 03:20:54 2026] Launched impl_1...
+Run output will be captured here: E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.runs/impl_1/runme.log
+launch_runs: Time (s): cpu = 00:00:07 ; elapsed = 00:00:12 . Memory (MB): peak = 2031.559 ; gain = 0.000
+# wait_on_run impl_1
+[Sun Aug  9 03:20:54 2026] Waiting for impl_1 to finish...
+
+
+*** Running vivado
+    with args -log fastvit_bd_wrapper.vdi -applog -m64 -product Vivado -messageDb vivado.pb -mode batch -source fastvit_bd_wrapper.tcl -notrace
+
+
+
+****** Vivado v2024.2 (64-bit)
+  **** SW Build 5239630 on Fri Nov 08 22:35:27 MST 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Sun Aug  9 03:21:01 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source fastvit_bd_wrapper.tcl -notrace
+Command: open_checkpoint E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.runs/impl_1/fastvit_bd_wrapper.dcp
+INFO: [Device 21-403] Loading part xc7z020clg400-1
+Netlist sorting complete. Time (s): cpu = 00:00:01 ; elapsed = 00:00:01 . Memory (MB): peak = 893.504 ; gain = 0.461
+INFO: [Netlist 29-17] Analyzing 9710 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2024.2
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Read ShapeDB Complete: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.165 . Memory (MB): peak = 1223.012 ; gain = 28.020
+INFO: [Timing 38-478] Restoring timing data from binary archive.
+INFO: [Timing 38-479] Binary timing data restore complete.
+INFO: [Project 1-856] Restoring constraints from binary archive.
+INFO: [Project 1-853] Binary constraint restore complete.
+INFO: [Designutils 20-5722] Start Reading Physical Databases.
+Reading placement.
+Read Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 1885.727 ; gain = 0.000
+Reading placer database...
+Read Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.007 . Memory (MB): peak = 1885.727 ; gain = 0.000
+Read PlaceDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.044 . Memory (MB): peak = 1885.727 ; gain = 0.000
+Read PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 1885.727 ; gain = 0.000
+Reading routing.
+Read RouteStorage: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.005 . Memory (MB): peak = 1885.727 ; gain = 0.000
+Read Physdb Files: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.063 . Memory (MB): peak = 1885.727 ; gain = 0.000
+Restored from archive | CPU: 0.000000 secs | Memory: 0.000000 MB |
+Finished XDEF File Restore: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.090 . Memory (MB): peak = 1885.727 ; gain = 0.000
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.018 . Memory (MB): peak = 1885.727 ; gain = 0.000
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 742 instances were transformed.
+  RAM16X1D => RAM32X1D (RAMD32(x2)): 261 instances
+  RAM16X1S => RAM32X1S (RAMS32): 60 instances
+  RAM32M => RAM32M (RAMD32(x6), RAMS32(x2)): 387 instances
+  RAM32X1D => RAM32X1D (RAMD32(x2)): 26 instances
+  RAM64X1S => RAM64X1S (RAMS64E): 8 instances
+
+INFO: [Project 1-604] Checkpoint was created with Vivado v2024.2 (64-bit) build 5239630
+open_checkpoint: Time (s): cpu = 00:00:14 ; elapsed = 00:00:16 . Memory (MB): peak = 1885.727 ; gain = 1592.215
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/codes/microzed/fastvit_hls/fastvit_ip_w8a4/tier_b_rtl_ip_step2'.
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'E:/Xilinx/Vivado/2024.2/data/ip'.
+WARNING: [IP_Flow 19-4995] The host OS only allows 260 characters in a normal path. The IP cache path is more than 80 characters. If you experience issues with IP caching, please consider changing the IP cache to a location with a shorter path. Alternately consider using the OS subst command to map part of the path to a drive letter. 
+Current IP cache path is E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.cache/ip 
+Command: opt_design -directive ExploreWithRemap
+INFO: [Vivado_Tcl 4-136] Directive used for opt_design is: ExploreWithRemap
+Attempting to get a license for feature 'Implementation' and/or device 'xc7z020'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7z020'
+Running DRC as a precondition to command opt_design
+
+Starting DRC Task
+INFO: [Project 1-461] DRC finished with 0 Errors
+INFO: [Project 1-462] Please refer to the DRC report (report_drc) for more information.
+
+Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.701 . Memory (MB): peak = 1885.727 ; gain = 0.000
+
+Starting Logic Optimization Task
+
+Phase 1 Initialization
+
+Phase 1.1 Core Generation And Design Setup
+Phase 1.1 Core Generation And Design Setup | Checksum: 1710c7ed4
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.064 . Memory (MB): peak = 2106.461 ; gain = 0.000
+
+Phase 1.2 Setup Constraints And Sort Netlist
+Phase 1.2 Setup Constraints And Sort Netlist | Checksum: 1710c7ed4
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.097 . Memory (MB): peak = 2106.461 ; gain = 0.000
+Phase 1 Initialization | Checksum: 1710c7ed4
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.101 . Memory (MB): peak = 2106.461 ; gain = 0.000
+
+Phase 2 Timer Update And Timing Data Collection
+
+Phase 2.1 Timer Update
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+Phase 2.1 Timer Update | Checksum: 1710c7ed4
+
+Time (s): cpu = 00:00:05 ; elapsed = 00:00:06 . Memory (MB): peak = 2299.102 ; gain = 192.641
+
+Phase 2.2 Timing Data Collection
+Phase 2.2 Timing Data Collection | Checksum: 1710c7ed4
+
+Time (s): cpu = 00:00:05 ; elapsed = 00:00:06 . Memory (MB): peak = 2299.102 ; gain = 192.641
+Phase 2 Timer Update And Timing Data Collection | Checksum: 1710c7ed4
+
+Time (s): cpu = 00:00:05 ; elapsed = 00:00:06 . Memory (MB): peak = 2299.102 ; gain = 192.641
+
+Phase 3 Retarget
+INFO: [Opt 31-1851] Number of loadless carry chains removed were: 0
+INFO: [Opt 31-1834] Total Chains To Be Transformed Were: 0 AND Number of Transformed insts Created are: 0
+INFO: [Opt 31-1566] Pulled 1 inverters resulting in an inversion of 27 pins
+INFO: [Opt 31-138] Pushed 48 inverter(s) to 249 load pin(s).
+INFO: [Opt 31-49] Retargeted 0 cell(s).
+Phase 3 Retarget | Checksum: 17450b3db
+
+Time (s): cpu = 00:00:06 ; elapsed = 00:00:07 . Memory (MB): peak = 2299.102 ; gain = 192.641
+Retarget | Checksum: 17450b3db
+INFO: [Opt 31-389] Phase Retarget created 272 cells and removed 387 cells
+INFO: [Opt 31-1021] In phase Retarget, 136 netlist objects are constrained preventing optimization. Please run opt_design with -debug_log to get more detail. 
+
+Phase 4 Constant propagation
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+Phase 4 Constant propagation | Checksum: 1960d9810
+
+Time (s): cpu = 00:00:06 ; elapsed = 00:00:07 . Memory (MB): peak = 2299.102 ; gain = 192.641
+Constant propagation | Checksum: 1960d9810
+INFO: [Opt 31-389] Phase Constant propagation created 142 cells and removed 2125 cells
+INFO: [Opt 31-1021] In phase Constant propagation, 136 netlist objects are constrained preventing optimization. Please run opt_design with -debug_log to get more detail. 
+
+Phase 5 Sweep
+INFO: [Constraints 18-11670] Building netlist checker database with flags, 0x8
+Done building netlist checker database: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.031 . Memory (MB): peak = 2299.102 ; gain = 0.000
+INFO: [Constraints 18-11670] Building netlist checker database with flags, 0x8
+Done building netlist checker database: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.031 . Memory (MB): peak = 2299.102 ; gain = 0.000
+Phase 5 Sweep | Checksum: 155d7ed06
+
+Time (s): cpu = 00:00:09 ; elapsed = 00:00:10 . Memory (MB): peak = 2299.102 ; gain = 192.641
+Sweep | Checksum: 155d7ed06
+INFO: [Opt 31-389] Phase Sweep created 0 cells and removed 693 cells
+INFO: [Opt 31-1021] In phase Sweep, 180 netlist objects are constrained preventing optimization. Please run opt_design with -debug_log to get more detail. 
+
+Phase 6 BUFG optimization
+Phase 6 BUFG optimization | Checksum: 155d7ed06
+
+Time (s): cpu = 00:00:10 ; elapsed = 00:00:11 . Memory (MB): peak = 2299.102 ; gain = 192.641
+BUFG optimization | Checksum: 155d7ed06
+INFO: [Opt 31-662] Phase BUFG optimization created 0 cells of which 0 are BUFGs and removed 0 cells.
+
+Phase 7 Shift Register Optimization
+INFO: [Opt 31-1064] SRL Remap converted 0 SRLs to 0 registers and converted 0 registers of register chains to 0 SRLs
+Phase 7 Shift Register Optimization | Checksum: 1acdab2de
+
+Time (s): cpu = 00:00:10 ; elapsed = 00:00:11 . Memory (MB): peak = 2299.102 ; gain = 192.641
+Shift Register Optimization | Checksum: 1acdab2de
+INFO: [Opt 31-389] Phase Shift Register Optimization created 15 cells and removed 0 cells
+INFO: [Opt 31-1555] control_set_opt supports Versal devices only, and device 7z020 is unsupported
+
+Phase 8 Remap
+Phase 8 Remap | Checksum: 1b52f0884
+
+Time (s): cpu = 00:00:18 ; elapsed = 00:00:19 . Memory (MB): peak = 2700.828 ; gain = 594.367
+Remap | Checksum: 1b52f0884
+INFO: [Opt 31-389] Phase Remap created 873 cells and removed 983 cells
+INFO: [Opt 31-1021] In phase Remap, 39 netlist objects are constrained preventing optimization. Please run opt_design with -debug_log to get more detail. 
+
+Phase 9 Post Processing Netlist
+Phase 9 Post Processing Netlist | Checksum: 1521dd133
+
+Time (s): cpu = 00:00:18 ; elapsed = 00:00:20 . Memory (MB): peak = 2700.828 ; gain = 594.367
+Post Processing Netlist | Checksum: 1521dd133
+INFO: [Opt 31-389] Phase Post Processing Netlist created 0 cells and removed 0 cells
+INFO: [Opt 31-1021] In phase Post Processing Netlist, 136 netlist objects are constrained preventing optimization. Please run opt_design with -debug_log to get more detail. 
+
+Phase 10 Finalization
+
+Phase 10.1 Finalizing Design Cores and Updating Shapes
+Phase 10.1 Finalizing Design Cores and Updating Shapes | Checksum: 16fce4d98
+
+Time (s): cpu = 00:00:20 ; elapsed = 00:00:21 . Memory (MB): peak = 2700.828 ; gain = 594.367
+
+Phase 10.2 Verifying Netlist Connectivity
+
+Starting Connectivity Check Task
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.153 . Memory (MB): peak = 2700.828 ; gain = 0.000
+Phase 10.2 Verifying Netlist Connectivity | Checksum: 16fce4d98
+
+Time (s): cpu = 00:00:20 ; elapsed = 00:00:21 . Memory (MB): peak = 2700.828 ; gain = 594.367
+Phase 10 Finalization | Checksum: 16fce4d98
+
+Time (s): cpu = 00:00:20 ; elapsed = 00:00:21 . Memory (MB): peak = 2700.828 ; gain = 594.367
+Opt_design Change Summary
+=========================
+
+
+-------------------------------------------------------------------------------------------------------------------------
+|  Phase                        |  #Cells created  |  #Cells Removed  |  #Constrained objects preventing optimizations  |
+-------------------------------------------------------------------------------------------------------------------------
+|  Retarget                     |             272  |             387  |                                            136  |
+|  Constant propagation         |             142  |            2125  |                                            136  |
+|  Sweep                        |               0  |             693  |                                            180  |
+|  BUFG optimization            |               0  |               0  |                                              0  |
+|  Shift Register Optimization  |              15  |               0  |                                              0  |
+|  Remap                        |             873  |             983  |                                             39  |
+|  Post Processing Netlist      |               0  |               0  |                                            136  |
+-------------------------------------------------------------------------------------------------------------------------
+
+
+Ending Logic Optimization Task | Checksum: 16fce4d98
+
+Time (s): cpu = 00:00:20 ; elapsed = 00:00:22 . Memory (MB): peak = 2700.828 ; gain = 594.367
+
+Starting Netlist Obfuscation Task
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.024 . Memory (MB): peak = 2700.828 ; gain = 0.000
+Ending Netlist Obfuscation Task | Checksum: 16fce4d98
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.037 . Memory (MB): peak = 2700.828 ; gain = 0.000
+INFO: [Common 17-83] Releasing license: Implementation
+43 Infos, 1 Warnings, 0 Critical Warnings and 0 Errors encountered.
+opt_design completed successfully
+opt_design: Time (s): cpu = 00:00:23 ; elapsed = 00:00:24 . Memory (MB): peak = 2700.828 ; gain = 815.102
+INFO: [Vivado 12-24828] Executing command : report_drc -file fastvit_bd_wrapper_drc_opted.rpt -pb fastvit_bd_wrapper_drc_opted.pb -rpx fastvit_bd_wrapper_drc_opted.rpx
+Command: report_drc -file fastvit_bd_wrapper_drc_opted.rpt -pb fastvit_bd_wrapper_drc_opted.pb -rpx fastvit_bd_wrapper_drc_opted.rpx
+INFO: [IP_Flow 19-1839] IP Catalog is up to date.
+INFO: [Vivado_Tcl 2-168] The results of DRC are in file E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.runs/impl_1/fastvit_bd_wrapper_drc_opted.rpt.
+report_drc completed successfully
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Write ShapeDB Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.132 . Memory (MB): peak = 2700.828 ; gain = 0.000
+Wrote PlaceDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.017 . Memory (MB): peak = 2700.828 ; gain = 0.000
+Wrote PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2700.828 ; gain = 0.000
+Writing XDEF routing.
+Writing XDEF routing logical nets.
+Writing XDEF routing special nets.
+Wrote RouteStorage: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.105 . Memory (MB): peak = 2700.828 ; gain = 0.000
+Wrote Netlist Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 2700.828 ; gain = 0.000
+Wrote Device Cache: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.008 . Memory (MB): peak = 2700.828 ; gain = 0.000
+Write Physdb Complete: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.135 . Memory (MB): peak = 2700.828 ; gain = 0.000
+INFO: [Common 17-1381] The checkpoint 'E:/codes/microzed/fastvit_hls/vivado_impl/fastvit_w8a4_tierb_step2_200mhz_proj/fastvit_w8a4_tierb_step2_200mhz_proj.runs/impl_1/fastvit_bd_wrapper_opt.dcp' has been generated.
+write_checkpoint: Time (s): cpu = 00:00:07 ; elapsed = 00:00:07 . Memory (MB): peak = 2700.828 ; gain = 0.000
+Command: place_design -directive ExtraTimingOpt
+Attempting to get a license for feature 'Implementation' and/or device 'xc7z020'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7z020'
+INFO: [Common 17-83] Releasing license: Implementation
+INFO: [Vivado_Tcl 4-198] DRC finished with 0 Errors
+INFO: [Vivado_Tcl 4-199] Please refer to the DRC report (report_drc) for more information.
+INFO: [Vivado_Tcl 4-2302] The placer was invoked with the 'ExtraTimingOpt' directive.
+Running DRC as a precondition to command place_design
+INFO: [Vivado_Tcl 4-198] DRC finished with 0 Errors
+INFO: [Vivado_Tcl 4-199] Please refer to the DRC report (report_drc) for more information.
+
+Starting Placer Task
+
+Phase 1 Placer Initialization
+
+Phase 1.1 Placer Initialization Netlist Sorting
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.024 . Memory (MB): peak = 2700.828 ; gain = 0.000
+Phase 1.1 Placer Initialization Netlist Sorting | Checksum: 11c50d859
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.035 . Memory (MB): peak = 2700.828 ; gain = 0.000
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.018 . Memory (MB): peak = 2700.828 ; gain = 0.000
+
+Phase 1.2 IO Placement/ Clock Placement/ Build Placer Device
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+Phase 1.2 IO Placement/ Clock Placement/ Build Placer Device | Checksum: 8a7c2703
+
+Time (s): cpu = 00:00:06 ; elapsed = 00:00:07 . Memory (MB): peak = 2800.941 ; gain = 100.113
+
+Phase 1.3 Build Placer Netlist Model
+WARNING: [Place 30-770] High register utilization is forcing place_design to place up to 8 registers per slice which may impact placement success and/or routing congestion.
+WARNING: [Place 30-34] Design utilization is very high. Please run report_utilization command to see design utilization.
+Phase 1.3 Build Placer Netlist Model | Checksum: c8b276b2
+
+Time (s): cpu = 00:00:22 ; elapsed = 00:00:23 . Memory (MB): peak = 3332.656 ; gain = 631.828
+
+Phase 1.4 Constrain Clocks/Macros
+Phase 1.4 Constrain Clocks/Macros | Checksum: c8b276b2
+
+Time (s): cpu = 00:00:22 ; elapsed = 00:00:23 . Memory (MB): peak = 3332.656 ; gain = 631.828
+Phase 1 Placer Initialization | Checksum: c8b276b2
+
+Time (s): cpu = 00:00:22 ; elapsed = 00:00:24 . Memory (MB): peak = 3332.656 ; gain = 631.828
+
+Phase 2 Global Placement
+
+Phase 2.1 Floorplanning
+Phase 2.1 Floorplanning | Checksum: 7e14aebb
+
+Time (s): cpu = 00:00:28 ; elapsed = 00:00:29 . Memory (MB): peak = 3332.656 ; gain = 631.828
+
+Phase 2.2 Update Timing before SLR Path Opt
+Phase 2.2 Update Timing before SLR Path Opt | Checksum: ec13770a
+
+Time (s): cpu = 00:00:33 ; elapsed = 00:00:35 . Memory (MB): peak = 3332.656 ; gain = 631.828
+
+Phase 2.3 Post-Processing in Floorplanning
+Phase 2.3 Post-Processing in Floorplanning | Checksum: 10584d9b8
+
+Time (s): cpu = 00:00:33 ; elapsed = 00:00:35 . Memory (MB): peak = 3332.656 ; gain = 631.828
+
+Phase 2.4 Global Place Phase1
+Phase 2.4 Global Place Phase1 | Checksum: ce69cbb4
+
+Time (s): cpu = 00:01:37 ; elapsed = 00:01:42 . Memory (MB): peak = 3332.656 ; gain = 631.828
+
+Phase 2.5 Global Place Phase2
+
+Phase 2.5.1 UpdateTiming Before Physical Synthesis
+Phase 2.5.1 UpdateTiming Before Physical Synthesis | Checksum: 14e9e8cb7
+
+Time (s): cpu = 00:01:44 ; elapsed = 00:01:49 . Memory (MB): peak = 3332.656 ; gain = 631.828
+
+Phase 2.5.2 Physical Synthesis In Placer
+INFO: [Physopt 32-1035] Found 1450 LUTNM shape to break, 572 LUT instances to create LUTNM shape
+INFO: [Physopt 32-1044] Break lutnm for timing: one critical 295, two critical 1155, total 0, new lutff created 0
+INFO: [Physopt 32-1138] End 1 Pass. Optimized 73 nets or LUTs. Breaked 0 LUT, combined 73 existing LUTs and moved 0 existing LUT
+INFO: [Physopt 32-1408] Pass 1. Identified 2 candidate nets for high-fanout optimization.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/ap_CS_fsm_state135. Replicated 12 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/tmp_22_reg_9590. Replicated 7 times.
+INFO: [Physopt 32-232] Optimized 2 nets. Created 19 new instances.
+INFO: [Physopt 32-775] End 1 Pass. Optimized 2 nets or cells. Created 19 new cells, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.081 . Memory (MB): peak = 3332.656 ; gain = 0.000
+INFO: [Physopt 32-76] Pass 1. Identified 16 candidate nets for fanout optimization.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/spatial_reg_9463[6]. Replicated 8 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/spatial_reg_9463[7]. Replicated 8 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/spatial_reg_9463[12]. Replicated 6 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/spatial_reg_9463[4]. Replicated 6 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/spatial_reg_9463[10]. Replicated 6 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/spatial_reg_9463[14]. Replicated 5 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/spatial_reg_9463[9]. Replicated 6 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/spatial_reg_9463[8]. Replicated 6 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/spatial_reg_9463[3]. Replicated 6 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/spatial_reg_9463[5]. Replicated 6 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/spatial_reg_9463[11]. Replicated 6 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/spatial_reg_9463[13]. Replicated 6 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/p_ZL10pw_out_buf_0_0_ce0_local. Replicated 9 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/rst_ps7_0_200M/U0/peripheral_aresetn[0]. Replicated 9 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_CS_fsm_state79. Replicated 8 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/Q[0]. Replicated 9 times.
+INFO: [Physopt 32-232] Optimized 16 nets. Created 110 new instances.
+INFO: [Physopt 32-775] End 1 Pass. Optimized 16 nets or cells. Created 110 new cells, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.349 . Memory (MB): peak = 3332.656 ; gain = 0.000
+INFO: [Physopt 32-46] Identified 185 candidate nets for critical-cell optimization.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_CHin_reg[31]_0[2]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_CHin_reg[31]_0[1]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_CHin_reg[31]_0[4]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_CHin_reg[31]_0[3]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[5]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/tm_fu_1688_reg[0]_0[0]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_CHin_reg[31]_0[0]. Replicated 3 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[13]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[7]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[11]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[9]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[17]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[6]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[12]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_CHin_reg[31]_0[5]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[15]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[14]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[10]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[4]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[19]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[16]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[18]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/zext_ln83_fu_4976_p1[8]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_CHin_reg[31]_0[6]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_CHin_reg[31]_0[7]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_CHin_reg[31]_0[8]. Replicated 3 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Hin_reg[31]_0[4]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_CHin_reg[31]_0[9]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Win_reg[31]_0[5]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Hin_reg[31]_0[21]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_CHin_reg[31]_0[17]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Win_reg[31]_0[13]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Win_reg[31]_0[19]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Win_reg[31]_0[0]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_CHin_reg[31]_0[11]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Win_reg[31]_0[25]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Win_reg[31]_0[17]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/hw_out_words_reg_5295[17]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_CHin_reg[31]_0[12]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Win_reg[31]_0[10]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Win_reg[31]_0[31]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Win_reg[31]_0[18]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Win_reg[31]_0[6]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/spatial_reg_9463[16]. Replicated 3 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Win_reg[31]_0[28]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Win_reg[31]_0[23]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Win_reg[31]_0[16]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/hw_out_words_reg_5295[20]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/ctrl_s_axi_U/int_Win_reg[31]_0[20]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/spatial_reg_9463[15]. Replicated 3 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/hw_out_words_reg_5295[26]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/sext_ln133_5_fu_1873_p1[29]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/hw_out_words_reg_5295[21]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/hw_out_words_reg_5295[18]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/hw_out_words_reg_5295[27]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/ap_CS_fsm_state10. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/hw_out_words_reg_5295[22]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/sext_ln133_5_fu_1873_p1[28]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/grp_fu_4649_p0[23]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/sext_ln133_5_fu_1873_p1[32]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/shared_gmem2_m_axi_U/load_unit_0/buff_rdata/waddr_reg_n_2_[1]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/shared_gmem2_m_axi_U/load_unit_0/buff_rdata/waddr_reg_n_2_[2]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/sext_ln133_5_fu_1873_p1[20]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/sext_ln133_5_fu_1873_p1[21]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/sext_ln133_5_fu_1873_p1[27]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/sext_ln133_5_fu_1873_p1[30]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/grp_fu_4649_p0[20]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/grp_fu_4649_p0[27]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/grp_fu_4649_p0[18]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/sext_ln133_5_fu_1873_p1[25]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/shared_gmem2_m_axi_U/load_unit_0/buff_rdata/waddr_reg_n_2_[0]. Replicated 2 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/hw_out_words_reg_5295[24]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/grp_fu_4649_p0[21]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/hw_out_words_reg_5295[25]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/hw_out_words_reg_5295[28]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/grp_fu_4649_p0[28]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/sext_ln133_5_fu_1873_p1[19]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/hw_out_words_reg_5295[23]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/sext_ln133_5_fu_1873_p1[23]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/pwconv_worker_U/grp_fu_4649_p0[19]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/sext_ln133_5_fu_1873_p1[26]. Replicated 1 times.
+INFO: [Physopt 32-81] Processed net fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/hw_out_words_reg_5295[19]. Replicated 1 times.
+INFO: [Common 17-14] Message 'Physopt 32-81' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
+INFO: [Physopt 32-232] Optimized 89 nets. Created 123 new instances.
+INFO: [Physopt 32-775] End 1 Pass. Optimized 89 nets or cells. Created 123 new cells, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.171 . Memory (MB): peak = 3332.656 ; gain = 0.000
+INFO: [Physopt 32-457] Pass 1. Identified 8 candidate cells for DSP register optimization.
+INFO: [Physopt 32-665] Processed cell fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/dwconv_process_channel4_U0/grp_dwconv_process_channel4_Pipeline_COMPUTE_DW_KW_fu_1523/mac_muladd_8s_4s_32s_32_4_1_U1934/fastvit_ip_mac_muladd_8s_4s_32s_32_4_1_DSP48_0_U/p_reg_reg. 4 registers were pushed out.
+INFO: [Physopt 32-666] Processed cell fastvit_bd_i/tierb_0/inst/gelu_chxh_r_reg. No change.
+INFO: [Physopt 32-665] Processed cell fastvit_bd_i/tierb_0/inst/conv_worker_U/mul_32s_32s_32_5_1_U2135/buff1_reg. 15 registers were pushed out.
+INFO: [Physopt 32-666] Processed cell fastvit_bd_i/tierb_0/inst/gelu_total_px_r_reg. No change.
+INFO: [Physopt 32-666] Processed cell fastvit_bd_i/tierb_0/inst/gelu_total_px_r0__0. No change.
+INFO: [Physopt 32-666] Processed cell fastvit_bd_i/tierb_0/inst/gelu_chxh_r0__0. No change.
+INFO: [Physopt 32-665] Processed cell fastvit_bd_i/tierb_0/inst/conv_worker_U/mul_32s_32s_32_5_1_U2135/buff2_reg. 15 registers were pushed out.
+INFO: [Physopt 32-666] Processed cell fastvit_bd_i/tierb_0/inst/gelu_chxh_r0. No change.
+INFO: [Physopt 32-457] Pass 2. Identified 5 candidate cells for DSP register optimization.
+INFO: [Physopt 32-666] Processed cell fastvit_bd_i/tierb_0/inst/gelu_chxh_r_reg. No change.
+INFO: [Physopt 32-666] Processed cell fastvit_bd_i/tierb_0/inst/gelu_total_px_r_reg. No change.
+INFO: [Physopt 32-666] Processed cell fastvit_bd_i/tierb_0/inst/gelu_total_px_r0__0. No change.
+INFO: [Physopt 32-666] Processed cell fastvit_bd_i/tierb_0/inst/gelu_chxh_r0__0. No change.
+INFO: [Physopt 32-666] Processed cell fastvit_bd_i/tierb_0/inst/gelu_chxh_r0. No change.
+INFO: [Physopt 32-775] End 2 Pass. Optimized 3 nets or cells. Created 34 new cells, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.065 . Memory (MB): peak = 3332.656 ; gain = 0.000
+INFO: [Physopt 32-1123] No candidate cells found for Shift Register to Pipeline optimization
+INFO: [Physopt 32-775] End 2 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+INFO: [Physopt 32-1402] Pass 1: Identified 64 candidate cells for Shift Register optimization.
+INFO: [Physopt 32-775] End 1 Pass. Optimized 56 nets or cells. Created 59 new cells, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.124 . Memory (MB): peak = 3332.656 ; gain = 0.000
+INFO: [Physopt 32-527] Pass 1: Identified 12 candidate cells for BRAM register optimization
+INFO: [Physopt 32-665] Processed cell fastvit_bd_i/tierb_0/inst/conv_worker_U/p_ZL6wt_buf_0_0_U/ram_reg. 8 registers were pushed out.
+INFO: [Physopt 32-665] Processed cell fastvit_bd_i/tierb_0/inst/conv_worker_U/p_ZL6wt_buf_0_1_U/ram_reg. 8 registers were pushed out.
+INFO: [Physopt 32-665] Processed cell fastvit_bd_i/tierb_0/inst/conv_worker_U/p_ZL6wt_buf_1_1_U/ram_reg. 8 registers were pushed out.
+INFO: [Physopt 32-665] Processed cell fastvit_bd_i/tierb_0/inst/conv_worker_U/p_ZL6wt_buf_1_0_U/ram_reg. 8 registers were pushed out.
+INFO: [Physopt 32-665] Processed cell fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_10_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg. 4 registers were pushed out.
+INFO: [Physopt 32-665] Processed cell fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_7_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg. 4 registers were pushed out.
+INFO: [Physopt 32-666] Processed cell fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_11_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg. No change.
+INFO: [Physopt 32-666] Processed cell fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_15_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg. No change.
+INFO: [Physopt 32-666] Processed cell fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_4_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg. No change.
+INFO: [Physopt 32-666] Processed cell fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_3_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg. No change.
+INFO: [Physopt 32-665] Processed cell fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_0_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg. 4 registers were pushed out.
+INFO: [Physopt 32-665] Processed cell fastvit_bd_i/tierb_0/inst/dwconv_worker_U/dataflow_in_loop_LOOP_DW_CH_1_U0/p_ZL9ch_in_buf_1_U/fastvit_ip_dataflow_in_loop_LOOP_DW_CH_1_p_ZL9ch_in_buf_0_RAM_1P_BRAM_1R1W_memcore_U/ram_reg. 4 registers were pushed out.
+INFO: [Physopt 32-775] End 1 Pass. Optimized 8 nets or cells. Created 48 new cells, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.104 . Memory (MB): peak = 3332.656 ; gain = 0.000
+INFO: [Physopt 32-846] No candidate cells for URAM register optimization found in the design
+INFO: [Physopt 32-775] End 1 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+INFO: [Physopt 32-846] No candidate cells for URAM register optimization found in the design
+INFO: [Physopt 32-775] End 1 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+INFO: [Physopt 32-949] No candidate nets found for dynamic/static region interface net replication
+INFO: [Physopt 32-775] End 1 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.034 . Memory (MB): peak = 3332.656 ; gain = 0.000
+INFO: [Physopt 32-46] Identified 1 candidate net for critical-cell optimization.
+INFO: [Physopt 32-232] Optimized 1 net. Created 1 new instance.
+INFO: [Physopt 32-775] End 1 Pass. Optimized 1 net or cell. Created 1 new cell, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.046 . Memory (MB): peak = 3332.656 ; gain = 0.000
+Netlist sorting complete. Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.027 . Memory (MB): peak = 3332.656 ; gain = 0.000
+
+Summary of Physical Synthesis Optimizations
+============================================
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+|  Optimization                                     |  Added Cells  |  Removed Cells  |  Optimized Cells/Nets  |  Dont Touch  |  Iterations  |  Elapsed   |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+|  LUT Combining                                    |            0  |             73  |                    73  |           0  |           1  |  00:00:00  |
+|  Retime                                           |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Very High Fanout                                 |           19  |              0  |                     2  |           0  |           1  |  00:00:01  |
+|  Fanout                                           |          110  |              0  |                    16  |           0  |           1  |  00:00:01  |
+|  Critical Cell                                    |          123  |              0  |                    89  |           0  |           1  |  00:00:09  |
+|  DSP Register                                     |           34  |              0  |                     3  |           0  |           1  |  00:00:02  |
+|  Shift Register to Pipeline                       |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Shift Register                                   |           59  |              0  |                    56  |           0  |           1  |  00:00:00  |
+|  BRAM Register                                    |           48  |              0  |                     8  |           0  |           1  |  00:00:00  |
+|  URAM Register                                    |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Dynamic/Static Region Interface Net Replication  |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Critical Cell                                    |            1  |              0  |                     1  |           0  |           1  |  00:00:00  |
+|  Total                                            |          394  |             73  |                   248  |           0  |          12  |  00:00:14  |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Phase 2.5.2 Physical Synthesis In Placer | Checksum: e48c0ffe
+
+Time (s): cpu = 00:02:05 ; elapsed = 00:02:11 . Memory (MB): peak = 3332.656 ; gain = 631.828
+Phase 2.5 Global Place Phase2 | Checksum: 18de62ea8
+
+Time (s): cpu = 00:02:07 ; elapsed = 00:02:13 . Memory (MB): peak = 3332.656 ; gain = 631.828
+Phase 2 Global Placement | Checksum: 18de62ea8
+
+Time (s): cpu = 00:02:07 ; elapsed = 00:02:13 . Memory (MB): peak = 3332.656 ; gain = 631.828
+
+Phase 3 Detail Placement
+
+Phase 3.1 Commit Multi Column Macros
+Phase 3.1 Commit Multi Column Macros | Checksum: 1eb27a5c4
+
+Time (s): cpu = 00:02:13 ; elapsed = 00:02:20 . Memory (MB): peak = 3332.656 ; gain = 631.828
+
+Phase 3.2 Commit Most Macros & LUTRAMs
+Phase 3.2 Commit Most Macros & LUTRAMs | Checksum: 94e64326
+
+Time (s): cpu = 00:02:34 ; elapsed = 00:02:41 . Memory (MB): peak = 3332.656 ; gain = 631.828
+
+Phase 3.3 Area Swap Optimization
+Phase 3.3 Area Swap Optimization | Checksum: 172a39655
+
+Time (s): cpu = 00:02:35 ; elapsed = 00:02:42 . Memory (MB): peak = 3332.656 ; gain = 631.828
+
+Phase 3.4 Pipeline Register Optimization
+Phase 3.4 Pipeline Register Optimization | Checksum: 97aaa2bf
+
+Time (s): cpu = 00:02:35 ; elapsed = 00:02:42 . Memory (MB): peak = 3332.656 ; gain = 631.828
+
+Phase 3.5 Fast Optimization
+Phase 3.5 Fast Optimization | Checksum: 149f72d92
+
+Time (s): cpu = 00:02:50 ; elapsed = 00:02:58 . Memory (MB): peak = 3332.656 ; gain = 631.828
+
+Phase 3.6 Small Shape Detail Placement
+Phase 3.6 Small Shape Detail Placement | Checksum: ecfe20db
+
+Time (s): cpu = 00:03:02 ; elapsed = 00:03:11 . Memory (MB): peak = 3332.656 ; gain = 631.828
+Phase 3 Detail Placement | Checksum: ecfe20db
+
+Time (s): cpu = 00:03:03 ; elapsed = 00:03:11 . Memory (MB): peak = 3332.656 ; gain = 631.828
+ERROR: [Place 30-487] The packing of instances into the device could not be obeyed. There are a total of 13300 slices in the device, of which 5835 slices are available, however, the unplaced instances require 7493 slices. Please analyze your design to determine if the number of LUTs, FFs, and/or control sets can be reduced.
+
+Number of control sets and instances constrained to the design
+	Control sets: 1711
+	Luts: 57254 (combined) 63935 (total), available capacity: 53200 
+	Flip flops: 63599, available capacity: 106400
+	NOTE: each slice can only accommodate 1 unique control set so FFs cannot be packed to fully fill every slice
+
+
+ERROR: [Place 30-99] Placer failed with error: 'Detail Placement failed please check previous errors for details.'
+Please review all ERROR, CRITICAL WARNING, and WARNING messages during placement to understand the cause for failure.
+
+Phase 4 Add Constraints
+
+Phase 4.1 Add User PBlocks
+Phase 4.1 Add User PBlocks | Checksum: 8535bf2c
+
+Time (s): cpu = 00:03:03 ; elapsed = 00:03:11 . Memory (MB): peak = 3332.656 ; gain = 631.828
+Phase 4 Add Constraints | Checksum: 8535bf2c
+
+Time (s): cpu = 00:03:03 ; elapsed = 00:03:11 . Memory (MB): peak = 3332.656 ; gain = 631.828
+Ending Placer Task | Checksum: e4aee79d
+
+Time (s): cpu = 00:03:03 ; elapsed = 00:03:11 . Memory (MB): peak = 3332.656 ; gain = 631.828
+212 Infos, 3 Warnings, 0 Critical Warnings and 3 Errors encountered.
+place_design failed
+ERROR: [Common 17-69] Command failed: Placer could not place all instances
+INFO: [Common 17-206] Exiting Vivado at Sun Aug  9 03:25:07 2026...
+[Sun Aug  9 03:25:10 2026] impl_1 finished
+ERROR: [Vivado 12-13638] Failed runs(s) : 'impl_1'
+wait_on_runs: Time (s): cpu = 00:00:00 ; elapsed = 00:04:16 . Memory (MB): peak = 2031.559 ; gain = 0.000
+ERROR: [Common 17-39] 'wait_on_runs' failed due to earlier errors.
+
+    while executing
+"wait_on_run impl_1"
+    (file "run_impl_w8a4_tierb_step2_200mhz_resume.tcl" line 48)
+INFO: [Common 17-206] Exiting Vivado at Sun Aug  9 03:25:10 2026...

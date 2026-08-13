@@ -1,0 +1,225 @@
+
+
+================================================================
+== Synthesis Summary Report of 'global_avgpool_ip'
+================================================================
++ General Information: 
+    * Date:           Sat Jun 20 15:48:52 2026
+    * Version:        2024.2 (Build 5238294 on Nov  8 2024)
+    * Project:        gap_ip_proj
+    * Solution:       solution1 (Vivado IP Flow Target)
+    * Product family: zynq
+    * Target device:  xc7z020-clg400-1
+    
+
++ Performance & Resource Estimates: 
+    
+    PS: '+' for module; 'o' for loop; '*' for dataflow
+    +------------------------------------------------------+------+------+---------+--------+----------+---------+------+----------+--------+---------+-----------+-----------+-----+
+    |                        Modules                       | Issue|      | Latency | Latency| Iteration|         | Trip |          |        |         |           |           |     |
+    |                        & Loops                       | Type | Slack| (cycles)|  (ns)  |  Latency | Interval| Count| Pipelined|  BRAM  |   DSP   |     FF    |    LUT    | URAM|
+    +------------------------------------------------------+------+------+---------+--------+----------+---------+------+----------+--------+---------+-----------+-----------+-----+
+    |+ global_avgpool_ip                                   |     -|  0.00|        -|       -|         -|        -|     -|        no|  4 (1%)|  11 (5%)|  3117 (2%)|  3106 (5%)|    -|
+    | o LOOP_GAP_TN                                        |     -|  7.30|        -|       -|         -|        -|     -|        no|       -|        -|          -|          -|    -|
+    |  + global_avgpool_ip_Pipeline_LOOP_GAP_H_LOOP_GAP_W  |     -|  0.00|        -|       -|         -|        -|     -|        no|       -|        -|  110 (~0%)|  235 (~0%)|    -|
+    |   o LOOP_GAP_H_LOOP_GAP_W                            |     -|  7.30|        -|       -|         3|        1|     -|       yes|       -|        -|          -|          -|    -|
+    +------------------------------------------------------+------+------+---------+--------+----------+---------+------+----------+--------+---------+-----------+-----------+-----+
+
+
+================================================================
+== HW Interfaces
+================================================================
+* M_AXI
++-------------+------------+------------+---------------+---------+--------+-------------------+----------+-----------+--------------+--------------+-------------+-------------+-------------------+
+| Interface   | Read/Write | Data Width | Address Width | Latency | Offset | Offset Interfaces | Register | Max Widen | Max Read     | Max Write    | Num Read    | Num Write   | Resource Estimate |
+|             |            | (SW->HW)   |               |         |        |                   |          | Bitwidth  | Burst Length | Burst Length | Outstanding | Outstanding |                   |
++-------------+------------+------------+---------------+---------+--------+-------------------+----------+-----------+--------------+--------------+-------------+-------------+-------------------+
+| m_axi_gmem0 | READ_ONLY  | 8 -> 8     | 64            | 0       | slave  | s_axi_control     | 0        | 0         | 16           | 16           | 16          | 16          | BRAM=2            |
+| m_axi_gmem1 | WRITE_ONLY | 32 -> 32   | 64            | 0       | slave  | s_axi_control     | 0        | 0         | 16           | 16           | 16          | 16          | BRAM=2            |
++-------------+------------+------------+---------------+---------+--------+-------------------+----------+-----------+--------------+--------------+-------------+-------------+-------------------+
+
+* S_AXILITE Interfaces
++---------------+------------+---------------+--------+----------+----------------+
+| Interface     | Data Width | Address Width | Offset | Register | Data Interface |
++---------------+------------+---------------+--------+----------+----------------+
+| s_axi_control | 32         | 6             | 16     | 0        | m_axi_gmem1    |
+| s_axi_ctrl    | 32         | 6             | 16     | 0        |                |
++---------------+------------+---------------+--------+----------+----------------+
+
+* S_AXILITE Registers
++---------------+------------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+| Interface     | Register   | Offset | Width | Access | Description                      | Bit Fields                                                           |
++---------------+------------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+| s_axi_control | feat_in_1  | 0x10   | 32    | W      | Data signal of feat_in           |                                                                      |
+| s_axi_control | feat_in_2  | 0x14   | 32    | W      | Data signal of feat_in           |                                                                      |
+| s_axi_control | feat_out_1 | 0x1c   | 32    | W      | Data signal of feat_out          |                                                                      |
+| s_axi_control | feat_out_2 | 0x20   | 32    | W      | Data signal of feat_out          |                                                                      |
+| s_axi_ctrl    | CTRL       | 0x00   | 32    | RW     | Control signals                  | 0=AP_START 1=AP_DONE 2=AP_IDLE 3=AP_READY 7=AUTO_RESTART 9=INTERRUPT |
+| s_axi_ctrl    | GIER       | 0x04   | 32    | RW     | Global Interrupt Enable Register | 0=Enable                                                             |
+| s_axi_ctrl    | IP_IER     | 0x08   | 32    | RW     | IP Interrupt Enable Register     | 0=CHAN0_INT_EN 1=CHAN1_INT_EN                                        |
+| s_axi_ctrl    | IP_ISR     | 0x0c   | 32    | RW     | IP Interrupt Status Register     | 0=CHAN0_INT_ST 1=CHAN1_INT_ST                                        |
+| s_axi_ctrl    | CH         | 0x10   | 32    | W      | Data signal of CH                |                                                                      |
+| s_axi_ctrl    | Hin        | 0x18   | 32    | W      | Data signal of Hin               |                                                                      |
+| s_axi_ctrl    | Win        | 0x20   | 32    | W      | Data signal of Win               |                                                                      |
++---------------+------------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+
+* TOP LEVEL CONTROL
++-----------+------------+-----------+
+| Interface | Type       | Ports     |
++-----------+------------+-----------+
+| ap_clk    | clock      | ap_clk    |
+| ap_rst_n  | reset      | ap_rst_n  |
+| interrupt | interrupt  | interrupt |
+| ap_ctrl   | ap_ctrl_hs |           |
++-----------+------------+-----------+
+
+
+================================================================
+== SW I/O Information
+================================================================
+* Top Function Arguments
++----------+-----------+-------------+
+| Argument | Direction | Datatype    |
++----------+-----------+-------------+
+| feat_in  | in        | ap_int<8>*  |
+| feat_out | out       | ap_int<32>* |
+| CH       | in        | int         |
+| Hin      | in        | int         |
+| Win      | in        | int         |
++----------+-----------+-------------+
+
+* SW-to-HW Mapping
++----------+---------------+-----------+----------+--------------------------------------+
+| Argument | HW Interface  | HW Type   | HW Usage | HW Info                              |
++----------+---------------+-----------+----------+--------------------------------------+
+| feat_in  | m_axi_gmem0   | interface |          | channel=0                            |
+| feat_in  | s_axi_control | register  | offset   | name=feat_in_1 offset=0x10 range=32  |
+| feat_in  | s_axi_control | register  | offset   | name=feat_in_2 offset=0x14 range=32  |
+| feat_out | m_axi_gmem1   | interface |          | channel=0                            |
+| feat_out | s_axi_control | register  | offset   | name=feat_out_1 offset=0x1c range=32 |
+| feat_out | s_axi_control | register  | offset   | name=feat_out_2 offset=0x20 range=32 |
+| CH       | s_axi_ctrl    | register  |          | name=CH offset=0x10 range=32         |
+| Hin      | s_axi_ctrl    | register  |          | name=Hin offset=0x18 range=32        |
+| Win      | s_axi_ctrl    | register  |          | name=Win offset=0x20 range=32        |
++----------+---------------+-----------+----------+--------------------------------------+
+
+
+================================================================
+== M_AXI Burst Information
+================================================================
+ Note: All burst requests might be further partitioned into multiple requests during RTL generation based on max_read_burst_length or max_write_burst_length settings.
+
+* Inferred Burst Summary
++--------------+-----------+----------+-------+-------------+-------------------+
+| HW Interface | Direction | Length   | Width | Loop        | Loop Location     |
++--------------+-----------+----------+-------+-------------+-------------------+
+| m_axi_gmem0  | read      | variable | 8     | LOOP_GAP_H  | pool_ip.cpp:272:9 |
+| m_axi_gmem1  | write     | variable | 32    | LOOP_GAP_TN | pool_ip.cpp:258:5 |
++--------------+-----------+----------+-------+-------------+-------------------+
+
+* All M_AXI Variable Accesses
++--------------+----------+--------------------+-----------+--------------+----------+-------------+--------------------+------------+-------------------------------------------------------------------------------------------------------+
+| HW Interface | Variable | Access Location    | Direction | Burst Status | Length   | Loop        | Loop Location      | Resolution | Problem                                                                                               |
++--------------+----------+--------------------+-----------+--------------+----------+-------------+--------------------+------------+-------------------------------------------------------------------------------------------------------+
+| m_axi_gmem0  | feat_in  | pool_ip.cpp:280:39 | read      | Widen Fail   |          | LOOP_GAP_W  | pool_ip.cpp:274:13 | 214-353    | Could not widen since type i8 size is greater than or equal to the max_widen_bitwidth threshold of 0  |
+| m_axi_gmem0  | feat_in  | pool_ip.cpp:280:39 | read      | Fail         |          | LOOP_GAP_TN | pool_ip.cpp:258:5  | 214-230    | Stride is incompatible                                                                                |
+| m_axi_gmem0  | feat_in  | pool_ip.cpp:280:39 | read      | Inferred     | variable | LOOP_GAP_H  | pool_ip.cpp:272:9  |            |                                                                                                       |
+| m_axi_gmem1  | feat_out | pool_ip.cpp:290:24 | write     | Widen Fail   |          | LOOP_GAP_TN | pool_ip.cpp:258:5  | 214-353    | Could not widen since type i32 size is greater than or equal to the max_widen_bitwidth threshold of 0 |
+| m_axi_gmem1  | feat_out | pool_ip.cpp:290:24 | write     | Inferred     | variable | LOOP_GAP_TN | pool_ip.cpp:258:5  |            |                                                                                                       |
++--------------+----------+--------------------+-----------+--------------+----------+-------------+--------------------+------------+-------------------------------------------------------------------------------------------------------+
+
+    * Resolution URL: docs.xilinx.com/access/sources/dita/topic?Doc_Version=2024.2%20English&url=ug1448-hls-guidance&resourceid=XXX-YYY.html (replace XXX-YYY with column value)
+
+================================================================
+== Bind Op Report
+================================================================
++-----------------------------------------------------+-----+--------+-------------+--------+----------+---------+
+| Name                                                | DSP | Pragma | Variable    | Op     | Impl     | Latency |
++-----------------------------------------------------+-----+--------+-------------+--------+----------+---------+
+| + global_avgpool_ip                                 | 11  |        |             |        |          |         |
+|   mul_32s_32s_32_2_1_U7                             | 3   |        | spatial     | mul    | auto     | 1       |
+|   icmp_ln258_fu_190_p2                              |     |        | icmp_ln258  | setgt  | auto     | 0       |
+|   cmp115_fu_196_p2                                  |     |        | cmp115      | setgt  | auto     | 0       |
+|   cmp153_fu_202_p2                                  |     |        | cmp153      | setgt  | auto     | 0       |
+|   mul_32ns_32ns_63_2_1_U6                           | 4   |        | mul_ln258   | mul    | auto     | 1       |
+|   empty_22_fu_232_p3                                |     |        | empty_22    | select | auto_sel | 0       |
+|   empty_24_fu_285_p3                                |     |        | empty_24    | select | auto_sel | 0       |
+|   empty_25_fu_291_p3                                |     |        | empty_25    | select | auto_sel | 0       |
+|   smax_fu_262_p3                                    |     |        | smax        | select | auto_sel | 0       |
+|   smax1_fu_268_p3                                   |     |        | smax1       | select | auto_sel | 0       |
+|   mul_31ns_31ns_62_2_1_U5                           | 4   |        | mul_ln233   | mul    | auto     | 1       |
+|   add_ln260_2_fu_308_p2                             |     |        | add_ln260_2 | add    | fabric   | 0       |
+|   icmp_ln260_fu_317_p2                              |     |        | icmp_ln260  | setlt  | auto     | 0       |
+|   add_ln260_1_fu_322_p2                             |     |        | add_ln260_1 | add    | fabric   | 0       |
+|   add_ln260_fu_332_p2                               |     |        | add_ln260   | add    | fabric   | 0       |
+|  + global_avgpool_ip_Pipeline_LOOP_GAP_H_LOOP_GAP_W | 0   |        |             |        |          |         |
+|    icmp_ln272_fu_93_p2                              |     |        | icmp_ln272  | seteq  | auto     | 0       |
+|    add_ln272_fu_98_p2                               |     |        | add_ln272   | add    | fabric   | 0       |
+|    add_ln280_fu_120_p2                              |     |        | add_ln280   | add    | fabric   | 0       |
++-----------------------------------------------------+-----+--------+-------------+--------+----------+---------+
+
+
+================================================================
+== Storage Report
+================================================================
++---------------------+-----------+-----------+------+------+--------+----------+------+---------+------------------+
+| Name                | Usage     | Type      | BRAM | URAM | Pragma | Variable | Impl | Latency | Bitwidth, Depth, |
+|                     |           |           |      |      |        |          |      |         | Banks            |
++---------------------+-----------+-----------+------+------+--------+----------+------+---------+------------------+
+| + global_avgpool_ip |           |           | 4    | 0    |        |          |      |         |                  |
+|   control_s_axi_U   | interface | s_axilite |      |      |        |          |      |         |                  |
+|   ctrl_s_axi_U      | interface | s_axilite |      |      |        |          |      |         |                  |
+|   gmem0_m_axi_U     | interface | m_axi     | 2    |      |        |          |      |         |                  |
+|   gmem1_m_axi_U     | interface | m_axi     | 2    |      |        |          |      |         |                  |
++---------------------+-----------+-----------+------+------+--------+----------+------+---------+------------------+
+
+
+================================================================
+== Pragma Report
+================================================================
+* Valid Pragma Syntax
++-----------------+-----------------------------------------------------------+------------------------------------------------+
+| Type            | Options                                                   | Location                                       |
++-----------------+-----------------------------------------------------------+------------------------------------------------+
+| pipeline        | II=1                                                      | pool_ip.cpp:67 in maxpool_kernel               |
+| pipeline        | II=1                                                      | pool_ip.cpp:86 in maxpool_kernel               |
+| unroll          |                                                           | pool_ip.cpp:89 in maxpool_kernel               |
+| unroll          |                                                           | pool_ip.cpp:93 in maxpool_kernel               |
+| unroll          |                                                           | pool_ip.cpp:96 in maxpool_kernel               |
+| pipeline        | II=1                                                      | pool_ip.cpp:161 in avgpool_kernel              |
+| pipeline        | II=1                                                      | pool_ip.cpp:179 in avgpool_kernel              |
+| pipeline        | II=1                                                      | pool_ip.cpp:195 in avgpool_kernel              |
+| unroll          |                                                           | pool_ip.cpp:198 in avgpool_kernel              |
+| pipeline        | II=1                                                      | pool_ip.cpp:210 in avgpool_kernel              |
+| interface       | m_axi port=feat_in offset=slave bundle=gmem0 depth=65536  | pool_ip.cpp:240 in global_avgpool_ip, feat_in  |
+| interface       | m_axi port=feat_out offset=slave bundle=gmem1 depth=512   | pool_ip.cpp:241 in global_avgpool_ip, feat_out |
+| interface       | s_axilite port=CH bundle=ctrl                             | pool_ip.cpp:242 in global_avgpool_ip, CH       |
+| interface       | s_axilite port=Hin bundle=ctrl                            | pool_ip.cpp:243 in global_avgpool_ip, Hin      |
+| interface       | s_axilite port=Win bundle=ctrl                            | pool_ip.cpp:244 in global_avgpool_ip, Win      |
+| interface       | s_axilite port=return bundle=ctrl                         | pool_ip.cpp:245 in global_avgpool_ip, return   |
+| array_partition | variable=in_buf dim=1 complete                            | pool_ip.cpp:247 in global_avgpool_ip, in_buf   |
+| array_partition | variable=acc_buf dim=1 complete                           | pool_ip.cpp:248 in global_avgpool_ip, acc_buf  |
+| array_partition | variable=sum_buf complete                                 | pool_ip.cpp:255 in global_avgpool_ip, sum_buf  |
+| unroll          |                                                           | pool_ip.cpp:266 in global_avgpool_ip           |
+| pipeline        | II=1                                                      | pool_ip.cpp:275 in global_avgpool_ip           |
+| unroll          |                                                           | pool_ip.cpp:278 in global_avgpool_ip           |
+| pipeline        | II=1                                                      | pool_ip.cpp:289 in global_avgpool_ip           |
+| interface       | m_axi port=feat_in offset=slave bundle=gmem0 depth=65536  | pool_ip.cpp:313 in pool_ip, feat_in            |
+| interface       | m_axi port=feat_out offset=slave bundle=gmem1 depth=65536 | pool_ip.cpp:314 in pool_ip, feat_out           |
+| interface       | s_axilite port=CH bundle=ctrl                             | pool_ip.cpp:315 in pool_ip, CH                 |
+| interface       | s_axilite port=Hin bundle=ctrl                            | pool_ip.cpp:316 in pool_ip, Hin                |
+| interface       | s_axilite port=Win bundle=ctrl                            | pool_ip.cpp:317 in pool_ip, Win                |
+| interface       | s_axilite port=Kh bundle=ctrl                             | pool_ip.cpp:318 in pool_ip, Kh                 |
+| interface       | s_axilite port=Kw bundle=ctrl                             | pool_ip.cpp:319 in pool_ip, Kw                 |
+| interface       | s_axilite port=stride_h bundle=ctrl                       | pool_ip.cpp:320 in pool_ip, stride_h           |
+| interface       | s_axilite port=stride_w bundle=ctrl                       | pool_ip.cpp:321 in pool_ip, stride_w           |
+| interface       | s_axilite port=pad_h bundle=ctrl                          | pool_ip.cpp:322 in pool_ip, pad_h              |
+| interface       | s_axilite port=pad_w bundle=ctrl                          | pool_ip.cpp:323 in pool_ip, pad_w              |
+| interface       | s_axilite port=mode bundle=ctrl                           | pool_ip.cpp:324 in pool_ip, mode               |
+| interface       | s_axilite port=out_shift bundle=ctrl                      | pool_ip.cpp:325 in pool_ip, out_shift          |
+| interface       | s_axilite port=return bundle=ctrl                         | pool_ip.cpp:326 in pool_ip, return             |
+| array_partition | variable=in_buf dim=1 complete                            | pool_ip.cpp:328 in pool_ip, in_buf             |
+| array_partition | variable=acc_buf dim=1 complete                           | pool_ip.cpp:329 in pool_ip, acc_buf            |
++-----------------+-----------------------------------------------------------+------------------------------------------------+
+
+

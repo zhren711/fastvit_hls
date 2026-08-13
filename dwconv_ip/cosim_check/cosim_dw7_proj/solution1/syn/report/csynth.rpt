@@ -1,0 +1,724 @@
+
+
+================================================================
+== Synthesis Summary Report of 'dwconv_ip'
+================================================================
++ General Information: 
+    * Date:           Sat Jul 25 23:53:36 2026
+    * Version:        2024.2 (Build 5238294 on Nov  8 2024)
+    * Project:        cosim_dw7_proj
+    * Solution:       solution1 (Vivado IP Flow Target)
+    * Product family: zynq
+    * Target device:  xc7z020-clg400-1
+    
+
++ Performance & Resource Estimates: 
+    
+    PS: '+' for module; 'o' for loop; '*' for dataflow
+    +-------------------------------------------------------+--------+-------+-----------+-----------+----------+-----------+-----------+----------+----------+----------+-------------+-------------+-----+
+    |                        Modules                        |  Issue |       |  Latency  |  Latency  | Iteration|           |    Trip   |          |          |          |             |             |     |
+    |                        & Loops                        |  Type  | Slack |  (cycles) |    (ns)   |  Latency |  Interval |   Count   | Pipelined|   BRAM   |    DSP   |      FF     |     LUT     | URAM|
+    +-------------------------------------------------------+--------+-------+-----------+-----------+----------+-----------+-----------+----------+----------+----------+-------------+-------------+-----+
+    |+ dwconv_ip                                            |  Timing|  -0.10|          -|          -|         -|          -|          -|        no|  40 (14%)|  61 (27%)|  13815 (12%)|  24280 (45%)|    -|
+    | o LOOP_DW_CH                                          |       -|   7.30|          -|          -|         -|          -|          -|        no|         -|         -|            -|            -|    -|
+    |  + dwconv_ip_Pipeline_PRELOAD_IN                      |       -|   0.00|  536870914|  5.369e+09|         -|  536870914|          -|        no|         -|         -|     87 (~0%)|    122 (~0%)|    -|
+    |   o PRELOAD_IN                                        |       -|   7.30|  536870912|  5.369e+09|         3|          1|  536870911|       yes|         -|         -|            -|            -|    -|
+    |  o LOOP_DW_FPG                                        |       -|   7.30|          -|          -|         -|          -|          -|        no|         -|         -|            -|            -|    -|
+    |   + dwconv_ip_Pipeline_WRITEBACK_OUT                  |       -|   0.00|  536870914|  5.369e+09|         -|  536870914|          -|        no|         -|         -|     68 (~0%)|    202 (~0%)|    -|
+    |    o WRITEBACK_OUT                                    |       -|   7.30|  536870912|  5.369e+09|         3|          1|  536870911|       yes|         -|         -|            -|            -|    -|
+    |   o LOAD_DW_WT                                        |       -|   7.30|          -|          -|         -|          -|          -|        no|         -|         -|            -|            -|    -|
+    |    o VITIS_LOOP_127_1                                 |       -|   7.30|          -|          -|         2|          -|          -|        no|         -|         -|            -|            -|    -|
+    |   o LOOP_DW_TR                                        |       -|   7.30|          -|          -|         -|          -|          -|        no|         -|         -|            -|            -|    -|
+    |    o LOOP_DW_TC                                       |       -|   7.30|          -|          -|         -|          -|          -|        no|         -|         -|            -|            -|    -|
+    |     + dwconv_ip_Pipeline_LOAD_DW_IN                   |       -|   0.13|         17|    170.000|         -|         17|          -|        no|         -|   1 (~0%)|    233 (~0%)|    2534 (4%)|    -|
+    |      o LOAD_DW_IN                                     |       -|   7.30|         15|    150.000|         4|          1|         13|       yes|         -|         -|            -|            -|    -|
+    |     + dwconv_ip_Pipeline_COMPUTE_DW_KH_COMPUTE_DW_KW  |  Timing|  -0.10|          -|          -|         -|          -|          -|        no|         -|   16 (7%)|    831 (~0%)|   6001 (11%)|    -|
+    |      o COMPUTE_DW_KH_COMPUTE_DW_KW                    |       -|   7.30|          -|          -|         6|          1|          -|       yes|         -|         -|            -|            -|    -|
+    |     + dwconv_ip_Pipeline_STORE_DW_OUT                 |       -|   1.55|         21|    210.000|         -|         21|          -|        no|         -|   1 (~0%)|    529 (~0%)|    2679 (5%)|    -|
+    |      o STORE_DW_OUT                                   |      II|   7.30|         19|    190.000|         8|          4|          4|       yes|         -|         -|            -|            -|    -|
+    +-------------------------------------------------------+--------+-------+-----------+-----------+----------+-----------+-----------+----------+----------+----------+-------------+-------------+-----+
+
+
+================================================================
+== HW Interfaces
+================================================================
+* M_AXI
++-------------+------------+------------+---------------+---------+--------+----------+-----------+--------------+--------------+-------------+-------------+-------------------+
+| Interface   | Read/Write | Data Width | Address Width | Latency | Offset | Register | Max Widen | Max Read     | Max Write    | Num Read    | Num Write   | Resource Estimate |
+|             |            | (SW->HW)   |               |         |        |          | Bitwidth  | Burst Length | Burst Length | Outstanding | Outstanding |                   |
++-------------+------------+------------+---------------+---------+--------+----------+-----------+--------------+--------------+-------------+-------------+-------------------+
+| m_axi_gmem0 | READ_ONLY  | 32 -> 32   | 64            | 64      | slave  | 0        | 0         | 256          | 16           | 4           | 16          | BRAM=2            |
+| m_axi_gmem1 | READ_ONLY  | 8 -> 8     | 64            | 64      | slave  | 0        | 0         | 256          | 16           | 4           | 16          | BRAM=2            |
+| m_axi_gmem2 | READ_ONLY  | 32 -> 32   | 64            | 0       | slave  | 0        | 0         | 16           | 16           | 16          | 16          | BRAM=2            |
+| m_axi_gmem3 | WRITE_ONLY | 32 -> 32   | 64            | 64      | slave  | 0        | 0         | 16           | 256          | 16          | 4           | BRAM=2            |
++-------------+------------+------------+---------------+---------+--------+----------+-----------+--------------+--------------+-------------+-------------+-------------------+
+
+* S_AXILITE Interfaces
++---------------+------------+---------------+--------+----------+
+| Interface     | Data Width | Address Width | Offset | Register |
++---------------+------------+---------------+--------+----------+
+| s_axi_control | 32         | 6             | 16     | 0        |
+| s_axi_ctrl    | 32         | 7             | 16     | 0        |
++---------------+------------+---------------+--------+----------+
+
+* S_AXILITE Registers
++---------------+------------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+| Interface     | Register   | Offset | Width | Access | Description                      | Bit Fields                                                           |
++---------------+------------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+| s_axi_control | feat_in_1  | 0x10   | 32    | W      | Data signal of feat_in           |                                                                      |
+| s_axi_control | feat_in_2  | 0x14   | 32    | W      | Data signal of feat_in           |                                                                      |
+| s_axi_control | weight_1   | 0x1c   | 32    | W      | Data signal of weight            |                                                                      |
+| s_axi_control | weight_2   | 0x20   | 32    | W      | Data signal of weight            |                                                                      |
+| s_axi_control | bias_1     | 0x28   | 32    | W      | Data signal of bias              |                                                                      |
+| s_axi_control | bias_2     | 0x2c   | 32    | W      | Data signal of bias              |                                                                      |
+| s_axi_control | feat_out_1 | 0x34   | 32    | W      | Data signal of feat_out          |                                                                      |
+| s_axi_control | feat_out_2 | 0x38   | 32    | W      | Data signal of feat_out          |                                                                      |
+| s_axi_ctrl    | CTRL       | 0x00   | 32    | RW     | Control signals                  | 0=AP_START 1=AP_DONE 2=AP_IDLE 3=AP_READY 7=AUTO_RESTART 9=INTERRUPT |
+| s_axi_ctrl    | GIER       | 0x04   | 32    | RW     | Global Interrupt Enable Register | 0=Enable                                                             |
+| s_axi_ctrl    | IP_IER     | 0x08   | 32    | RW     | IP Interrupt Enable Register     | 0=CHAN0_INT_EN 1=CHAN1_INT_EN                                        |
+| s_axi_ctrl    | IP_ISR     | 0x0c   | 32    | RW     | IP Interrupt Status Register     | 0=CHAN0_INT_ST 1=CHAN1_INT_ST                                        |
+| s_axi_ctrl    | CHin       | 0x10   | 32    | W      | Data signal of CHin              |                                                                      |
+| s_axi_ctrl    | Hin        | 0x18   | 32    | W      | Data signal of Hin               |                                                                      |
+| s_axi_ctrl    | Win        | 0x20   | 32    | W      | Data signal of Win               |                                                                      |
+| s_axi_ctrl    | Kh         | 0x28   | 32    | W      | Data signal of Kh                |                                                                      |
+| s_axi_ctrl    | Kw         | 0x30   | 32    | W      | Data signal of Kw                |                                                                      |
+| s_axi_ctrl    | stride_h   | 0x38   | 32    | W      | Data signal of stride_h          |                                                                      |
+| s_axi_ctrl    | stride_w   | 0x40   | 32    | W      | Data signal of stride_w          |                                                                      |
+| s_axi_ctrl    | pad_h      | 0x48   | 32    | W      | Data signal of pad_h             |                                                                      |
+| s_axi_ctrl    | pad_w      | 0x50   | 32    | W      | Data signal of pad_w             |                                                                      |
+| s_axi_ctrl    | fpg        | 0x58   | 32    | W      | Data signal of fpg               |                                                                      |
+| s_axi_ctrl    | act_mode   | 0x60   | 32    | W      | Data signal of act_mode          |                                                                      |
+| s_axi_ctrl    | out_shift  | 0x68   | 32    | W      | Data signal of out_shift         |                                                                      |
++---------------+------------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+
+* TOP LEVEL CONTROL
++-----------+------------+-----------+
+| Interface | Type       | Ports     |
++-----------+------------+-----------+
+| ap_clk    | clock      | ap_clk    |
+| ap_rst_n  | reset      | ap_rst_n  |
+| interrupt | interrupt  | interrupt |
+| ap_ctrl   | ap_ctrl_hs |           |
++-----------+------------+-----------+
+
+
+================================================================
+== SW I/O Information
+================================================================
+* Top Function Arguments
++-----------+-----------+--------------+
+| Argument  | Direction | Datatype     |
++-----------+-----------+--------------+
+| feat_in   | in        | ap_uint<32>* |
+| weight    | in        | ap_int<8>*   |
+| bias      | in        | ap_int<32>*  |
+| feat_out  | out       | ap_uint<32>* |
+| CHin      | in        | int          |
+| Hin       | in        | int          |
+| Win       | in        | int          |
+| Kh        | in        | int          |
+| Kw        | in        | int          |
+| stride_h  | in        | int          |
+| stride_w  | in        | int          |
+| pad_h     | in        | int          |
+| pad_w     | in        | int          |
+| fpg       | in        | int          |
+| act_mode  | in        | int          |
+| out_shift | in        | int          |
++-----------+-----------+--------------+
+
+* SW-to-HW Mapping
++-----------+---------------+-----------+----------+--------------------------------------+
+| Argument  | HW Interface  | HW Type   | HW Usage | HW Info                              |
++-----------+---------------+-----------+----------+--------------------------------------+
+| feat_in   | m_axi_gmem0   | interface |          | channel=0                            |
+| feat_in   | s_axi_control | register  | offset   | name=feat_in_1 offset=0x10 range=32  |
+| feat_in   | s_axi_control | register  | offset   | name=feat_in_2 offset=0x14 range=32  |
+| weight    | m_axi_gmem1   | interface |          | channel=0                            |
+| weight    | s_axi_control | register  | offset   | name=weight_1 offset=0x1c range=32   |
+| weight    | s_axi_control | register  | offset   | name=weight_2 offset=0x20 range=32   |
+| bias      | m_axi_gmem2   | interface |          | channel=0                            |
+| bias      | s_axi_control | register  | offset   | name=bias_1 offset=0x28 range=32     |
+| bias      | s_axi_control | register  | offset   | name=bias_2 offset=0x2c range=32     |
+| feat_out  | m_axi_gmem3   | interface |          | channel=0                            |
+| feat_out  | s_axi_control | register  | offset   | name=feat_out_1 offset=0x34 range=32 |
+| feat_out  | s_axi_control | register  | offset   | name=feat_out_2 offset=0x38 range=32 |
+| CHin      | s_axi_ctrl    | register  |          | name=CHin offset=0x10 range=32       |
+| Hin       | s_axi_ctrl    | register  |          | name=Hin offset=0x18 range=32        |
+| Win       | s_axi_ctrl    | register  |          | name=Win offset=0x20 range=32        |
+| Kh        | s_axi_ctrl    | register  |          | name=Kh offset=0x28 range=32         |
+| Kw        | s_axi_ctrl    | register  |          | name=Kw offset=0x30 range=32         |
+| stride_h  | s_axi_ctrl    | register  |          | name=stride_h offset=0x38 range=32   |
+| stride_w  | s_axi_ctrl    | register  |          | name=stride_w offset=0x40 range=32   |
+| pad_h     | s_axi_ctrl    | register  |          | name=pad_h offset=0x48 range=32      |
+| pad_w     | s_axi_ctrl    | register  |          | name=pad_w offset=0x50 range=32      |
+| fpg       | s_axi_ctrl    | register  |          | name=fpg offset=0x58 range=32        |
+| act_mode  | s_axi_ctrl    | register  |          | name=act_mode offset=0x60 range=32   |
+| out_shift | s_axi_ctrl    | register  |          | name=out_shift offset=0x68 range=32  |
++-----------+---------------+-----------+----------+--------------------------------------+
+
+
+================================================================
+== M_AXI Burst Information
+================================================================
+ Note: All burst requests might be further partitioned into multiple requests during RTL generation based on max_read_burst_length or max_write_burst_length settings.
+
+* Inferred Burst Summary
++--------------+-----------+----------+-------+------------+------------------------+
+| HW Interface | Direction | Length   | Width | Loop       | Loop Location          |
++--------------+-----------+----------+-------+------------+------------------------+
+| m_axi_gmem0  | read      | variable | 32    |            |                        |
+| m_axi_gmem1  | read      | variable | 8     | LOOP_DW_CH | ../dwconv_ip.cpp:106:5 |
+| m_axi_gmem2  | read      | variable | 32    |            |                        |
+| m_axi_gmem3  | write     | variable | 32    |            |                        |
++--------------+-----------+----------+-------+------------+------------------------+
+
+* All M_AXI Variable Accesses
++--------------+----------+-------------------------+-----------+--------------+----------+------------------+-------------------------+------------+-------------------------------------------------------------------------------------------------------+
+| HW Interface | Variable | Access Location         | Direction | Burst Status | Length   | Loop             | Loop Location           | Resolution | Problem                                                                                               |
++--------------+----------+-------------------------+-----------+--------------+----------+------------------+-------------------------+------------+-------------------------------------------------------------------------------------------------------+
+| m_axi_gmem0  | feat_in  | ../dwconv_ip.cpp:113:21 | read      | Widen Fail   |          | PRELOAD_IN       | ../dwconv_ip.cpp:111:9  | 214-353    | Could not widen since type i32 size is greater than or equal to the max_widen_bitwidth threshold of 0 |
+| m_axi_gmem0  | feat_in  | ../dwconv_ip.cpp:113:21 | read      | Inferred     | variable | LOOP_DW_CH       | ../dwconv_ip.cpp:106:5  |            |                                                                                                       |
+| m_axi_gmem1  | weight   | ../dwconv_ip.cpp:128:42 | read      | Widen Fail   |          | VITIS_LOOP_127_1 | ../dwconv_ip.cpp:127:20 | 214-353    | Could not widen since type i8 size is greater than or equal to the max_widen_bitwidth threshold of 0  |
+| m_axi_gmem1  | weight   | ../dwconv_ip.cpp:128:42 | read      | Inferred     | variable | LOOP_DW_CH       | ../dwconv_ip.cpp:106:5  |            |                                                                                                       |
+| m_axi_gmem2  | bias     | ../dwconv_ip.cpp:178:22 | read      | Widen Fail   |          | LOOP_DW_FPG      | ../dwconv_ip.cpp:121:9  | 214-353    | Could not widen since type i32 size is greater than or equal to the max_widen_bitwidth threshold of 0 |
+| m_axi_gmem2  | bias     | ../dwconv_ip.cpp:178:22 | read      | Inferred     | variable | LOOP_DW_CH       | ../dwconv_ip.cpp:106:5  |            |                                                                                                       |
+| m_axi_gmem3  | feat_out | ../dwconv_ip.cpp:239:50 | write     | Widen Fail   |          | WRITEBACK_OUT    | ../dwconv_ip.cpp:232:13 | 214-353    | Could not widen since type i32 size is greater than or equal to the max_widen_bitwidth threshold of 0 |
+| m_axi_gmem3  | feat_out | ../dwconv_ip.cpp:239:50 | write     | Inferred     | variable | LOOP_DW_CH       | ../dwconv_ip.cpp:106:5  |            |                                                                                                       |
++--------------+----------+-------------------------+-----------+--------------+----------+------------------+-------------------------+------------+-------------------------------------------------------------------------------------------------------+
+
+    * Resolution URL: docs.xilinx.com/access/sources/dita/topic?Doc_Version=2024.2%20English&url=ug1448-hls-guidance&resourceid=XXX-YYY.html (replace XXX-YYY with column value)
+
+================================================================
+== Bind Op Report
+================================================================
++---------------------------------------------------+-----+--------+-----------------+-----------+--------------------------+---------+
+| Name                                              | DSP | Pragma | Variable        | Op        | Impl                     | Latency |
++---------------------------------------------------+-----+--------+-----------------+-----------+--------------------------+---------+
+| + dwconv_ip                                       | 61  |        |                 |           |                          |         |
+|   sdiv_32ns_32s_32_36_seq_1_U713                  |     |        | sdiv_ln98       | sdiv      | auto_seq                 | 35      |
+|   Hout_fu_2205_p2                                 |     |        | Hout            | add       | fabric                   | 0       |
+|   sdiv_32ns_32s_32_36_seq_1_U714                  |     |        | sdiv_ln99       | sdiv      | auto_seq                 | 35      |
+|   Wout_fu_2211_p2                                 |     |        | Wout            | add       | fabric                   | 0       |
+|   add_ln100_fu_2221_p2                            |     |        | add_ln100       | add       | fabric                   | 0       |
+|   sub_ln100_fu_2234_p2                            |     |        | sub_ln100       | sub       | fabric                   | 0       |
+|   sub_ln100_1_fu_2253_p2                          |     |        | sub_ln100_1     | sub       | fabric                   | 0       |
+|   Tr_loops_fu_2273_p3                             |     |        | Tr_loops        | select    | auto_sel                 | 0       |
+|   add_ln101_fu_2281_p2                            |     |        | add_ln101       | add       | fabric                   | 0       |
+|   sub_ln101_fu_2294_p2                            |     |        | sub_ln101       | sub       | fabric                   | 0       |
+|   sub_ln101_1_fu_2313_p2                          |     |        | sub_ln101_1     | sub       | fabric                   | 0       |
+|   Tc_loops_fu_2333_p3                             |     |        | Tc_loops        | select    | auto_sel                 | 0       |
+|   mul_32s_32s_32_2_1_U710                         | 3   |        | mul_ln102       | mul       | auto                     | 1       |
+|   mul_32s_32s_32_2_1_U710                         | 3   |        | mul_ln103       | mul       | auto                     | 1       |
+|   sub_i_i_fu_2381_p2                              |     |        | sub_i_i         | sub       | fabric                   | 0       |
+|   cmp_i_fu_1941_p2                                |     |        | cmp_i           | seteq     | auto                     | 0       |
+|   icmp_ln106_fu_1947_p2                           |     |        | icmp_ln106      | setgt     | auto                     | 0       |
+|   cmp172_fu_2046_p2                               |     |        | cmp172          | setgt     | auto                     | 0       |
+|   cmp4626_fu_2063_p2                              |     |        | cmp4626         | setgt     | auto                     | 0       |
+|   cmp526_fu_2068_p2                               |     |        | cmp526          | setgt     | auto                     | 0       |
+|   cmp564_fu_2073_p2                               |     |        | cmp564          | setgt     | auto                     | 0       |
+|   cmp25924_fu_2349_p2                             |     |        | cmp25924        | setgt     | auto                     | 0       |
+|   sub_ln106_fu_2400_p2                            |     |        | sub_ln106       | sub       | fabric                   | 0       |
+|   sub_ln106_1_fu_2419_p2                          |     |        | sub_ln106_1     | sub       | fabric                   | 0       |
+|   mul_32ns_32ns_61_2_1_U706                       | 4   |        | mul_ln106       | mul       | auto                     | 1       |
+|   select_ln106_fu_2078_p3                         |     |        | select_ln106    | select    | auto_sel                 | 0       |
+|   empty_102_fu_2084_p3                            |     |        | empty_102       | select    | auto_sel                 | 0       |
+|   mul_32ns_32ns_64_2_1_U707                       | 4   |        | mul_ln106_1     | mul       | auto                     | 1       |
+|   mul_32ns_32ns_64_2_1_U708                       | 4   |        | mul_ln106_2     | mul       | auto                     | 1       |
+|   mul_64s_64s_64_5_1_U712                         | 10  |        | mul_ln106_3     | mul       | auto                     | 4       |
+|   and_ln106_fu_2091_p2                            |     |        | and_ln106       | and       | auto                     | 0       |
+|   and_ln106_1_fu_2097_p2                          |     |        | and_ln106_1     | and       | auto                     | 0       |
+|   select_ln106_1_fu_2103_p3                       |     |        | select_ln106_1  | select    | auto_sel                 | 0       |
+|   empty_104_fu_2110_p3                            |     |        | empty_104       | select    | auto_sel                 | 0       |
+|   mul_32ns_32ns_64_2_1_U709                       | 4   |        | mul_ln106_4     | mul       | auto                     | 1       |
+|   mul_64s_32ns_64_5_1_U711                        | 7   |        | mul_ln106_5     | mul       | auto                     | 4       |
+|   and_ln106_2_fu_2354_p2                          |     |        | and_ln106_2     | and       | auto                     | 0       |
+|   select_ln106_2_fu_2359_p3                       |     |        | select_ln106_2  | select    | auto_sel                 | 0       |
+|   empty_106_fu_2366_p3                            |     |        | empty_106       | select    | auto_sel                 | 0       |
+|   select_ln106_3_fu_2120_p3                       |     |        | select_ln106_3  | select    | auto_sel                 | 0       |
+|   empty_108_fu_2128_p3                            |     |        | empty_108       | select    | auto_sel                 | 0       |
+|   smax_fu_2135_p3                                 |     |        | smax            | select    | auto_sel                 | 0       |
+|   smax17_fu_2142_p3                               |     |        | smax17          | select    | auto_sel                 | 0       |
+|   mul_31ns_31ns_62_2_1_U705                       | 4   |        | mul_ln45        | mul       | auto                     | 1       |
+|   icmp_ln106_1_fu_2456_p2                         |     |        | icmp_ln106_1    | setlt     | auto                     | 0       |
+|   add_ln106_fu_2461_p2                            |     |        | add_ln106       | add       | fabric                   | 0       |
+|   icmp_ln121_fu_2471_p2                           |     |        | icmp_ln121      | setlt     | auto                     | 0       |
+|   add_ln121_fu_2476_p2                            |     |        | add_ln121       | add       | fabric                   | 0       |
+|   icmp_ln125_fu_2490_p2                           |     |        | icmp_ln125      | setlt     | auto                     | 0       |
+|   add_ln125_fu_2495_p2                            |     |        | add_ln125       | add       | fabric                   | 0       |
+|   icmp_ln127_fu_2509_p2                           |     |        | icmp_ln127      | setlt     | auto                     | 0       |
+|   add_ln127_fu_2514_p2                            |     |        | add_ln127       | add       | fabric                   | 0       |
+|   icmp_ln135_fu_3019_p2                           |     |        | icmp_ln135      | setlt     | auto                     | 0       |
+|   add_ln135_fu_3024_p2                            |     |        | add_ln135       | add       | fabric                   | 0       |
+|   add_ln138_fu_3046_p2                            |     |        | add_ln138       | add       | fabric                   | 0       |
+|   icmp_ln138_fu_3056_p2                           |     |        | icmp_ln138      | setlt     | auto                     | 0       |
+|   row_out_end_fu_3061_p3                          |     |        | row_out_end     | select    | auto_sel                 | 0       |
+|   tr_valid_fu_3066_p2                             |     |        | tr_valid        | sub       | fabric                   | 0       |
+|   add_ln141_fu_3071_p2                            |     |        | add_ln141       | add       | fabric                   | 0       |
+|   mul_32s_32s_32_2_1_U710                         | 3   |        | mul_ln141       | mul       | auto                     | 1       |
+|   in_tile_h_fu_3096_p2                            |     |        | in_tile_h       | add       | fabric                   | 0       |
+|   mul_29ns_30s_30_2_1_U704                        | 3   |        | empty_112       | mul       | auto                     | 1       |
+|   empty_113_fu_3084_p2                            |     |        | empty_113       | sub       | fabric                   | 0       |
+|   add_ln144_1_fu_3101_p2                          |     |        | add_ln144_1     | add       | fabric                   | 0       |
+|   icmp_ln144_fu_3110_p2                           |     |        | icmp_ln144      | setlt     | auto                     | 0       |
+|   add_ln144_fu_3115_p2                            |     |        | add_ln144       | add       | fabric                   | 0       |
+|   add_ln147_fu_3141_p2                            |     |        | add_ln147       | add       | fabric                   | 0       |
+|   icmp_ln147_fu_3151_p2                           |     |        | icmp_ln147      | setlt     | auto                     | 0       |
+|   col_out_end_fu_3265_p3                          |     |        | col_out_end     | select    | auto_sel                 | 0       |
+|   tc_valid_fu_3270_p2                             |     |        | tc_valid        | sub       | fabric                   | 0       |
+|   sub_ln149_fu_3168_p2                            |     |        | sub_ln149       | sub       | fabric                   | 0       |
+|   add_ln150_fu_3275_p2                            |     |        | add_ln150       | add       | fabric                   | 0       |
+|   mul_32s_32s_32_2_1_U710                         | 3   |        | mul_ln150       | mul       | auto                     | 1       |
+|   in_tile_w_fu_3301_p2                            |     |        | in_tile_w       | add       | fabric                   | 0       |
+|   cmp122_fu_3306_p2                               |     |        | cmp122          | setlt     | auto                     | 0       |
+|   cmp129_fu_3312_p2                               |     |        | cmp129          | setlt     | auto                     | 0       |
+|   empty_114_fu_3316_p2                            |     |        | empty_114       | add       | fabric                   | 0       |
+|   icmp_fu_3335_p2                                 |     |        | icmp            | setlt     | auto                     | 0       |
+|   cmp129_1_fu_3349_p2                             |     |        | cmp129_1        | setlt     | auto                     | 0       |
+|   empty_116_fu_3354_p2                            |     |        | empty_116       | add       | fabric                   | 0       |
+|   cmp122_2_fu_3363_p2                             |     |        | cmp122_2        | setlt     | auto                     | 0       |
+|   cmp129_2_fu_3377_p2                             |     |        | cmp129_2        | setlt     | auto                     | 0       |
+|   empty_118_fu_3382_p2                            |     |        | empty_118       | add       | fabric                   | 0       |
+|   icmp49_fu_3401_p2                               |     |        | icmp49          | setlt     | auto                     | 0       |
+|   cmp129_3_fu_3415_p2                             |     |        | cmp129_3        | setlt     | auto                     | 0       |
+|   empty_120_fu_3420_p2                            |     |        | empty_120       | add       | fabric                   | 0       |
+|   cmp122_4_fu_3429_p2                             |     |        | cmp122_4        | setlt     | auto                     | 0       |
+|   cmp129_4_fu_3443_p2                             |     |        | cmp129_4        | setlt     | auto                     | 0       |
+|   empty_122_fu_3448_p2                            |     |        | empty_122       | add       | fabric                   | 0       |
+|   cmp122_5_fu_3457_p2                             |     |        | cmp122_5        | setlt     | auto                     | 0       |
+|   cmp129_5_fu_3471_p2                             |     |        | cmp129_5        | setlt     | auto                     | 0       |
+|   empty_124_fu_3476_p2                            |     |        | empty_124       | add       | fabric                   | 0       |
+|   cmp122_6_fu_3485_p2                             |     |        | cmp122_6        | setlt     | auto                     | 0       |
+|   cmp129_6_fu_3499_p2                             |     |        | cmp129_6        | setlt     | auto                     | 0       |
+|   empty_126_fu_3504_p2                            |     |        | empty_126       | add       | fabric                   | 0       |
+|   icmp64_fu_3523_p2                               |     |        | icmp64          | setlt     | auto                     | 0       |
+|   cmp129_7_fu_3537_p2                             |     |        | cmp129_7        | setlt     | auto                     | 0       |
+|   empty_128_fu_3542_p2                            |     |        | empty_128       | add       | fabric                   | 0       |
+|   cmp122_8_fu_3551_p2                             |     |        | cmp122_8        | setlt     | auto                     | 0       |
+|   cmp129_8_fu_3565_p2                             |     |        | cmp129_8        | setlt     | auto                     | 0       |
+|   empty_130_fu_3570_p2                            |     |        | empty_130       | add       | fabric                   | 0       |
+|   cmp122_9_fu_3579_p2                             |     |        | cmp122_9        | setlt     | auto                     | 0       |
+|   cmp129_9_fu_3593_p2                             |     |        | cmp129_9        | setlt     | auto                     | 0       |
+|   empty_132_fu_3598_p2                            |     |        | empty_132       | add       | fabric                   | 0       |
+|   cmp122_10_fu_3607_p2                            |     |        | cmp122_10       | setlt     | auto                     | 0       |
+|   cmp129_10_fu_3621_p2                            |     |        | cmp129_10       | setlt     | auto                     | 0       |
+|   empty_134_fu_3626_p2                            |     |        | empty_134       | add       | fabric                   | 0       |
+|   cmp122_11_fu_3635_p2                            |     |        | cmp122_11       | setlt     | auto                     | 0       |
+|   cmp129_11_fu_3649_p2                            |     |        | cmp129_11       | setlt     | auto                     | 0       |
+|   empty_136_fu_3654_p2                            |     |        | empty_136       | add       | fabric                   | 0       |
+|   cmp122_12_fu_3663_p2                            |     |        | cmp122_12       | setlt     | auto                     | 0       |
+|   cmp129_12_fu_3677_p2                            |     |        | cmp129_12       | setlt     | auto                     | 0       |
+|  + dwconv_ip_Pipeline_PRELOAD_IN                  | 0   |        |                 |           |                          |         |
+|    icmp_ln111_fu_361_p2                           |     |        | icmp_ln111      | setlt     | auto                     | 0       |
+|    add_ln111_fu_367_p2                            |     |        | add_ln111       | add       | fabric                   | 0       |
+|  + dwconv_ip_Pipeline_WRITEBACK_OUT               | 0   |        |                 |           |                          |         |
+|    icmp_ln232_fu_368_p2                           |     |        | icmp_ln232      | setlt     | auto                     | 0       |
+|    add_ln232_fu_374_p2                            |     |        | add_ln232       | add       | fabric                   | 0       |
+|    sparsemux_9_2_8_1_1_U680                       |     |        | tmp_4           | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_9_2_8_1_1_U681                       |     |        | tmp_5           | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_9_2_8_1_1_U682                       |     |        | tmp_6           | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_9_2_8_1_1_U683                       |     |        | tmp_7           | sparsemux | compactencoding_dontcare | 0       |
+|  + dwconv_ip_Pipeline_LOAD_DW_IN                  | 1   |        |                 |           |                          |         |
+|    icmp_ln155_fu_2664_p2                          |     |        | icmp_ln155      | seteq     | auto                     | 0       |
+|    add_ln155_fu_2670_p2                           |     |        | add_ln155       | add       | fabric                   | 0       |
+|    icmp_ln157_fu_2684_p2                          |     |        | icmp_ln157      | setlt     | auto                     | 0       |
+|    empty_79_fu_2690_p2                            |     |        | empty_79        | add       | fabric                   | 0       |
+|    slt_fu_2700_p2                                 |     |        | slt             | setlt     | auto                     | 0       |
+|    rev34_fu_2718_p2                               |     |        | rev34           | xor       | auto                     | 0       |
+|    mul_12s_12s_12_1_1_U20                         | 1   |        | empty_81        | mul       | auto                     | 0       |
+|    or_ln163_fu_2727_p2                            |     |        | or_ln163        | or        | auto                     | 0       |
+|    or_ln163_1_fu_3179_p2                          |     |        | or_ln163_1      | or        | auto                     | 0       |
+|    or_ln163_14_fu_3183_p2                         |     |        | or_ln163_14     | or        | auto                     | 0       |
+|    xor_ln163_fu_3188_p2                           |     |        | xor_ln163       | xor       | auto                     | 0       |
+|    and_ln163_fu_3194_p2                           |     |        | and_ln163       | and       | auto                     | 0       |
+|    add_ln166_fu_2733_p2                           |     |        | add_ln166       | add       | fabric                   | 0       |
+|    sparsemux_33_4_8_1_1_U21                       |     |        | tmp_9           | sparsemux | compactencoding_dontcare | 0       |
+|    ref_tmp121_0_fu_3270_p3                        |     |        | ref_tmp121_0    | select    | auto_sel                 | 0       |
+|    or_ln163_2_fu_3356_p2                          |     |        | or_ln163_2      | or        | auto                     | 0       |
+|    or_ln163_15_fu_3360_p2                         |     |        | or_ln163_15     | or        | auto                     | 0       |
+|    xor_ln163_1_fu_3365_p2                         |     |        | xor_ln163_1     | xor       | auto                     | 0       |
+|    and_ln163_1_fu_3371_p2                         |     |        | and_ln163_1     | and       | auto                     | 0       |
+|    add_ln166_1_fu_2771_p2                         |     |        | add_ln166_1     | add       | fabric                   | 0       |
+|    sparsemux_33_4_8_1_1_U22                       |     |        | tmp_s           | sparsemux | compactencoding_dontcare | 0       |
+|    ref_tmp121_0_1_fu_3447_p3                      |     |        | ref_tmp121_0_1  | select    | auto_sel                 | 0       |
+|    or_ln163_3_fu_3533_p2                          |     |        | or_ln163_3      | or        | auto                     | 0       |
+|    or_ln163_16_fu_3537_p2                         |     |        | or_ln163_16     | or        | auto                     | 0       |
+|    xor_ln163_2_fu_3542_p2                         |     |        | xor_ln163_2     | xor       | auto                     | 0       |
+|    and_ln163_2_fu_3548_p2                         |     |        | and_ln163_2     | and       | auto                     | 0       |
+|    add_ln166_2_fu_2805_p2                         |     |        | add_ln166_2     | add       | fabric                   | 0       |
+|    sparsemux_33_4_8_1_1_U23                       |     |        | tmp_1           | sparsemux | compactencoding_dontcare | 0       |
+|    ref_tmp121_0_2_fu_3624_p3                      |     |        | ref_tmp121_0_2  | select    | auto_sel                 | 0       |
+|    or_ln163_4_fu_3710_p2                          |     |        | or_ln163_4      | or        | auto                     | 0       |
+|    or_ln163_17_fu_3714_p2                         |     |        | or_ln163_17     | or        | auto                     | 0       |
+|    xor_ln163_3_fu_3719_p2                         |     |        | xor_ln163_3     | xor       | auto                     | 0       |
+|    and_ln163_3_fu_3725_p2                         |     |        | and_ln163_3     | and       | auto                     | 0       |
+|    add_ln166_3_fu_2839_p2                         |     |        | add_ln166_3     | add       | fabric                   | 0       |
+|    sparsemux_33_4_8_1_1_U24                       |     |        | tmp_2           | sparsemux | compactencoding_dontcare | 0       |
+|    ref_tmp121_0_3_fu_3801_p3                      |     |        | ref_tmp121_0_3  | select    | auto_sel                 | 0       |
+|    or_ln163_5_fu_3887_p2                          |     |        | or_ln163_5      | or        | auto                     | 0       |
+|    or_ln163_18_fu_3891_p2                         |     |        | or_ln163_18     | or        | auto                     | 0       |
+|    xor_ln163_4_fu_3896_p2                         |     |        | xor_ln163_4     | xor       | auto                     | 0       |
+|    and_ln163_4_fu_3902_p2                         |     |        | and_ln163_4     | and       | auto                     | 0       |
+|    add_ln166_4_fu_2873_p2                         |     |        | add_ln166_4     | add       | fabric                   | 0       |
+|    sparsemux_33_4_8_1_1_U25                       |     |        | tmp_3           | sparsemux | compactencoding_dontcare | 0       |
+|    ref_tmp121_0_4_fu_3978_p3                      |     |        | ref_tmp121_0_4  | select    | auto_sel                 | 0       |
+|    or_ln163_6_fu_4064_p2                          |     |        | or_ln163_6      | or        | auto                     | 0       |
+|    or_ln163_19_fu_4068_p2                         |     |        | or_ln163_19     | or        | auto                     | 0       |
+|    xor_ln163_5_fu_4073_p2                         |     |        | xor_ln163_5     | xor       | auto                     | 0       |
+|    and_ln163_5_fu_4079_p2                         |     |        | and_ln163_5     | and       | auto                     | 0       |
+|    add_ln166_5_fu_2907_p2                         |     |        | add_ln166_5     | add       | fabric                   | 0       |
+|    sparsemux_33_4_8_1_1_U26                       |     |        | tmp_4           | sparsemux | compactencoding_dontcare | 0       |
+|    ref_tmp121_0_5_fu_4155_p3                      |     |        | ref_tmp121_0_5  | select    | auto_sel                 | 0       |
+|    or_ln163_7_fu_4241_p2                          |     |        | or_ln163_7      | or        | auto                     | 0       |
+|    or_ln163_20_fu_4245_p2                         |     |        | or_ln163_20     | or        | auto                     | 0       |
+|    xor_ln163_6_fu_4250_p2                         |     |        | xor_ln163_6     | xor       | auto                     | 0       |
+|    and_ln163_6_fu_4256_p2                         |     |        | and_ln163_6     | and       | auto                     | 0       |
+|    add_ln166_6_fu_2941_p2                         |     |        | add_ln166_6     | add       | fabric                   | 0       |
+|    sparsemux_33_4_8_1_1_U27                       |     |        | tmp_5           | sparsemux | compactencoding_dontcare | 0       |
+|    ref_tmp121_0_6_fu_4332_p3                      |     |        | ref_tmp121_0_6  | select    | auto_sel                 | 0       |
+|    or_ln163_8_fu_4418_p2                          |     |        | or_ln163_8      | or        | auto                     | 0       |
+|    or_ln163_21_fu_4422_p2                         |     |        | or_ln163_21     | or        | auto                     | 0       |
+|    xor_ln163_7_fu_4427_p2                         |     |        | xor_ln163_7     | xor       | auto                     | 0       |
+|    and_ln163_7_fu_4433_p2                         |     |        | and_ln163_7     | and       | auto                     | 0       |
+|    add_ln166_7_fu_2975_p2                         |     |        | add_ln166_7     | add       | fabric                   | 0       |
+|    sparsemux_33_4_8_1_1_U28                       |     |        | tmp_6           | sparsemux | compactencoding_dontcare | 0       |
+|    ref_tmp121_0_7_fu_4509_p3                      |     |        | ref_tmp121_0_7  | select    | auto_sel                 | 0       |
+|    or_ln163_9_fu_4595_p2                          |     |        | or_ln163_9      | or        | auto                     | 0       |
+|    or_ln163_22_fu_4599_p2                         |     |        | or_ln163_22     | or        | auto                     | 0       |
+|    xor_ln163_8_fu_4604_p2                         |     |        | xor_ln163_8     | xor       | auto                     | 0       |
+|    and_ln163_8_fu_4610_p2                         |     |        | and_ln163_8     | and       | auto                     | 0       |
+|    add_ln166_8_fu_3009_p2                         |     |        | add_ln166_8     | add       | fabric                   | 0       |
+|    sparsemux_33_4_8_1_1_U29                       |     |        | tmp_7           | sparsemux | compactencoding_dontcare | 0       |
+|    ref_tmp121_0_8_fu_4686_p3                      |     |        | ref_tmp121_0_8  | select    | auto_sel                 | 0       |
+|    or_ln163_10_fu_4772_p2                         |     |        | or_ln163_10     | or        | auto                     | 0       |
+|    or_ln163_23_fu_4776_p2                         |     |        | or_ln163_23     | or        | auto                     | 0       |
+|    xor_ln163_9_fu_4781_p2                         |     |        | xor_ln163_9     | xor       | auto                     | 0       |
+|    and_ln163_9_fu_4787_p2                         |     |        | and_ln163_9     | and       | auto                     | 0       |
+|    add_ln166_9_fu_3043_p2                         |     |        | add_ln166_9     | add       | fabric                   | 0       |
+|    sparsemux_33_4_8_1_1_U30                       |     |        | tmp_8           | sparsemux | compactencoding_dontcare | 0       |
+|    ref_tmp121_0_9_fu_4863_p3                      |     |        | ref_tmp121_0_9  | select    | auto_sel                 | 0       |
+|    or_ln163_11_fu_4949_p2                         |     |        | or_ln163_11     | or        | auto                     | 0       |
+|    or_ln163_24_fu_4953_p2                         |     |        | or_ln163_24     | or        | auto                     | 0       |
+|    xor_ln163_10_fu_4958_p2                        |     |        | xor_ln163_10    | xor       | auto                     | 0       |
+|    and_ln163_10_fu_4964_p2                        |     |        | and_ln163_10    | and       | auto                     | 0       |
+|    add_ln166_10_fu_3077_p2                        |     |        | add_ln166_10    | add       | fabric                   | 0       |
+|    sparsemux_33_4_8_1_1_U31                       |     |        | tmp_10          | sparsemux | compactencoding_dontcare | 0       |
+|    ref_tmp121_0_10_fu_5040_p3                     |     |        | ref_tmp121_0_10 | select    | auto_sel                 | 0       |
+|    or_ln163_12_fu_5126_p2                         |     |        | or_ln163_12     | or        | auto                     | 0       |
+|    or_ln163_25_fu_5130_p2                         |     |        | or_ln163_25     | or        | auto                     | 0       |
+|    xor_ln163_11_fu_5135_p2                        |     |        | xor_ln163_11    | xor       | auto                     | 0       |
+|    and_ln163_11_fu_5141_p2                        |     |        | and_ln163_11    | and       | auto                     | 0       |
+|    add_ln166_11_fu_3111_p2                        |     |        | add_ln166_11    | add       | fabric                   | 0       |
+|    sparsemux_33_4_8_1_1_U32                       |     |        | tmp_11          | sparsemux | compactencoding_dontcare | 0       |
+|    ref_tmp121_0_11_fu_5217_p3                     |     |        | ref_tmp121_0_11 | select    | auto_sel                 | 0       |
+|    or_ln163_13_fu_5303_p2                         |     |        | or_ln163_13     | or        | auto                     | 0       |
+|    or_ln163_26_fu_5307_p2                         |     |        | or_ln163_26     | or        | auto                     | 0       |
+|    xor_ln163_12_fu_5312_p2                        |     |        | xor_ln163_12    | xor       | auto                     | 0       |
+|    and_ln163_12_fu_5318_p2                        |     |        | and_ln163_12    | and       | auto                     | 0       |
+|    add_ln166_12_fu_3145_p2                        |     |        | add_ln166_12    | add       | fabric                   | 0       |
+|    sparsemux_33_4_8_1_1_U33                       |     |        | tmp_39          | sparsemux | compactencoding_dontcare | 0       |
+|    ref_tmp121_0_12_fu_5394_p3                     |     |        | ref_tmp121_0_12 | select    | auto_sel                 | 0       |
+|  + dwconv_ip_Pipeline_COMPUTE_DW_KH_COMPUTE_DW_KW | 16  |        |                 |           |                          |         |
+|    cmp564113_fu_1976_p2                           |     |        | cmp564113       | setgt     | auto                     | 0       |
+|    icmp_ln190_fu_2023_p2                          |     |        | icmp_ln190      | setlt     | auto                     | 0       |
+|    icmp_ln188_fu_2000_p2                          |     |        | icmp_ln188      | seteq     | auto                     | 0       |
+|    add_ln188_fu_2005_p2                           |     |        | add_ln188       | add       | fabric                   | 0       |
+|    select_ln188_fu_2031_p3                        |     |        | select_ln188    | select    | auto_sel                 | 0       |
+|    add_ln188_1_fu_2039_p2                         |     |        | add_ln188_1     | add       | fabric                   | 0       |
+|    select_ln188_1_fu_2045_p3                      |     |        | select_ln188_1  | select    | auto_sel                 | 0       |
+|    first_iter_0_fu_2053_p2                        |     |        | first_iter_0    | seteq     | auto                     | 0       |
+|    empty_98_fu_2290_p2                            |     |        | empty_98        | add       | fabric                   | 0       |
+|    empty_99_fu_2294_p2                            |     |        | empty_99        | add       | fabric                   | 0       |
+|    empty_100_fu_2298_p2                           |     |        | empty_100       | add       | fabric                   | 0       |
+|    sparsemux_15_4_8_1_1_U289                      |     |        | tmp_s           | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_15_4_8_1_1_U290                      |     |        | tmp_8           | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_15_4_8_1_1_U291                      |     |        | tmp_10          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_15_4_8_1_1_U292                      |     |        | tmp_11          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_15_4_8_1_1_U293                      |     |        | tmp_12          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_15_4_8_1_1_U294                      |     |        | tmp_13          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_15_4_8_1_1_U295                      |     |        | tmp_14          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_15_4_8_1_1_U296                      |     |        | w               | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U297                      |     |        | tmp_15          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U298                      |     |        | tmp_16          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U299                      |     |        | tmp_17          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U300                      |     |        | tmp_18          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U301                      |     |        | tmp_19          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U302                      |     |        | tmp_20          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U303                      |     |        | tmp_21          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U304                      |     |        | tmp_22          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U305                      |     |        | tmp_23          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U306                      |     |        | tmp_24          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U307                      |     |        | tmp_25          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U308                      |     |        | tmp_26          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U309                      |     |        | tmp_27          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U310                      |     |        | fi              | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U365               | 1   |        | mul_ln204       | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U365               | 1   |        | sext_ln204_1    | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U365               | 1   |        | add_ln204       | add       | dsp_slice                | 3       |
+|    add_ln201_fu_2067_p2                           |     |        | add_ln201       | add       | fabric                   | 0       |
+|    sparsemux_27_4_8_1_1_U311                      |     |        | tmp_28          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U312                      |     |        | tmp_29          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U313                      |     |        | tmp_30          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U314                      |     |        | tmp_31          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U315                      |     |        | tmp_32          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U316                      |     |        | tmp_33          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U317                      |     |        | tmp_34          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U318                      |     |        | tmp_35          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U319                      |     |        | tmp_36          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U320                      |     |        | tmp_37          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U321                      |     |        | tmp_38          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U322                      |     |        | tmp_39          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U323                      |     |        | tmp_40          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U324                      |     |        | fi_1            | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U366               | 1   |        | mul_ln204_1     | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U366               | 1   |        | sext_ln204_3    | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U366               | 1   |        | add_ln204_1     | add       | dsp_slice                | 3       |
+|    add_ln201_1_fu_2072_p2                         |     |        | add_ln201_1     | add       | fabric                   | 0       |
+|    sparsemux_27_4_8_1_1_U325                      |     |        | tmp_41          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U326                      |     |        | tmp_42          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U327                      |     |        | tmp_43          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U328                      |     |        | tmp_44          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U329                      |     |        | tmp_45          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U330                      |     |        | tmp_46          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U331                      |     |        | tmp_47          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U332                      |     |        | tmp_48          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U333                      |     |        | tmp_49          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U334                      |     |        | tmp_50          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U335                      |     |        | tmp_51          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U336                      |     |        | tmp_52          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U337                      |     |        | tmp_53          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U338                      |     |        | fi_2            | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U367               | 1   |        | mul_ln204_2     | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U367               | 1   |        | sext_ln204_5    | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U367               | 1   |        | add_ln204_2     | add       | dsp_slice                | 3       |
+|    add_ln201_2_fu_2077_p2                         |     |        | add_ln201_2     | add       | fabric                   | 0       |
+|    sparsemux_27_4_8_1_1_U339                      |     |        | tmp_54          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U340                      |     |        | tmp_55          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U341                      |     |        | tmp_56          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U342                      |     |        | tmp_57          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U343                      |     |        | tmp_58          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U344                      |     |        | tmp_59          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U345                      |     |        | tmp_60          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U346                      |     |        | tmp_61          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U347                      |     |        | tmp_62          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U348                      |     |        | tmp_63          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U349                      |     |        | tmp_64          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U350                      |     |        | tmp_65          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U351                      |     |        | tmp_66          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_27_4_8_1_1_U352                      |     |        | fi_3            | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U368               | 1   |        | mul_ln204_3     | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U368               | 1   |        | sext_ln204_7    | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U368               | 1   |        | add_ln204_3     | add       | dsp_slice                | 3       |
+|    sparsemux_27_4_8_1_1_U353                      |     |        | fi_4            | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U369               | 1   |        | mul_ln204_4     | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U369               | 1   |        | sext_ln204_9    | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U369               | 1   |        | add_ln204_4     | add       | dsp_slice                | 3       |
+|    sparsemux_27_4_8_1_1_U354                      |     |        | fi_5            | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U370               | 1   |        | mul_ln204_5     | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U370               | 1   |        | sext_ln204_11   | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U370               | 1   |        | add_ln204_5     | add       | dsp_slice                | 3       |
+|    sparsemux_27_4_8_1_1_U355                      |     |        | fi_6            | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U371               | 1   |        | mul_ln204_6     | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U371               | 1   |        | sext_ln204_13   | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U371               | 1   |        | add_ln204_6     | add       | dsp_slice                | 3       |
+|    sparsemux_27_4_8_1_1_U356                      |     |        | fi_7            | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U372               | 1   |        | mul_ln204_7     | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U372               | 1   |        | sext_ln204_15   | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U372               | 1   |        | add_ln204_7     | add       | dsp_slice                | 3       |
+|    sparsemux_27_4_8_1_1_U357                      |     |        | fi_8            | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U373               | 1   |        | mul_ln204_8     | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U373               | 1   |        | sext_ln204_17   | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U373               | 1   |        | add_ln204_8     | add       | dsp_slice                | 3       |
+|    sparsemux_27_4_8_1_1_U358                      |     |        | fi_9            | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U374               | 1   |        | mul_ln204_9     | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U374               | 1   |        | sext_ln204_19   | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U374               | 1   |        | add_ln204_9     | add       | dsp_slice                | 3       |
+|    sparsemux_27_4_8_1_1_U359                      |     |        | fi_10           | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U375               | 1   |        | mul_ln204_10    | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U375               | 1   |        | sext_ln204_21   | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U375               | 1   |        | add_ln204_10    | add       | dsp_slice                | 3       |
+|    sparsemux_27_4_8_1_1_U360                      |     |        | fi_11           | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U376               | 1   |        | mul_ln204_11    | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U376               | 1   |        | sext_ln204_23   | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U376               | 1   |        | add_ln204_11    | add       | dsp_slice                | 3       |
+|    sparsemux_27_4_8_1_1_U361                      |     |        | fi_12           | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U377               | 1   |        | mul_ln204_12    | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U377               | 1   |        | sext_ln204_25   | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U377               | 1   |        | add_ln204_12    | add       | dsp_slice                | 3       |
+|    sparsemux_27_4_8_1_1_U362                      |     |        | fi_13           | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U378               | 1   |        | mul_ln204_13    | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U378               | 1   |        | sext_ln204_27   | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U378               | 1   |        | add_ln204_13    | add       | dsp_slice                | 3       |
+|    sparsemux_27_4_8_1_1_U363                      |     |        | fi_14           | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U379               | 1   |        | mul_ln204_14    | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U379               | 1   |        | sext_ln204_29   | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U379               | 1   |        | add_ln204_14    | add       | dsp_slice                | 3       |
+|    sparsemux_27_4_8_1_1_U364                      |     |        | fi_15           | sparsemux | compactencoding_dontcare | 0       |
+|    mac_muladd_8s_8s_32s_32_4_1_U380               | 1   |        | mul_ln204_15    | mul       | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U380               | 1   |        | sext_ln204_31   | sext      | dsp_slice                | 3       |
+|    mac_muladd_8s_8s_32s_32_4_1_U380               | 1   |        | add_ln204_15    | add       | dsp_slice                | 3       |
+|    add_ln190_fu_2082_p2                           |     |        | add_ln190       | add       | fabric                   | 0       |
+|    icmp_ln190_1_fu_5952_p2                        |     |        | icmp_ln190_1    | setlt     | auto                     | 0       |
+|  + dwconv_ip_Pipeline_STORE_DW_OUT                | 1   |        |                 |           |                          |         |
+|    cmp231_fu_992_p2                               |     |        | cmp231          | setgt     | auto                     | 0       |
+|    icmp88_fu_998_p2                               |     |        | icmp88          | setgt     | auto                     | 0       |
+|    cmp231_2_fu_1004_p2                            |     |        | cmp231_2        | setgt     | auto                     | 0       |
+|    icmp91_fu_1010_p2                              |     |        | icmp91          | setgt     | auto                     | 0       |
+|    icmp_ln212_fu_1024_p2                          |     |        | icmp_ln212      | seteq     | auto                     | 0       |
+|    add_ln212_fu_1030_p2                           |     |        | add_ln212       | add       | fabric                   | 0       |
+|    icmp_ln214_fu_1048_p2                          |     |        | icmp_ln214      | setlt     | auto                     | 0       |
+|    am_addmul_3ns_12ns_12s_12_4_1_U630             | 1   |        | add_ln215       | add       | dsp_slice                | 3       |
+|    am_addmul_3ns_12ns_12s_12_4_1_U630             | 1   |        | empty_78        | mul       | dsp_slice                | 3       |
+|    sparsemux_9_2_32_1_1_U626                      |     |        | val             | sparsemux | compactencoding_dontcare | 0       |
+|    ashr_ln36_fu_1155_p2                           |     |        | ashr_ln36       | ashr      | auto_pipe                | 0       |
+|    shl_ln36_fu_1159_p2                            |     |        | shl_ln36        | shl       | auto_pipe                | 0       |
+|    s_fu_1163_p3                                   |     |        | s               | select    | auto_sel                 | 0       |
+|    icmp_ln38_fu_1178_p2                           |     |        | icmp_ln38       | setgt     | auto                     | 0       |
+|    icmp_ln39_fu_1184_p2                           |     |        | icmp_ln39       | setlt     | auto                     | 0       |
+|    select_ln38_fu_1194_p3                         |     |        | select_ln38     | select    | auto_sel                 | 0       |
+|    or_ln38_fu_1202_p2                             |     |        | or_ln38         | or        | auto                     | 0       |
+|    r_3_fu_1208_p3                                 |     |        | r_3             | select    | auto_sel                 | 0       |
+|    and_ln41_fu_1224_p2                            |     |        | and_ln41        | and       | auto                     | 0       |
+|    r_4_fu_1229_p3                                 |     |        | r_4             | select    | auto_sel                 | 0       |
+|    add_ln220_fu_1248_p2                           |     |        | add_ln220       | add       | fabric                   | 0       |
+|    sparsemux_9_2_32_1_1_U627                      |     |        | val_1           | sparsemux | compactencoding_dontcare | 0       |
+|    ashr_ln36_1_fu_1237_p2                         |     |        | ashr_ln36_1     | ashr      | auto_pipe                | 0       |
+|    shl_ln36_1_fu_1241_p2                          |     |        | shl_ln36_1      | shl       | auto_pipe                | 0       |
+|    s_1_fu_1266_p3                                 |     |        | s_1             | select    | auto_sel                 | 0       |
+|    icmp_ln38_1_fu_1281_p2                         |     |        | icmp_ln38_1     | setgt     | auto                     | 0       |
+|    icmp_ln39_1_fu_1287_p2                         |     |        | icmp_ln39_1     | setlt     | auto                     | 0       |
+|    select_ln38_2_fu_1297_p3                       |     |        | select_ln38_2   | select    | auto_sel                 | 0       |
+|    or_ln38_1_fu_1305_p2                           |     |        | or_ln38_1       | or        | auto                     | 0       |
+|    r_6_fu_1311_p3                                 |     |        | r_6             | select    | auto_sel                 | 0       |
+|    and_ln41_1_fu_1327_p2                          |     |        | and_ln41_1      | and       | auto                     | 0       |
+|    r_7_fu_1332_p3                                 |     |        | r_7             | select    | auto_sel                 | 0       |
+|    add_ln220_1_fu_1340_p2                         |     |        | add_ln220_1     | add       | fabric                   | 0       |
+|    add_ln220_2_fu_1345_p2                         |     |        | add_ln220_2     | add       | fabric                   | 0       |
+|    sparsemux_9_2_32_1_1_U628                      |     |        | val_2           | sparsemux | compactencoding_dontcare | 0       |
+|    ashr_ln36_2_fu_1359_p2                         |     |        | ashr_ln36_2     | ashr      | auto_pipe                | 0       |
+|    shl_ln36_2_fu_1363_p2                          |     |        | shl_ln36_2      | shl       | auto_pipe                | 0       |
+|    s_2_fu_1424_p3                                 |     |        | s_2             | select    | auto_sel                 | 0       |
+|    icmp_ln38_2_fu_1439_p2                         |     |        | icmp_ln38_2     | setgt     | auto                     | 0       |
+|    icmp_ln39_2_fu_1445_p2                         |     |        | icmp_ln39_2     | setlt     | auto                     | 0       |
+|    select_ln38_4_fu_1455_p3                       |     |        | select_ln38_4   | select    | auto_sel                 | 0       |
+|    or_ln38_2_fu_1463_p2                           |     |        | or_ln38_2       | or        | auto                     | 0       |
+|    r_9_fu_1469_p3                                 |     |        | r_9             | select    | auto_sel                 | 0       |
+|    and_ln41_2_fu_1485_p2                          |     |        | and_ln41_2      | and       | auto                     | 0       |
+|    r_10_fu_1490_p3                                |     |        | r_10            | select    | auto_sel                 | 0       |
+|    add_ln220_3_fu_1367_p2                         |     |        | add_ln220_3     | add       | fabric                   | 0       |
+|    add_ln220_4_fu_1372_p2                         |     |        | add_ln220_4     | add       | fabric                   | 0       |
+|    sparsemux_9_2_32_1_1_U629                      |     |        | val_3           | sparsemux | compactencoding_dontcare | 0       |
+|    ashr_ln36_3_fu_1498_p2                         |     |        | ashr_ln36_3     | ashr      | auto_pipe                | 0       |
+|    shl_ln36_3_fu_1502_p2                          |     |        | shl_ln36_3      | shl       | auto_pipe                | 0       |
+|    s_3_fu_1525_p3                                 |     |        | s_3             | select    | auto_sel                 | 0       |
+|    icmp_ln38_3_fu_1540_p2                         |     |        | icmp_ln38_3     | setgt     | auto                     | 0       |
+|    icmp_ln39_3_fu_1546_p2                         |     |        | icmp_ln39_3     | setlt     | auto                     | 0       |
+|    select_ln38_6_fu_1556_p3                       |     |        | select_ln38_6   | select    | auto_sel                 | 0       |
+|    or_ln38_3_fu_1564_p2                           |     |        | or_ln38_3       | or        | auto                     | 0       |
+|    r_12_fu_1570_p3                                |     |        | r_12            | select    | auto_sel                 | 0       |
+|    and_ln41_3_fu_1586_p2                          |     |        | and_ln41_3      | and       | auto                     | 0       |
+|    r_13_fu_1591_p3                                |     |        | r_13            | select    | auto_sel                 | 0       |
+|    add_ln220_5_fu_1386_p2                         |     |        | add_ln220_5     | add       | fabric                   | 0       |
+|    add_ln220_6_fu_1391_p2                         |     |        | add_ln220_6     | add       | fabric                   | 0       |
++---------------------------------------------------+-----+--------+-----------------+-----------+--------------------------+---------+
+
+
+================================================================
+== Storage Report
+================================================================
++-------------------------+-----------+-----------+------+------+--------+---------------------+------+---------+------------------+
+| Name                    | Usage     | Type      | BRAM | URAM | Pragma | Variable            | Impl | Latency | Bitwidth, Depth, |
+|                         |           |           |      |      |        |                     |      |         | Banks            |
++-------------------------+-----------+-----------+------+------+--------+---------------------+------+---------+------------------+
+| + dwconv_ip             |           |           | 40   | 0    |        |                     |      |         |                  |
+|   control_s_axi_U       | interface | s_axilite |      |      |        |                     |      |         |                  |
+|   ctrl_s_axi_U          | interface | s_axilite |      |      |        |                     |      |         |                  |
+|   gmem0_m_axi_U         | interface | m_axi     | 2    |      |        |                     |      |         |                  |
+|   gmem1_m_axi_U         | interface | m_axi     | 2    |      |        |                     |      |         |                  |
+|   gmem2_m_axi_U         | interface | m_axi     | 2    |      |        |                     |      |         |                  |
+|   gmem3_m_axi_U         | interface | m_axi     | 2    |      |        |                     |      |         |                  |
+|   p_ZL9ch_in_buf_0_U    | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_0    | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_1_U    | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_1    | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_2_U    | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_2    | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_3_U    | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_3    | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_4_U    | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_4    | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_5_U    | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_5    | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_6_U    | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_6    | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_7_U    | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_7    | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_8_U    | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_8    | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_9_U    | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_9    | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_10_U   | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_10   | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_11_U   | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_11   | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_12_U   | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_12   | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_13_U   | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_13   | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_14_U   | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_14   | bram | 1       | 8, 256, 1        |
+|   p_ZL9ch_in_buf_15_U   | ram_1p    |           | 1    |      | pragma | p_ZL9ch_in_buf_15   | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_0_U  | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_0  | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_4_U  | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_4  | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_8_U  | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_8  | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_12_U | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_12 | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_1_U  | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_1  | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_5_U  | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_5  | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_9_U  | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_9  | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_13_U | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_13 | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_2_U  | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_2  | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_6_U  | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_6  | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_10_U | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_10 | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_14_U | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_14 | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_3_U  | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_3  | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_7_U  | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_7  | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_11_U | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_11 | bram | 1       | 8, 256, 1        |
+|   p_ZL10ch_out_buf_15_U | ram_1p    |           | 1    |      | pragma | p_ZL10ch_out_buf_15 | bram | 1       | 8, 256, 1        |
++-------------------------+-----------+-----------+------+------+--------+---------------------+------+---------+------------------+
+
+
+================================================================
+== Pragma Report
+================================================================
+* Valid Pragma Syntax
++-----------------+-------------------------------------------------------------------------------------------------------------------------+----------------------------------------------+
+| Type            | Options                                                                                                                 | Location                                     |
++-----------------+-------------------------------------------------------------------------------------------------------------------------+----------------------------------------------+
+| inline          |                                                                                                                         | ../dwconv_ip.cpp:35 in apply_act             |
+| interface       | m_axi port=feat_in offset=slave bundle=gmem0 depth=65536 latency=64 num_read_outstanding=4 max_read_burst_length=256    | ../dwconv_ip.cpp:63 in dwconv_ip, feat_in    |
+| interface       | m_axi port=feat_out offset=slave bundle=gmem3 depth=65536 latency=64 num_write_outstanding=4 max_write_burst_length=256 | ../dwconv_ip.cpp:65 in dwconv_ip, feat_out   |
+| interface       | m_axi port=weight offset=slave bundle=gmem1 depth=65536 latency=64 num_read_outstanding=4 max_read_burst_length=256     | ../dwconv_ip.cpp:67 in dwconv_ip, weight     |
+| interface       | m_axi port=bias offset=slave bundle=gmem2 depth=1024                                                                    | ../dwconv_ip.cpp:69 in dwconv_ip, bias       |
+| interface       | s_axilite port=CHin bundle=ctrl                                                                                         | ../dwconv_ip.cpp:71 in dwconv_ip, CHin       |
+| interface       | s_axilite port=Hin bundle=ctrl                                                                                          | ../dwconv_ip.cpp:72 in dwconv_ip, Hin        |
+| interface       | s_axilite port=Win bundle=ctrl                                                                                          | ../dwconv_ip.cpp:73 in dwconv_ip, Win        |
+| interface       | s_axilite port=Kh bundle=ctrl                                                                                           | ../dwconv_ip.cpp:74 in dwconv_ip, Kh         |
+| interface       | s_axilite port=Kw bundle=ctrl                                                                                           | ../dwconv_ip.cpp:75 in dwconv_ip, Kw         |
+| interface       | s_axilite port=stride_h bundle=ctrl                                                                                     | ../dwconv_ip.cpp:76 in dwconv_ip, stride_h   |
+| interface       | s_axilite port=stride_w bundle=ctrl                                                                                     | ../dwconv_ip.cpp:77 in dwconv_ip, stride_w   |
+| interface       | s_axilite port=pad_h bundle=ctrl                                                                                        | ../dwconv_ip.cpp:78 in dwconv_ip, pad_h      |
+| interface       | s_axilite port=pad_w bundle=ctrl                                                                                        | ../dwconv_ip.cpp:79 in dwconv_ip, pad_w      |
+| interface       | s_axilite port=fpg bundle=ctrl                                                                                          | ../dwconv_ip.cpp:80 in dwconv_ip, fpg        |
+| interface       | s_axilite port=act_mode bundle=ctrl                                                                                     | ../dwconv_ip.cpp:81 in dwconv_ip, act_mode   |
+| interface       | s_axilite port=out_shift bundle=ctrl                                                                                    | ../dwconv_ip.cpp:82 in dwconv_ip, out_shift  |
+| interface       | s_axilite port=return bundle=ctrl                                                                                       | ../dwconv_ip.cpp:83 in dwconv_ip, return     |
+| array_partition | variable=ch_in_buf cyclic factor=16 dim=1                                                                               | ../dwconv_ip.cpp:87 in dwconv_ip, ch_in_buf  |
+| array_partition | variable=ch_out_buf cyclic factor=16 dim=1                                                                              | ../dwconv_ip.cpp:88 in dwconv_ip, ch_out_buf |
+| bind_storage    | variable=ch_in_buf type=RAM_1P impl=BRAM                                                                                | ../dwconv_ip.cpp:89 in dwconv_ip, ch_in_buf  |
+| bind_storage    | variable=ch_out_buf type=RAM_1P impl=BRAM                                                                               | ../dwconv_ip.cpp:90 in dwconv_ip, ch_out_buf |
+| array_partition | variable=dw_in_buf complete dim=0                                                                                       | ../dwconv_ip.cpp:94 in dwconv_ip, dw_in_buf  |
+| array_partition | variable=dw_wt_buf complete dim=0                                                                                       | ../dwconv_ip.cpp:95 in dwconv_ip, dw_wt_buf  |
+| array_partition | variable=dw_out_buf complete dim=0                                                                                      | ../dwconv_ip.cpp:96 in dwconv_ip, dw_out_buf |
+| loop_tripcount  | min=48 max=512                                                                                                          | ../dwconv_ip.cpp:107 in dwconv_ip            |
+| pipeline        | II=1                                                                                                                    | ../dwconv_ip.cpp:112 in dwconv_ip            |
+| pipeline        | II=1                                                                                                                    | ../dwconv_ip.cpp:126 in dwconv_ip            |
+| loop_tripcount  | min=1 max=16                                                                                                            | ../dwconv_ip.cpp:136 in dwconv_ip            |
+| loop_tripcount  | min=1 max=16                                                                                                            | ../dwconv_ip.cpp:145 in dwconv_ip            |
+| pipeline        | II=1                                                                                                                    | ../dwconv_ip.cpp:156 in dwconv_ip            |
+| unroll          |                                                                                                                         | ../dwconv_ip.cpp:159 in dwconv_ip            |
+| unroll          |                                                                                                                         | ../dwconv_ip.cpp:175 in dwconv_ip            |
+| unroll          |                                                                                                                         | ../dwconv_ip.cpp:177 in dwconv_ip            |
+| pipeline        | II=1                                                                                                                    | ../dwconv_ip.cpp:191 in dwconv_ip            |
+| unroll          |                                                                                                                         | ../dwconv_ip.cpp:194 in dwconv_ip            |
+| unroll          |                                                                                                                         | ../dwconv_ip.cpp:200 in dwconv_ip            |
+| pipeline        | II=1                                                                                                                    | ../dwconv_ip.cpp:213 in dwconv_ip            |
+| unroll          |                                                                                                                         | ../dwconv_ip.cpp:217 in dwconv_ip            |
+| pipeline        | II=1                                                                                                                    | ../dwconv_ip.cpp:233 in dwconv_ip            |
++-----------------+-------------------------------------------------------------------------------------------------------------------------+----------------------------------------------+
+
+

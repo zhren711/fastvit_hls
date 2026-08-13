@@ -1,0 +1,560 @@
+
+
+================================================================
+== Vitis HLS Report for 'pwconv_ip_Pipeline_COMPUTE_PW_S'
+================================================================
+* Date:           Thu Jun 25 16:29:14 2026
+
+* Version:        2024.2 (Build 5238294 on Nov  8 2024)
+* Project:        pwconv_ip_proj
+* Solution:       solution1 (Vivado IP Flow Target)
+* Product family: zynq
+* Target device:  xc7z020-clg400-1
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+---------+----------+------------+
+    |  Clock |  Target | Estimated| Uncertainty|
+    +--------+---------+----------+------------+
+    |ap_clk  |  7.00 ns|  5.728 ns|     1.89 ns|
+    +--------+---------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+    |  Latency (cycles) |  Latency (absolute) |  Interval |                    Pipeline                    |
+    |   min   |   max   |    min   |    max   | min | max |                      Type                      |
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+    |        ?|        ?|         ?|         ?|    0|    0|  loop auto-rewind stp (delay=0 clock cycles(s))|
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+
+    + Detail: 
+        * Instance: 
+        N/A
+
+        * Loop: 
+        +----------------+---------+---------+----------+-----------+-----------+------+----------+
+        |                |  Latency (cycles) | Iteration|  Initiation Interval  | Trip |          |
+        |    Loop Name   |   min   |   max   |  Latency |  achieved |   target  | Count| Pipelined|
+        +----------------+---------+---------+----------+-----------+-----------+------+----------+
+        |- COMPUTE_PW_S  |        ?|        ?|         5|          1|          1|     ?|       yes|
+        +----------------+---------+---------+----------+-----------+-----------+------+----------+
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++-----------------+---------+-----+--------+-------+-----+
+|       Name      | BRAM_18K| DSP |   FF   |  LUT  | URAM|
++-----------------+---------+-----+--------+-------+-----+
+|DSP              |        -|   24|       -|      -|    -|
+|Expression       |        -|    -|       0|    366|    -|
+|FIFO             |        -|    -|       -|      -|    -|
+|Instance         |        -|    0|       0|    832|    -|
+|Memory           |        -|    -|       -|      -|    -|
+|Multiplexer      |        -|    -|       0|    612|    -|
+|Register         |        -|    -|     624|     32|    -|
++-----------------+---------+-----+--------+-------+-----+
+|Total            |        0|   24|     624|   1842|    0|
++-----------------+---------+-----+--------+-------+-----+
+|Available        |      280|  220|  106400|  53200|    0|
++-----------------+---------+-----+--------+-------+-----+
+|Utilization (%)  |        0|   10|      ~0|      3|    0|
++-----------------+---------+-----+--------+-------+-----+
+
++ Detail: 
+    * Instance: 
+    +----------------------------+-----------------------+---------+----+---+----+-----+
+    |          Instance          |         Module        | BRAM_18K| DSP| FF| LUT| URAM|
+    +----------------------------+-----------------------+---------+----+---+----+-----+
+    |mul_8s_8s_16_1_1_U90        |mul_8s_8s_16_1_1       |        0|   0|  0|  41|    0|
+    |mul_8s_8s_16_1_1_U92        |mul_8s_8s_16_1_1       |        0|   0|  0|  41|    0|
+    |mul_8s_8s_16_1_1_U94        |mul_8s_8s_16_1_1       |        0|   0|  0|  41|    0|
+    |mul_8s_8s_16_1_1_U96        |mul_8s_8s_16_1_1       |        0|   0|  0|  41|    0|
+    |mul_8s_8s_16_1_1_U98        |mul_8s_8s_16_1_1       |        0|   0|  0|  41|    0|
+    |mul_8s_8s_16_1_1_U100       |mul_8s_8s_16_1_1       |        0|   0|  0|  41|    0|
+    |mul_8s_8s_16_1_1_U102       |mul_8s_8s_16_1_1       |        0|   0|  0|  41|    0|
+    |mul_8s_8s_16_1_1_U104       |mul_8s_8s_16_1_1       |        0|   0|  0|  41|    0|
+    |sparsemux_17_3_32_1_1_U89   |sparsemux_17_3_32_1_1  |        0|   0|  0|  42|    0|
+    |sparsemux_17_3_32_1_1_U91   |sparsemux_17_3_32_1_1  |        0|   0|  0|  42|    0|
+    |sparsemux_17_3_32_1_1_U93   |sparsemux_17_3_32_1_1  |        0|   0|  0|  42|    0|
+    |sparsemux_17_3_32_1_1_U95   |sparsemux_17_3_32_1_1  |        0|   0|  0|  42|    0|
+    |sparsemux_17_3_32_1_1_U97   |sparsemux_17_3_32_1_1  |        0|   0|  0|  42|    0|
+    |sparsemux_17_3_32_1_1_U99   |sparsemux_17_3_32_1_1  |        0|   0|  0|  42|    0|
+    |sparsemux_17_3_32_1_1_U101  |sparsemux_17_3_32_1_1  |        0|   0|  0|  42|    0|
+    |sparsemux_17_3_32_1_1_U103  |sparsemux_17_3_32_1_1  |        0|   0|  0|  42|    0|
+    |sparsemux_17_3_8_1_1_U85    |sparsemux_17_3_8_1_1   |        0|   0|  0|  42|    0|
+    |sparsemux_17_3_8_1_1_U86    |sparsemux_17_3_8_1_1   |        0|   0|  0|  42|    0|
+    |sparsemux_17_3_8_1_1_U87    |sparsemux_17_3_8_1_1   |        0|   0|  0|  42|    0|
+    |sparsemux_17_3_8_1_1_U88    |sparsemux_17_3_8_1_1   |        0|   0|  0|  42|    0|
+    +----------------------------+-----------------------+---------+----+---+----+-----+
+    |Total                       |                       |        0|   0|  0| 832|    0|
+    +----------------------------+-----------------------+---------+----+---+----+-----+
+
+    * DSP: 
+    +----------------------------------+-----------------------------+--------------+
+    |             Instance             |            Module           |  Expression  |
+    +----------------------------------+-----------------------------+--------------+
+    |mac_muladd_8s_8s_16s_17_4_1_U114  |mac_muladd_8s_8s_16s_17_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_16s_17_4_1_U116  |mac_muladd_8s_8s_16s_17_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_16s_17_4_1_U118  |mac_muladd_8s_8s_16s_17_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_16s_17_4_1_U120  |mac_muladd_8s_8s_16s_17_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_16s_17_4_1_U122  |mac_muladd_8s_8s_16s_17_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_16s_17_4_1_U124  |mac_muladd_8s_8s_16s_17_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_16s_17_4_1_U126  |mac_muladd_8s_8s_16s_17_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_16s_17_4_1_U128  |mac_muladd_8s_8s_16s_17_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U105  |mac_muladd_8s_8s_32s_32_4_1  |  i0 * i1 + i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U106  |mac_muladd_8s_8s_32s_32_4_1  |  i0 * i1 + i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U107  |mac_muladd_8s_8s_32s_32_4_1  |  i0 * i1 + i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U108  |mac_muladd_8s_8s_32s_32_4_1  |  i0 * i1 + i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U109  |mac_muladd_8s_8s_32s_32_4_1  |  i0 * i1 + i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U110  |mac_muladd_8s_8s_32s_32_4_1  |  i0 * i1 + i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U111  |mac_muladd_8s_8s_32s_32_4_1  |  i0 * i1 + i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U112  |mac_muladd_8s_8s_32s_32_4_1  |  i0 * i1 + i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U113  |mac_muladd_8s_8s_32s_32_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U115  |mac_muladd_8s_8s_32s_32_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U117  |mac_muladd_8s_8s_32s_32_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U119  |mac_muladd_8s_8s_32s_32_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U121  |mac_muladd_8s_8s_32s_32_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U123  |mac_muladd_8s_8s_32s_32_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U125  |mac_muladd_8s_8s_32s_32_4_1  |  i0 + i1 * i2|
+    |mac_muladd_8s_8s_32s_32_4_1_U127  |mac_muladd_8s_8s_32s_32_4_1  |  i0 + i1 * i2|
+    +----------------------------------+-----------------------------+--------------+
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +-------------------------+----------+----+---+----+------------+------------+
+    |      Variable Name      | Operation| DSP| FF| LUT| Bitwidth P0| Bitwidth P1|
+    +-------------------------+----------+----+---+----+------------+------------+
+    |add_ln134_fu_842_p2      |         +|   0|  0|  13|           4|           1|
+    |add_ln145_11_fu_1681_p2  |         +|   0|  0|  39|          32|          32|
+    |add_ln145_15_fu_1689_p2  |         +|   0|  0|  39|          32|          32|
+    |add_ln145_19_fu_1697_p2  |         +|   0|  0|  39|          32|          32|
+    |add_ln145_23_fu_1705_p2  |         +|   0|  0|  39|          32|          32|
+    |add_ln145_27_fu_1713_p2  |         +|   0|  0|  39|          32|          32|
+    |add_ln145_31_fu_1721_p2  |         +|   0|  0|  39|          32|          32|
+    |add_ln145_3_fu_1665_p2   |         +|   0|  0|  39|          32|          32|
+    |add_ln145_7_fu_1673_p2   |         +|   0|  0|  39|          32|          32|
+    |icmp_ln134_fu_836_p2     |      icmp|   0|  0|  39|          32|          32|
+    |ap_enable_pp0            |       xor|   0|  0|   2|           1|           2|
+    +-------------------------+----------+----+---+----+------------+------------+
+    |Total                    |          |   0|  0| 366|         293|         291|
+    +-------------------------+----------+----+---+----+------------+------------+
+
+    * Multiplexer: 
+    +-------------------------+----+-----------+-----+-----------+
+    |           Name          | LUT| Input Size| Bits| Total Bits|
+    +-------------------------+----+-----------+-----+-----------+
+    |ap_done_int              |   9|          2|    1|          2|
+    |ap_enable_reg_pp0_iter1  |   9|          2|    1|          2|
+    |ap_sig_allocacmp_s_4     |   9|          2|    4|          8|
+    |p_ZL10pw_out_buf_0_0_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_0_1_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_0_2_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_0_3_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_0_4_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_0_5_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_0_6_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_0_7_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_1_0_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_1_1_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_1_2_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_1_3_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_1_4_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_1_5_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_1_6_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_1_7_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_2_0_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_2_1_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_2_2_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_2_3_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_2_4_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_2_5_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_2_6_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_2_7_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_3_0_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_3_1_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_3_2_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_3_3_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_3_4_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_3_5_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_3_6_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_3_7_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_4_0_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_4_1_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_4_2_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_4_3_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_4_4_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_4_5_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_4_6_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_4_7_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_5_0_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_5_1_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_5_2_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_5_3_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_5_4_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_5_5_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_5_6_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_5_7_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_6_0_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_6_1_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_6_2_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_6_3_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_6_4_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_6_5_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_6_6_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_6_7_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_7_0_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_7_1_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_7_2_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_7_3_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_7_4_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_7_5_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_7_6_o   |   9|          2|   32|         64|
+    |p_ZL10pw_out_buf_7_7_o   |   9|          2|   32|         64|
+    |s_fu_302                 |   9|          2|    4|          8|
+    +-------------------------+----+-----------+-----+-----------+
+    |Total                    | 612|        136| 2058|       4116|
+    +-------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +--------------------------------------------+----+----+-----+-----------+
+    |                    Name                    | FF | LUT| Bits| Const Bits|
+    +--------------------------------------------+----+----+-----+-----------+
+    |ap_CS_fsm                                   |   1|   0|    1|          0|
+    |ap_done_reg                                 |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter1                     |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter2                     |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter3                     |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter4                     |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter1_reg            |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter2_reg            |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter3_reg            |   1|   0|    1|          0|
+    |mul_ln145_10_reg_2561                       |  16|   0|   16|          0|
+    |mul_ln145_14_reg_2571                       |  16|   0|   16|          0|
+    |mul_ln145_18_reg_2581                       |  16|   0|   16|          0|
+    |mul_ln145_22_reg_2591                       |  16|   0|   16|          0|
+    |mul_ln145_26_reg_2601                       |  16|   0|   16|          0|
+    |mul_ln145_2_reg_2541                        |  16|   0|   16|          0|
+    |mul_ln145_30_reg_2611                       |  16|   0|   16|          0|
+    |mul_ln145_6_reg_2551                        |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_0_0_load_cast_cast_reg_2464  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_0_2_load_cast_cast_reg_2454  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_0_3_load_cast_cast_reg_2449  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_1_0_load_cast_cast_reg_2444  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_1_2_load_cast_cast_reg_2434  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_1_3_load_cast_cast_reg_2429  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_2_0_load_cast_cast_reg_2424  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_2_2_load_cast_cast_reg_2414  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_2_3_load_cast_cast_reg_2409  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_3_0_load_cast_cast_reg_2404  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_3_2_load_cast_cast_reg_2394  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_3_3_load_cast_cast_reg_2389  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_4_0_load_cast_cast_reg_2384  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_4_2_load_cast_cast_reg_2374  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_4_3_load_cast_cast_reg_2369  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_5_0_load_cast_cast_reg_2364  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_5_2_load_cast_cast_reg_2354  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_5_3_load_cast_cast_reg_2349  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_6_0_load_cast_cast_reg_2344  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_6_2_load_cast_cast_reg_2334  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_6_3_load_cast_cast_reg_2329  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_7_0_load_cast_cast_reg_2324  |  16|   0|   16|          0|
+    |p_ZL9pw_wt_buf_7_2_load_cast_cast_reg_2314  |  16|   0|   16|          0|
+    |s_fu_302                                    |   4|   0|    4|          0|
+    |sext_ln89_cast_reg_2309                     |  16|   0|   16|          0|
+    |tmp_2_reg_2502                              |   8|   0|    8|          0|
+    |tmp_2_reg_2502_pp0_iter1_reg                |   8|   0|    8|          0|
+    |tmp_3_reg_2507                              |   8|   0|    8|          0|
+    |tmp_reg_2485                                |   8|   0|    8|          0|
+    |trunc_ln134_reg_2473                        |   3|   0|    3|          0|
+    |trunc_ln134_reg_2473                        |  64|  32|    3|          0|
+    +--------------------------------------------+----+----+-----+-----------+
+    |Total                                       | 624|  32|  563|          0|
+    +--------------------------------------------+----+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++-------------------------------+-----+-----+------------+---------------------------------+--------------+
+|           RTL Ports           | Dir | Bits|  Protocol  |          Source Object          |    C Type    |
++-------------------------------+-----+-----+------------+---------------------------------+--------------+
+|ap_clk                         |   in|    1|  ap_ctrl_hs|  pwconv_ip_Pipeline_COMPUTE_PW_S|  return value|
+|ap_rst                         |   in|    1|  ap_ctrl_hs|  pwconv_ip_Pipeline_COMPUTE_PW_S|  return value|
+|ap_start                       |   in|    1|  ap_ctrl_hs|  pwconv_ip_Pipeline_COMPUTE_PW_S|  return value|
+|ap_done                        |  out|    1|  ap_ctrl_hs|  pwconv_ip_Pipeline_COMPUTE_PW_S|  return value|
+|ap_idle                        |  out|    1|  ap_ctrl_hs|  pwconv_ip_Pipeline_COMPUTE_PW_S|  return value|
+|ap_ready                       |  out|    1|  ap_ctrl_hs|  pwconv_ip_Pipeline_COMPUTE_PW_S|  return value|
+|sub_ln89                       |   in|   32|     ap_none|                         sub_ln89|        scalar|
+|p_ZL9pw_in_buf_0_0_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_0_0_load|        scalar|
+|p_ZL9pw_in_buf_0_1_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_0_1_load|        scalar|
+|p_ZL9pw_in_buf_0_2_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_0_2_load|        scalar|
+|p_ZL9pw_in_buf_0_3_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_0_3_load|        scalar|
+|p_ZL9pw_in_buf_0_4_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_0_4_load|        scalar|
+|p_ZL9pw_in_buf_0_5_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_0_5_load|        scalar|
+|p_ZL9pw_in_buf_0_6_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_0_6_load|        scalar|
+|p_ZL9pw_in_buf_0_7_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_0_7_load|        scalar|
+|p_ZL9pw_in_buf_1_0_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_1_0_load|        scalar|
+|p_ZL9pw_in_buf_1_1_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_1_1_load|        scalar|
+|p_ZL9pw_in_buf_1_2_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_1_2_load|        scalar|
+|p_ZL9pw_in_buf_1_3_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_1_3_load|        scalar|
+|p_ZL9pw_in_buf_1_4_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_1_4_load|        scalar|
+|p_ZL9pw_in_buf_1_5_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_1_5_load|        scalar|
+|p_ZL9pw_in_buf_1_6_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_1_6_load|        scalar|
+|p_ZL9pw_in_buf_1_7_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_1_7_load|        scalar|
+|p_ZL9pw_in_buf_2_0_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_2_0_load|        scalar|
+|p_ZL9pw_in_buf_2_1_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_2_1_load|        scalar|
+|p_ZL9pw_in_buf_2_2_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_2_2_load|        scalar|
+|p_ZL9pw_in_buf_2_3_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_2_3_load|        scalar|
+|p_ZL9pw_in_buf_2_4_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_2_4_load|        scalar|
+|p_ZL9pw_in_buf_2_5_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_2_5_load|        scalar|
+|p_ZL9pw_in_buf_2_6_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_2_6_load|        scalar|
+|p_ZL9pw_in_buf_2_7_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_2_7_load|        scalar|
+|p_ZL9pw_in_buf_3_0_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_3_0_load|        scalar|
+|p_ZL9pw_in_buf_3_1_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_3_1_load|        scalar|
+|p_ZL9pw_in_buf_3_2_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_3_2_load|        scalar|
+|p_ZL9pw_in_buf_3_3_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_3_3_load|        scalar|
+|p_ZL9pw_in_buf_3_4_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_3_4_load|        scalar|
+|p_ZL9pw_in_buf_3_5_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_3_5_load|        scalar|
+|p_ZL9pw_in_buf_3_6_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_3_6_load|        scalar|
+|p_ZL9pw_in_buf_3_7_load        |   in|    8|     ap_none|          p_ZL9pw_in_buf_3_7_load|        scalar|
+|p_ZL9pw_wt_buf_0_0_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_0_0_load_cast|        scalar|
+|p_ZL9pw_wt_buf_0_1_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_0_1_load_cast|        scalar|
+|p_ZL9pw_wt_buf_0_2_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_0_2_load_cast|        scalar|
+|p_ZL9pw_wt_buf_0_3_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_0_3_load_cast|        scalar|
+|p_ZL9pw_wt_buf_1_0_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_1_0_load_cast|        scalar|
+|p_ZL9pw_wt_buf_1_1_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_1_1_load_cast|        scalar|
+|p_ZL9pw_wt_buf_1_2_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_1_2_load_cast|        scalar|
+|p_ZL9pw_wt_buf_1_3_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_1_3_load_cast|        scalar|
+|p_ZL9pw_wt_buf_2_0_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_2_0_load_cast|        scalar|
+|p_ZL9pw_wt_buf_2_1_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_2_1_load_cast|        scalar|
+|p_ZL9pw_wt_buf_2_2_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_2_2_load_cast|        scalar|
+|p_ZL9pw_wt_buf_2_3_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_2_3_load_cast|        scalar|
+|p_ZL9pw_wt_buf_3_0_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_3_0_load_cast|        scalar|
+|p_ZL9pw_wt_buf_3_1_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_3_1_load_cast|        scalar|
+|p_ZL9pw_wt_buf_3_2_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_3_2_load_cast|        scalar|
+|p_ZL9pw_wt_buf_3_3_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_3_3_load_cast|        scalar|
+|p_ZL9pw_wt_buf_4_0_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_4_0_load_cast|        scalar|
+|p_ZL9pw_wt_buf_4_1_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_4_1_load_cast|        scalar|
+|p_ZL9pw_wt_buf_4_2_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_4_2_load_cast|        scalar|
+|p_ZL9pw_wt_buf_4_3_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_4_3_load_cast|        scalar|
+|p_ZL9pw_wt_buf_5_0_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_5_0_load_cast|        scalar|
+|p_ZL9pw_wt_buf_5_1_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_5_1_load_cast|        scalar|
+|p_ZL9pw_wt_buf_5_2_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_5_2_load_cast|        scalar|
+|p_ZL9pw_wt_buf_5_3_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_5_3_load_cast|        scalar|
+|p_ZL9pw_wt_buf_6_0_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_6_0_load_cast|        scalar|
+|p_ZL9pw_wt_buf_6_1_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_6_1_load_cast|        scalar|
+|p_ZL9pw_wt_buf_6_2_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_6_2_load_cast|        scalar|
+|p_ZL9pw_wt_buf_6_3_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_6_3_load_cast|        scalar|
+|p_ZL9pw_wt_buf_7_0_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_7_0_load_cast|        scalar|
+|p_ZL9pw_wt_buf_7_1_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_7_1_load_cast|        scalar|
+|p_ZL9pw_wt_buf_7_2_load_cast   |   in|    8|     ap_none|     p_ZL9pw_wt_buf_7_2_load_cast|        scalar|
+|sext_ln89                      |   in|    8|     ap_none|                        sext_ln89|        scalar|
+|p_ZL10pw_out_buf_0_0_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_0_0|       pointer|
+|p_ZL10pw_out_buf_0_0_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_0_0|       pointer|
+|p_ZL10pw_out_buf_0_0_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_0_0|       pointer|
+|p_ZL10pw_out_buf_1_0_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_1_0|       pointer|
+|p_ZL10pw_out_buf_1_0_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_1_0|       pointer|
+|p_ZL10pw_out_buf_1_0_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_1_0|       pointer|
+|p_ZL10pw_out_buf_2_0_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_2_0|       pointer|
+|p_ZL10pw_out_buf_2_0_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_2_0|       pointer|
+|p_ZL10pw_out_buf_2_0_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_2_0|       pointer|
+|p_ZL10pw_out_buf_3_0_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_3_0|       pointer|
+|p_ZL10pw_out_buf_3_0_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_3_0|       pointer|
+|p_ZL10pw_out_buf_3_0_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_3_0|       pointer|
+|p_ZL10pw_out_buf_4_0_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_4_0|       pointer|
+|p_ZL10pw_out_buf_4_0_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_4_0|       pointer|
+|p_ZL10pw_out_buf_4_0_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_4_0|       pointer|
+|p_ZL10pw_out_buf_5_0_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_5_0|       pointer|
+|p_ZL10pw_out_buf_5_0_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_5_0|       pointer|
+|p_ZL10pw_out_buf_5_0_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_5_0|       pointer|
+|p_ZL10pw_out_buf_6_0_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_6_0|       pointer|
+|p_ZL10pw_out_buf_6_0_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_6_0|       pointer|
+|p_ZL10pw_out_buf_6_0_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_6_0|       pointer|
+|p_ZL10pw_out_buf_7_0_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_7_0|       pointer|
+|p_ZL10pw_out_buf_7_0_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_7_0|       pointer|
+|p_ZL10pw_out_buf_7_0_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_7_0|       pointer|
+|p_ZL10pw_out_buf_0_1_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_0_1|       pointer|
+|p_ZL10pw_out_buf_0_1_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_0_1|       pointer|
+|p_ZL10pw_out_buf_0_1_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_0_1|       pointer|
+|p_ZL10pw_out_buf_0_2_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_0_2|       pointer|
+|p_ZL10pw_out_buf_0_2_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_0_2|       pointer|
+|p_ZL10pw_out_buf_0_2_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_0_2|       pointer|
+|p_ZL10pw_out_buf_0_3_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_0_3|       pointer|
+|p_ZL10pw_out_buf_0_3_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_0_3|       pointer|
+|p_ZL10pw_out_buf_0_3_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_0_3|       pointer|
+|p_ZL10pw_out_buf_0_4_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_0_4|       pointer|
+|p_ZL10pw_out_buf_0_4_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_0_4|       pointer|
+|p_ZL10pw_out_buf_0_4_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_0_4|       pointer|
+|p_ZL10pw_out_buf_0_5_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_0_5|       pointer|
+|p_ZL10pw_out_buf_0_5_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_0_5|       pointer|
+|p_ZL10pw_out_buf_0_5_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_0_5|       pointer|
+|p_ZL10pw_out_buf_0_6_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_0_6|       pointer|
+|p_ZL10pw_out_buf_0_6_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_0_6|       pointer|
+|p_ZL10pw_out_buf_0_6_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_0_6|       pointer|
+|p_ZL10pw_out_buf_0_7_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_0_7|       pointer|
+|p_ZL10pw_out_buf_0_7_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_0_7|       pointer|
+|p_ZL10pw_out_buf_0_7_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_0_7|       pointer|
+|p_ZL10pw_out_buf_1_1_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_1_1|       pointer|
+|p_ZL10pw_out_buf_1_1_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_1_1|       pointer|
+|p_ZL10pw_out_buf_1_1_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_1_1|       pointer|
+|p_ZL10pw_out_buf_1_2_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_1_2|       pointer|
+|p_ZL10pw_out_buf_1_2_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_1_2|       pointer|
+|p_ZL10pw_out_buf_1_2_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_1_2|       pointer|
+|p_ZL10pw_out_buf_1_3_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_1_3|       pointer|
+|p_ZL10pw_out_buf_1_3_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_1_3|       pointer|
+|p_ZL10pw_out_buf_1_3_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_1_3|       pointer|
+|p_ZL10pw_out_buf_1_4_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_1_4|       pointer|
+|p_ZL10pw_out_buf_1_4_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_1_4|       pointer|
+|p_ZL10pw_out_buf_1_4_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_1_4|       pointer|
+|p_ZL10pw_out_buf_1_5_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_1_5|       pointer|
+|p_ZL10pw_out_buf_1_5_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_1_5|       pointer|
+|p_ZL10pw_out_buf_1_5_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_1_5|       pointer|
+|p_ZL10pw_out_buf_1_6_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_1_6|       pointer|
+|p_ZL10pw_out_buf_1_6_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_1_6|       pointer|
+|p_ZL10pw_out_buf_1_6_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_1_6|       pointer|
+|p_ZL10pw_out_buf_1_7_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_1_7|       pointer|
+|p_ZL10pw_out_buf_1_7_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_1_7|       pointer|
+|p_ZL10pw_out_buf_1_7_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_1_7|       pointer|
+|p_ZL10pw_out_buf_2_1_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_2_1|       pointer|
+|p_ZL10pw_out_buf_2_1_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_2_1|       pointer|
+|p_ZL10pw_out_buf_2_1_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_2_1|       pointer|
+|p_ZL10pw_out_buf_2_2_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_2_2|       pointer|
+|p_ZL10pw_out_buf_2_2_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_2_2|       pointer|
+|p_ZL10pw_out_buf_2_2_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_2_2|       pointer|
+|p_ZL10pw_out_buf_2_3_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_2_3|       pointer|
+|p_ZL10pw_out_buf_2_3_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_2_3|       pointer|
+|p_ZL10pw_out_buf_2_3_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_2_3|       pointer|
+|p_ZL10pw_out_buf_2_4_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_2_4|       pointer|
+|p_ZL10pw_out_buf_2_4_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_2_4|       pointer|
+|p_ZL10pw_out_buf_2_4_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_2_4|       pointer|
+|p_ZL10pw_out_buf_2_5_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_2_5|       pointer|
+|p_ZL10pw_out_buf_2_5_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_2_5|       pointer|
+|p_ZL10pw_out_buf_2_5_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_2_5|       pointer|
+|p_ZL10pw_out_buf_2_6_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_2_6|       pointer|
+|p_ZL10pw_out_buf_2_6_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_2_6|       pointer|
+|p_ZL10pw_out_buf_2_6_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_2_6|       pointer|
+|p_ZL10pw_out_buf_2_7_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_2_7|       pointer|
+|p_ZL10pw_out_buf_2_7_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_2_7|       pointer|
+|p_ZL10pw_out_buf_2_7_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_2_7|       pointer|
+|p_ZL10pw_out_buf_3_1_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_3_1|       pointer|
+|p_ZL10pw_out_buf_3_1_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_3_1|       pointer|
+|p_ZL10pw_out_buf_3_1_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_3_1|       pointer|
+|p_ZL10pw_out_buf_3_2_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_3_2|       pointer|
+|p_ZL10pw_out_buf_3_2_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_3_2|       pointer|
+|p_ZL10pw_out_buf_3_2_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_3_2|       pointer|
+|p_ZL10pw_out_buf_3_3_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_3_3|       pointer|
+|p_ZL10pw_out_buf_3_3_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_3_3|       pointer|
+|p_ZL10pw_out_buf_3_3_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_3_3|       pointer|
+|p_ZL10pw_out_buf_3_4_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_3_4|       pointer|
+|p_ZL10pw_out_buf_3_4_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_3_4|       pointer|
+|p_ZL10pw_out_buf_3_4_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_3_4|       pointer|
+|p_ZL10pw_out_buf_3_5_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_3_5|       pointer|
+|p_ZL10pw_out_buf_3_5_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_3_5|       pointer|
+|p_ZL10pw_out_buf_3_5_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_3_5|       pointer|
+|p_ZL10pw_out_buf_3_6_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_3_6|       pointer|
+|p_ZL10pw_out_buf_3_6_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_3_6|       pointer|
+|p_ZL10pw_out_buf_3_6_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_3_6|       pointer|
+|p_ZL10pw_out_buf_3_7_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_3_7|       pointer|
+|p_ZL10pw_out_buf_3_7_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_3_7|       pointer|
+|p_ZL10pw_out_buf_3_7_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_3_7|       pointer|
+|p_ZL10pw_out_buf_4_1_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_4_1|       pointer|
+|p_ZL10pw_out_buf_4_1_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_4_1|       pointer|
+|p_ZL10pw_out_buf_4_1_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_4_1|       pointer|
+|p_ZL10pw_out_buf_4_2_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_4_2|       pointer|
+|p_ZL10pw_out_buf_4_2_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_4_2|       pointer|
+|p_ZL10pw_out_buf_4_2_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_4_2|       pointer|
+|p_ZL10pw_out_buf_4_3_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_4_3|       pointer|
+|p_ZL10pw_out_buf_4_3_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_4_3|       pointer|
+|p_ZL10pw_out_buf_4_3_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_4_3|       pointer|
+|p_ZL10pw_out_buf_4_4_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_4_4|       pointer|
+|p_ZL10pw_out_buf_4_4_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_4_4|       pointer|
+|p_ZL10pw_out_buf_4_4_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_4_4|       pointer|
+|p_ZL10pw_out_buf_4_5_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_4_5|       pointer|
+|p_ZL10pw_out_buf_4_5_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_4_5|       pointer|
+|p_ZL10pw_out_buf_4_5_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_4_5|       pointer|
+|p_ZL10pw_out_buf_4_6_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_4_6|       pointer|
+|p_ZL10pw_out_buf_4_6_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_4_6|       pointer|
+|p_ZL10pw_out_buf_4_6_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_4_6|       pointer|
+|p_ZL10pw_out_buf_4_7_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_4_7|       pointer|
+|p_ZL10pw_out_buf_4_7_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_4_7|       pointer|
+|p_ZL10pw_out_buf_4_7_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_4_7|       pointer|
+|p_ZL10pw_out_buf_5_1_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_5_1|       pointer|
+|p_ZL10pw_out_buf_5_1_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_5_1|       pointer|
+|p_ZL10pw_out_buf_5_1_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_5_1|       pointer|
+|p_ZL10pw_out_buf_5_2_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_5_2|       pointer|
+|p_ZL10pw_out_buf_5_2_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_5_2|       pointer|
+|p_ZL10pw_out_buf_5_2_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_5_2|       pointer|
+|p_ZL10pw_out_buf_5_3_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_5_3|       pointer|
+|p_ZL10pw_out_buf_5_3_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_5_3|       pointer|
+|p_ZL10pw_out_buf_5_3_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_5_3|       pointer|
+|p_ZL10pw_out_buf_5_4_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_5_4|       pointer|
+|p_ZL10pw_out_buf_5_4_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_5_4|       pointer|
+|p_ZL10pw_out_buf_5_4_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_5_4|       pointer|
+|p_ZL10pw_out_buf_5_5_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_5_5|       pointer|
+|p_ZL10pw_out_buf_5_5_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_5_5|       pointer|
+|p_ZL10pw_out_buf_5_5_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_5_5|       pointer|
+|p_ZL10pw_out_buf_5_6_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_5_6|       pointer|
+|p_ZL10pw_out_buf_5_6_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_5_6|       pointer|
+|p_ZL10pw_out_buf_5_6_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_5_6|       pointer|
+|p_ZL10pw_out_buf_5_7_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_5_7|       pointer|
+|p_ZL10pw_out_buf_5_7_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_5_7|       pointer|
+|p_ZL10pw_out_buf_5_7_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_5_7|       pointer|
+|p_ZL10pw_out_buf_6_1_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_6_1|       pointer|
+|p_ZL10pw_out_buf_6_1_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_6_1|       pointer|
+|p_ZL10pw_out_buf_6_1_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_6_1|       pointer|
+|p_ZL10pw_out_buf_6_2_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_6_2|       pointer|
+|p_ZL10pw_out_buf_6_2_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_6_2|       pointer|
+|p_ZL10pw_out_buf_6_2_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_6_2|       pointer|
+|p_ZL10pw_out_buf_6_3_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_6_3|       pointer|
+|p_ZL10pw_out_buf_6_3_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_6_3|       pointer|
+|p_ZL10pw_out_buf_6_3_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_6_3|       pointer|
+|p_ZL10pw_out_buf_6_4_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_6_4|       pointer|
+|p_ZL10pw_out_buf_6_4_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_6_4|       pointer|
+|p_ZL10pw_out_buf_6_4_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_6_4|       pointer|
+|p_ZL10pw_out_buf_6_5_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_6_5|       pointer|
+|p_ZL10pw_out_buf_6_5_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_6_5|       pointer|
+|p_ZL10pw_out_buf_6_5_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_6_5|       pointer|
+|p_ZL10pw_out_buf_6_6_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_6_6|       pointer|
+|p_ZL10pw_out_buf_6_6_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_6_6|       pointer|
+|p_ZL10pw_out_buf_6_6_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_6_6|       pointer|
+|p_ZL10pw_out_buf_6_7_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_6_7|       pointer|
+|p_ZL10pw_out_buf_6_7_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_6_7|       pointer|
+|p_ZL10pw_out_buf_6_7_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_6_7|       pointer|
+|p_ZL10pw_out_buf_7_1_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_7_1|       pointer|
+|p_ZL10pw_out_buf_7_1_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_7_1|       pointer|
+|p_ZL10pw_out_buf_7_1_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_7_1|       pointer|
+|p_ZL10pw_out_buf_7_2_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_7_2|       pointer|
+|p_ZL10pw_out_buf_7_2_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_7_2|       pointer|
+|p_ZL10pw_out_buf_7_2_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_7_2|       pointer|
+|p_ZL10pw_out_buf_7_3_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_7_3|       pointer|
+|p_ZL10pw_out_buf_7_3_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_7_3|       pointer|
+|p_ZL10pw_out_buf_7_3_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_7_3|       pointer|
+|p_ZL10pw_out_buf_7_4_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_7_4|       pointer|
+|p_ZL10pw_out_buf_7_4_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_7_4|       pointer|
+|p_ZL10pw_out_buf_7_4_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_7_4|       pointer|
+|p_ZL10pw_out_buf_7_5_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_7_5|       pointer|
+|p_ZL10pw_out_buf_7_5_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_7_5|       pointer|
+|p_ZL10pw_out_buf_7_5_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_7_5|       pointer|
+|p_ZL10pw_out_buf_7_6_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_7_6|       pointer|
+|p_ZL10pw_out_buf_7_6_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_7_6|       pointer|
+|p_ZL10pw_out_buf_7_6_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_7_6|       pointer|
+|p_ZL10pw_out_buf_7_7_i         |   in|   32|     ap_ovld|             p_ZL10pw_out_buf_7_7|       pointer|
+|p_ZL10pw_out_buf_7_7_o         |  out|   32|     ap_ovld|             p_ZL10pw_out_buf_7_7|       pointer|
+|p_ZL10pw_out_buf_7_7_o_ap_vld  |  out|    1|     ap_ovld|             p_ZL10pw_out_buf_7_7|       pointer|
++-------------------------------+-----+-----+------------+---------------------------------+--------------+
+
