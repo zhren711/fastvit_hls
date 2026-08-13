@@ -1,0 +1,186 @@
+[LayerTiming]      0.00 ms  start
+[LayerTiming]      0.24 ms  Stem: Conv3x3 3->48 s=2
+[LayerTiming]    137.50 ms  Stem: DW3x3 48 + GELU
+[LayerTiming]    162.39 ms  Stem: PW 48->48
+[LayerTiming]    173.23 ms  Stem: DW3x3 48 (no act)
+[LayerTiming]    196.11 ms  Stage1 blk0 RepMixer C=48 64x64
+[LayerTiming]    196.16 ms    [S1B0] DW7-only C=48 64x64
+[LayerTiming]    252.48 ms    [S1B0] PW1 48->144 64x64
+[LayerTiming]    284.88 ms    [S1B0] GELU 589824 elem
+[LayerTiming]    290.84 ms    [S1B0] PW2 144->48 64x64
+[LayerTiming]    318.18 ms    [S1B0] Add C=48 64x64
+[LayerTiming]    342.19 ms    [S1B0] done
+[LayerTiming]    342.24 ms  Stage1 blk1 RepMixer C=48 64x64
+[LayerTiming]    342.26 ms    [S1B1] DW3 C=48 64x64
+[LayerTiming]    365.11 ms    [S1B1] DW7 C=48 64x64
+[LayerTiming]    421.46 ms    [S1B1] PW1 48->144 64x64
+[LayerTiming]    453.86 ms    [S1B1] GELU 589824 elem
+[LayerTiming]    459.81 ms    [S1B1] PW2 144->48 64x64
+[LayerTiming]    487.15 ms    [S1B1] Add C=48 64x64
+[LayerTiming]    511.16 ms    [S1B1] done
+[LayerTiming]    511.22 ms  Trans1 FPGA DW7 fpg=2 48->96 64->32
+[LayerTiming]    540.75 ms  Trans1 PW 96->96
+[LayerTiming]    551.27 ms  Stage2 blk0 RepMixer C=96 32x32
+[LayerTiming]    551.32 ms    [S2B0] DW3 C=96 32x32
+[LayerTiming]    562.83 ms    [S2B0] DW7 C=96 32x32
+[LayerTiming]    591.15 ms    [S2B0] PW1 96->288 32x32
+[LayerTiming]    622.62 ms    [S2B0] GELU 294912 elem
+[LayerTiming]    625.62 ms    [S2B0] PW2 288->96 32x32
+[LayerTiming]    654.43 ms    [S2B0] Add C=96 32x32
+[LayerTiming]    666.46 ms    [S2B0] done
+[LayerTiming]    666.50 ms  Stage2 blk1 RepMixer C=96 32x32
+[LayerTiming]    666.53 ms    [S2B1] DW3 C=96 32x32
+[LayerTiming]    678.03 ms    [S2B1] DW7 C=96 32x32
+[LayerTiming]    706.35 ms    [S2B1] PW1 96->288 32x32
+[LayerTiming]    737.82 ms    [S2B1] GELU 294912 elem
+[LayerTiming]    740.83 ms    [S2B1] PW2 288->96 32x32
+[LayerTiming]    769.63 ms    [S2B1] Add C=96 32x32
+[LayerTiming]    781.67 ms    [S2B1] done
+[LayerTiming]    781.71 ms  Trans2 FPGA DW7 fpg=2 96->192 32->16
+[LayerTiming]    796.71 ms  Trans2 PW 192->192
+[LayerTiming]    810.19 ms  Stage3 blk0 RepMixer C=192 16x16
+[LayerTiming]    810.24 ms    [S3B0] DW3 C=192 16x16
+[LayerTiming]    816.10 ms    [S3B0] DW7 C=192 16x16
+[LayerTiming]    830.50 ms    [S3B0] PW1 192->576 16x16
+[LayerTiming]    870.85 ms    [S3B0] GELU 147456 elem
+[LayerTiming]    872.38 ms    [S3B0] PW2 576->192 16x16
+[LayerTiming]    911.14 ms    [S3B0] Add C=192 16x16
+[LayerTiming]    917.18 ms    [S3B0] done
+[LayerTiming]    917.21 ms  Stage3 blk1 RepMixer C=192 16x16
+[LayerTiming]    917.23 ms    [S3B1] DW3 C=192 16x16
+[LayerTiming]    923.08 ms    [S3B1] DW7 C=192 16x16
+[LayerTiming]    937.49 ms    [S3B1] PW1 192->576 16x16
+[LayerTiming]    977.86 ms    [S3B1] GELU 147456 elem
+[LayerTiming]    979.39 ms    [S3B1] PW2 576->192 16x16
+[LayerTiming]   1018.14 ms    [S3B1] Add C=192 16x16
+[LayerTiming]   1024.19 ms    [S3B1] done
+[LayerTiming]   1024.24 ms  Stage3 blk2 RepMixer C=192 16x16
+[LayerTiming]   1024.26 ms    [S3B2] DW3 C=192 16x16
+[LayerTiming]   1030.12 ms    [S3B2] DW7 C=192 16x16
+[LayerTiming]   1044.51 ms    [S3B2] PW1 192->576 16x16
+[LayerTiming]   1084.86 ms    [S3B2] GELU 147456 elem
+[LayerTiming]   1086.39 ms    [S3B2] PW2 576->192 16x16
+[LayerTiming]   1125.13 ms    [S3B2] Add C=192 16x16
+[LayerTiming]   1131.18 ms    [S3B2] done
+[LayerTiming]   1131.23 ms  Stage3 blk3 RepMixer C=192 16x16
+[LayerTiming]   1131.25 ms    [S3B3] DW3 C=192 16x16
+[LayerTiming]   1137.11 ms    [S3B3] DW7 C=192 16x16
+[LayerTiming]   1151.49 ms    [S3B3] PW1 192->576 16x16
+[LayerTiming]   1191.83 ms    [S3B3] GELU 147456 elem
+[LayerTiming]   1193.37 ms    [S3B3] PW2 576->192 16x16
+[LayerTiming]   1232.11 ms    [S3B3] Add C=192 16x16
+[LayerTiming]   1238.16 ms    [S3B3] done
+[LayerTiming]   1238.18 ms  Trans3 FPGA DW7 fpg=2 192->384 16->8
+[LayerTiming]   1246.08 ms  Trans3 PW 384->384
+[LayerTiming]   1273.67 ms  Stage4 blk0 RepMixer C=384 8x8
+[LayerTiming]   1273.72 ms    [S4B0] DW3 C=384 8x8
+[LayerTiming]   1276.81 ms    [S4B0] DW7 C=384 8x8
+[LayerTiming]   1284.41 ms    [S4B0] PW1 384->1152 8x8
+[LayerTiming]   1367.13 ms    [S4B0] GELU 73728 elem
+[LayerTiming]   1367.93 ms    [S4B0] PW2 1152->384 8x8
+[LayerTiming]   1449.44 ms    [S4B0] Add C=384 8x8
+[LayerTiming]   1452.50 ms    [S4B0] done
+[LayerTiming]   1452.54 ms  Stage4 blk1 RepMixer C=384 8x8
+[LayerTiming]   1452.57 ms    [S4B1] DW3 C=384 8x8
+[LayerTiming]   1455.65 ms    [S4B1] DW7 C=384 8x8
+[LayerTiming]   1463.25 ms    [S4B1] PW1 384->1152 8x8
+[LayerTiming]   1545.93 ms    [S4B1] GELU 73728 elem
+[LayerTiming]   1546.73 ms    [S4B1] PW2 1152->384 8x8
+[LayerTiming]   1628.24 ms    [S4B1] Add C=384 8x8
+[LayerTiming]   1631.28 ms    [S4B1] done
+[LayerTiming]   1631.33 ms  FinalDW FPGA DW3 fpg=2 384->768 8->4
+[LayerTiming]   1633.14 ms  SE block C=768 4x4 [ARM]
+[LayerTiming]   1633.90 ms  done
+[LayerTiming]      0.00 ms  start
+[LayerTiming]      0.12 ms  Stem: Conv3x3 3->48 s=2
+[LayerTiming]    137.37 ms  Stem: DW3x3 48 + GELU
+[LayerTiming]    162.23 ms  Stem: PW 48->48
+[LayerTiming]    173.06 ms  Stem: DW3x3 48 (no act)
+[LayerTiming]    195.95 ms  Stage1 blk0 RepMixer C=48 64x64
+[LayerTiming]    196.00 ms    [S1B0] DW7-only C=48 64x64
+[LayerTiming]    252.32 ms    [S1B0] PW1 48->144 64x64
+[LayerTiming]    284.71 ms    [S1B0] GELU 589824 elem
+[LayerTiming]    290.66 ms    [S1B0] PW2 144->48 64x64
+[LayerTiming]    318.02 ms    [S1B0] Add C=48 64x64
+[LayerTiming]    342.03 ms    [S1B0] done
+[LayerTiming]    342.08 ms  Stage1 blk1 RepMixer C=48 64x64
+[LayerTiming]    342.10 ms    [S1B1] DW3 C=48 64x64
+[LayerTiming]    364.96 ms    [S1B1] DW7 C=48 64x64
+[LayerTiming]    421.30 ms    [S1B1] PW1 48->144 64x64
+[LayerTiming]    453.70 ms    [S1B1] GELU 589824 elem
+[LayerTiming]    459.65 ms    [S1B1] PW2 144->48 64x64
+[LayerTiming]    487.01 ms    [S1B1] Add C=48 64x64
+[LayerTiming]    511.03 ms    [S1B1] done
+[LayerTiming]    511.08 ms  Trans1 FPGA DW7 fpg=2 48->96 64->32
+[LayerTiming]    540.61 ms  Trans1 PW 96->96
+[LayerTiming]    551.13 ms  Stage2 blk0 RepMixer C=96 32x32
+[LayerTiming]    551.18 ms    [S2B0] DW3 C=96 32x32
+[LayerTiming]    562.69 ms    [S2B0] DW7 C=96 32x32
+[LayerTiming]    591.02 ms    [S2B0] PW1 96->288 32x32
+[LayerTiming]    622.49 ms    [S2B0] GELU 294912 elem
+[LayerTiming]    625.50 ms    [S2B0] PW2 288->96 32x32
+[LayerTiming]    654.30 ms    [S2B0] Add C=96 32x32
+[LayerTiming]    666.34 ms    [S2B0] done
+[LayerTiming]    666.38 ms  Stage2 blk1 RepMixer C=96 32x32
+[LayerTiming]    666.41 ms    [S2B1] DW3 C=96 32x32
+[LayerTiming]    677.91 ms    [S2B1] DW7 C=96 32x32
+[LayerTiming]    706.24 ms    [S2B1] PW1 96->288 32x32
+[LayerTiming]    737.71 ms    [S2B1] GELU 294912 elem
+[LayerTiming]    740.72 ms    [S2B1] PW2 288->96 32x32
+[LayerTiming]    769.53 ms    [S2B1] Add C=96 32x32
+[LayerTiming]    781.57 ms    [S2B1] done
+[LayerTiming]    781.64 ms  Trans2 FPGA DW7 fpg=2 96->192 32->16
+[LayerTiming]    796.63 ms  Trans2 PW 192->192
+[LayerTiming]    810.12 ms  Stage3 blk0 RepMixer C=192 16x16
+[LayerTiming]    810.17 ms    [S3B0] DW3 C=192 16x16
+[LayerTiming]    816.03 ms    [S3B0] DW7 C=192 16x16
+[LayerTiming]    830.41 ms    [S3B0] PW1 192->576 16x16
+[LayerTiming]    870.78 ms    [S3B0] GELU 147456 elem
+[LayerTiming]    872.32 ms    [S3B0] PW2 576->192 16x16
+[LayerTiming]    911.06 ms    [S3B0] Add C=192 16x16
+[LayerTiming]    917.10 ms    [S3B0] done
+[LayerTiming]    917.18 ms  Stage3 blk1 RepMixer C=192 16x16
+[LayerTiming]    917.20 ms    [S3B1] DW3 C=192 16x16
+[LayerTiming]    923.06 ms    [S3B1] DW7 C=192 16x16
+[LayerTiming]    937.44 ms    [S3B1] PW1 192->576 16x16
+[LayerTiming]    977.78 ms    [S3B1] GELU 147456 elem
+[LayerTiming]    979.31 ms    [S3B1] PW2 576->192 16x16
+[LayerTiming]   1018.05 ms    [S3B1] Add C=192 16x16
+[LayerTiming]   1024.10 ms    [S3B1] done
+[LayerTiming]   1024.12 ms  Stage3 blk2 RepMixer C=192 16x16
+[LayerTiming]   1024.14 ms    [S3B2] DW3 C=192 16x16
+[LayerTiming]   1030.00 ms    [S3B2] DW7 C=192 16x16
+[LayerTiming]   1044.40 ms    [S3B2] PW1 192->576 16x16
+[LayerTiming]   1084.75 ms    [S3B2] GELU 147456 elem
+[LayerTiming]   1086.28 ms    [S3B2] PW2 576->192 16x16
+[LayerTiming]   1125.02 ms    [S3B2] Add C=192 16x16
+[LayerTiming]   1131.11 ms    [S3B2] done
+[LayerTiming]   1131.16 ms  Stage3 blk3 RepMixer C=192 16x16
+[LayerTiming]   1131.18 ms    [S3B3] DW3 C=192 16x16
+[LayerTiming]   1137.04 ms    [S3B3] DW7 C=192 16x16
+[LayerTiming]   1151.42 ms    [S3B3] PW1 192->576 16x16
+[LayerTiming]   1191.76 ms    [S3B3] GELU 147456 elem
+[LayerTiming]   1193.29 ms    [S3B3] PW2 576->192 16x16
+[LayerTiming]   1232.04 ms    [S3B3] Add C=192 16x16
+[LayerTiming]   1238.08 ms    [S3B3] done
+[LayerTiming]   1238.13 ms  Trans3 FPGA DW7 fpg=2 192->384 16->8
+[LayerTiming]   1246.03 ms  Trans3 PW 384->384
+[LayerTiming]   1273.59 ms  Stage4 blk0 RepMixer C=384 8x8
+[LayerTiming]   1273.64 ms    [S4B0] DW3 C=384 8x8
+[LayerTiming]   1276.73 ms    [S4B0] DW7 C=384 8x8
+[LayerTiming]   1284.33 ms    [S4B0] PW1 384->1152 8x8
+[LayerTiming]   1367.01 ms    [S4B0] GELU 73728 elem
+[LayerTiming]   1367.81 ms    [S4B0] PW2 1152->384 8x8
+[LayerTiming]   1449.34 ms    [S4B0] Add C=384 8x8
+[LayerTiming]   1452.39 ms    [S4B0] done
+[LayerTiming]   1452.42 ms  Stage4 blk1 RepMixer C=384 8x8
+[LayerTiming]   1452.45 ms    [S4B1] DW3 C=384 8x8
+[LayerTiming]   1455.53 ms    [S4B1] DW7 C=384 8x8
+[LayerTiming]   1463.13 ms    [S4B1] PW1 384->1152 8x8
+[LayerTiming]   1545.82 ms    [S4B1] GELU 73728 elem
+[LayerTiming]   1546.61 ms    [S4B1] PW2 1152->384 8x8
+[LayerTiming]   1628.12 ms    [S4B1] Add C=384 8x8
+[LayerTiming]   1631.18 ms    [S4B1] done
+[LayerTiming]   1631.20 ms  FinalDW FPGA DW3 fpg=2 384->768 8->4
+[LayerTiming]   1633.01 ms  SE block C=768 4x4 [ARM]
+[LayerTiming]   1633.76 ms  done
