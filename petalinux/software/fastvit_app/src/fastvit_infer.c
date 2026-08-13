@@ -72,7 +72,13 @@ static void se_block(
         a >>= shift_ex;
         ex[co] = (int8_t)(a < -128 ? -128 : a > 127 ? 127 : a);
     }
-    for (int co = 0; co < C; co++) ex[co] = sigmoid_lut[(uint8_t)ex[co]];
+    /* Phase 0.7 step 1 fix (2026-08-13): sigmoid_lut was built as
+     * x=(i-128)/64 (index 128 = x=0 = sigmoid 0.5), so a correct lookup
+     * needs index = ex[co]+128 (int8 -> unsigned OFFSET). The old
+     * (uint8_t)ex[co] is a raw bit-reinterpret CAST instead (ex=0->0,
+     * ex=-128->128), which swaps the LUT's two halves -- confirmed via
+     * Phase 0.6 debug instrumentation and code review, see ZHR-8. */
+    for (int co = 0; co < C; co++) ex[co] = sigmoid_lut[(uint8_t)((int)ex[co] + 128)];
     for (int c = 0; c < C; c++) {
         int16_t sc = ex[c];
         for (int p = 0; p < sp; p++) {
