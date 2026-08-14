@@ -335,6 +335,17 @@ int fastvit_t8_infer(
         "S4B1");
     DUMP_STATS(cur, 384, 8, 8, "after Stage4");
 
+    /* Phase 0.7 step 3 prep: dump the exact real Stage4 activation bytes
+     * that FinalDW is about to consume, so a from-scratch software
+     * cross-check (real weight+bias+activation, same int8 dot-product +
+     * bias + shift + clamp math as dwconv_worker.cpp) can settle whether
+     * a near-zero result is the mathematically correct answer for these
+     * real numbers, or a hardware bug. */
+    {
+        FILE *fdump = fopen("/tmp/stage4_real_activation.bin", "wb");
+        if (fdump) { fwrite(cur, 1, 384 * 8 * 8, fdump); fclose(fdump); }
+    }
+
     /* ─── Phase 0.7 step 2: FinalDW out_shift SWEEP ──────────
      * `cur` at this point holds Stage4's REAL output (healthy full
      * int8 range, confirmed by the "after Stage4" trace above) --
