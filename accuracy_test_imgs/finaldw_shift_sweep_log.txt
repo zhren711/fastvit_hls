@@ -1,0 +1,1160 @@
+--- img_0000 ---
+[LayerTiming]      0.00 ms  start
+[TRACE] raw input (copied)           C=3    128x128 min=-127 max= 127 mean=  11.778
+[LayerTiming]     17.39 ms  Stem: Conv3x3 3->48 s=2
+[TRACE] after Stem Conv              C=48   64x64  min=  -1 max= 127 mean= 119.011
+[LayerTiming]    222.52 ms  Stem: DW3x3 48 + GELU
+[LayerTiming]    247.34 ms  Stem: PW 48->48
+[LayerTiming]    258.16 ms  Stem: DW3x3 48 (no act)
+[TRACE] after Stem                   C=48   64x64  min=-127 max= 127 mean=   3.695
+[LayerTiming]    348.89 ms  Stage1 blk0 RepMixer C=48 64x64
+[LayerTiming]    348.91 ms    [S1B0] DW7-only C=48 64x64
+[TRACE]   [S1B0] after DW            C=48   64x64  min=-127 max= 127 mean=   3.695
+[LayerTiming]    473.02 ms    [S1B0] PW1 48->144 64x64
+[TRACE]   [S1B0] after PW1           C=144  64x64  min=-127 max= 127 mean=   1.898
+[LayerTiming]    708.73 ms    [S1B0] GELU 589824 elem
+[LayerTiming]    714.66 ms    [S1B0] PW2 144->48 64x64
+[LayerTiming]    742.00 ms    [S1B0] Add C=48 64x64
+[TRACE]   [S1B0] after Add (block out) C=48   64x64  min=-127 max= 127 mean=   3.695
+[LayerTiming]    833.83 ms    [S1B0] done
+[LayerTiming]    833.85 ms  Stage1 blk1 RepMixer C=48 64x64
+[LayerTiming]    833.86 ms    [S1B1] DW3 C=48 64x64
+[LayerTiming]    856.71 ms    [S1B1] DW7 C=48 64x64
+[TRACE]   [S1B1] after DW            C=48   64x64  min=-127 max= 127 mean=   3.695
+[LayerTiming]    980.85 ms    [S1B1] PW1 48->144 64x64
+[TRACE]   [S1B1] after PW1           C=144  64x64  min=-127 max= 127 mean=   1.898
+[LayerTiming]   1216.67 ms    [S1B1] GELU 589824 elem
+[LayerTiming]   1222.59 ms    [S1B1] PW2 144->48 64x64
+[LayerTiming]   1249.93 ms    [S1B1] Add C=48 64x64
+[TRACE]   [S1B1] after Add (block out) C=48   64x64  min=-127 max= 127 mean=   3.695
+[LayerTiming]   1342.19 ms    [S1B1] done
+[TRACE] after Stage1                 C=48   64x64  min=-127 max= 127 mean=   3.695
+[LayerTiming]   1410.28 ms  Trans1 FPGA DW7 fpg=2 48->96 64->32
+[LayerTiming]   1439.81 ms  Trans1 PW 96->96
+[TRACE] after Trans1                 C=96   32x32  min=-127 max= 127 mean=   6.389
+[LayerTiming]   1484.22 ms  Stage2 blk0 RepMixer C=96 32x32
+[LayerTiming]   1484.25 ms    [S2B0] DW3 C=96 32x32
+[LayerTiming]   1495.75 ms    [S2B0] DW7 C=96 32x32
+[TRACE]   [S2B0] after DW            C=96   32x32  min=-127 max= 127 mean=   6.389
+[LayerTiming]   1557.97 ms    [S2B0] PW1 96->240 32x32
+[TRACE]   [S2B0] after PW1           C=240  32x32  min=-127 max= 127 mean=   3.156
+[LayerTiming]   1669.08 ms    [S2B0] GELU 245760 elem
+[LayerTiming]   1671.56 ms    [S2B0] PW2 240->96 32x32
+[LayerTiming]   1695.80 ms    [S2B0] Add C=96 32x32
+[TRACE]   [S2B0] after Add (block out) C=96   32x32  min=-127 max= 127 mean=   6.389
+[LayerTiming]   1741.72 ms    [S2B0] done
+[LayerTiming]   1741.74 ms  Stage2 blk1 RepMixer C=96 32x32
+[LayerTiming]   1741.76 ms    [S2B1] DW3 C=96 32x32
+[LayerTiming]   1753.26 ms    [S2B1] DW7 C=96 32x32
+[TRACE]   [S2B1] after DW            C=96   32x32  min=-127 max= 127 mean=   6.389
+[LayerTiming]   1815.52 ms    [S2B1] PW1 96->288 32x32
+[TRACE]   [S2B1] after PW1           C=288  32x32  min=-127 max= 127 mean=   2.796
+[LayerTiming]   1948.75 ms    [S2B1] GELU 294912 elem
+[LayerTiming]   1951.73 ms    [S2B1] PW2 288->96 32x32
+[LayerTiming]   1980.54 ms    [S2B1] Add C=96 32x32
+[TRACE]   [S2B1] after Add (block out) C=96   32x32  min=-127 max= 127 mean=   6.389
+[LayerTiming]   2026.47 ms    [S2B1] done
+[TRACE] after Stage2                 C=96   32x32  min=-127 max= 127 mean=   6.389
+[LayerTiming]   2060.47 ms  Trans2 FPGA DW7 fpg=2 96->192 32->16
+[LayerTiming]   2075.46 ms  Trans2 PW 192->192
+[TRACE] after Trans2                 C=192  16x16  min=-127 max= 127 mean=  11.778
+[LayerTiming]   2105.89 ms  Stage3 blk0 RepMixer C=192 16x16
+[LayerTiming]   2105.91 ms    [S3B0] DW3 C=192 16x16
+[LayerTiming]   2111.77 ms    [S3B0] DW7 C=192 16x16
+[TRACE]   [S3B0] after DW            C=192  16x16  min=-127 max= 127 mean=  11.778
+[LayerTiming]   2143.12 ms    [S3B0] PW1 192->576 16x16
+[TRACE]   [S3B0] after PW1           C=576  16x16  min=-127 max= 127 mean=   4.593
+[LayerTiming]   2234.30 ms    [S3B0] GELU 147456 elem
+[LayerTiming]   2235.80 ms    [S3B0] PW2 576->192 16x16
+[LayerTiming]   2274.54 ms    [S3B0] Add C=192 16x16
+[TRACE]   [S3B0] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  11.778
+[LayerTiming]   2297.55 ms    [S3B0] done
+[LayerTiming]   2297.56 ms  Stage3 blk1 RepMixer C=192 16x16
+[LayerTiming]   2297.58 ms    [S3B1] DW3 C=192 16x16
+[LayerTiming]   2303.43 ms    [S3B1] DW7 C=192 16x16
+[TRACE]   [S3B1] after DW            C=192  16x16  min=-127 max= 127 mean=  11.778
+[LayerTiming]   2334.78 ms    [S3B1] PW1 192->480 16x16
+[TRACE]   [S3B1] after PW1           C=480  16x16  min=-127 max= 127 mean=   5.311
+[LayerTiming]   2410.79 ms    [S3B1] GELU 122880 elem
+[LayerTiming]   2412.04 ms    [S3B1] PW2 480->192 16x16
+[LayerTiming]   2444.46 ms    [S3B1] Add C=192 16x16
+[TRACE]   [S3B1] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  11.778
+[LayerTiming]   2467.48 ms    [S3B1] done
+[LayerTiming]   2467.49 ms  Stage3 blk2 RepMixer C=192 16x16
+[LayerTiming]   2467.51 ms    [S3B2] DW3 C=192 16x16
+[LayerTiming]   2473.36 ms    [S3B2] DW7 C=192 16x16
+[TRACE]   [S3B2] after DW            C=192  16x16  min=-127 max= 127 mean=  11.778
+[LayerTiming]   2504.71 ms    [S3B2] PW1 192->576 16x16
+[TRACE]   [S3B2] after PW1           C=576  16x16  min=-127 max= 127 mean=   4.593
+[LayerTiming]   2595.87 ms    [S3B2] GELU 147456 elem
+[LayerTiming]   2597.37 ms    [S3B2] PW2 576->192 16x16
+[LayerTiming]   2636.12 ms    [S3B2] Add C=192 16x16
+[TRACE]   [S3B2] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  11.778
+[LayerTiming]   2659.12 ms    [S3B2] done
+[LayerTiming]   2659.14 ms  Stage3 blk3 RepMixer C=192 16x16
+[LayerTiming]   2659.15 ms    [S3B3] DW3 C=192 16x16
+[LayerTiming]   2665.00 ms    [S3B3] DW7 C=192 16x16
+[TRACE]   [S3B3] after DW            C=192  16x16  min=-127 max= 127 mean=  11.778
+[LayerTiming]   2696.37 ms    [S3B3] PW1 192->576 16x16
+[TRACE]   [S3B3] after PW1           C=576  16x16  min=-127 max= 127 mean=   4.593
+[LayerTiming]   2787.63 ms    [S3B3] GELU 147456 elem
+[LayerTiming]   2789.13 ms    [S3B3] PW2 576->192 16x16
+[LayerTiming]   2827.88 ms    [S3B3] Add C=192 16x16
+[TRACE]   [S3B3] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  11.778
+[LayerTiming]   2850.88 ms    [S3B3] done
+[TRACE] after Stage3                 C=192  16x16  min=-127 max= 127 mean=  11.778
+[LayerTiming]   2867.96 ms  Trans3 FPGA DW7 fpg=2 192->384 16->8
+[LayerTiming]   2875.86 ms  Trans3 PW 384->384
+[TRACE] after Trans3                 C=384  8x8   min=-127 max= 127 mean=   8.155
+[LayerTiming]   2912.02 ms  Stage4 blk0 RepMixer C=384 8x8
+[LayerTiming]   2912.05 ms    [S4B0] DW3 C=384 8x8
+[LayerTiming]   2915.12 ms    [S4B0] DW7 C=384 8x8
+[TRACE]   [S4B0] after DW            C=384  8x8   min=-127 max= 127 mean=   8.155
+[LayerTiming]   2931.24 ms    [S4B0] PW1 384->1152 8x8
+[TRACE]   [S4B0] after PW1           C=1152 8x8   min=-127 max= 127 mean=   8.186
+[LayerTiming]   3039.34 ms    [S4B0] GELU 73728 elem
+[LayerTiming]   3040.10 ms    [S4B0] PW2 1152->384 8x8
+[LayerTiming]   3121.62 ms    [S4B0] Add C=384 8x8
+[TRACE]   [S4B0] after Add (block out) C=384  8x8   min=-127 max= 127 mean=   8.155
+[LayerTiming]   3133.16 ms    [S4B0] done
+[LayerTiming]   3133.18 ms  Stage4 blk1 RepMixer C=384 8x8
+[LayerTiming]   3133.20 ms    [S4B1] DW3 C=384 8x8
+[LayerTiming]   3136.27 ms    [S4B1] DW7 C=384 8x8
+[TRACE]   [S4B1] after DW            C=384  8x8   min=-127 max= 127 mean=   8.155
+[LayerTiming]   3152.39 ms    [S4B1] PW1 384->960 8x8
+[TRACE]   [S4B1] after PW1           C=960  8x8   min=-127 max= 127 mean=   9.623
+[LayerTiming]   3242.48 ms    [S4B1] GELU 61440 elem
+[LayerTiming]   3243.12 ms    [S4B1] PW2 960->384 8x8
+[LayerTiming]   3311.15 ms    [S4B1] Add C=384 8x8
+[TRACE]   [S4B1] after Add (block out) C=384  8x8   min=-127 max= 127 mean=   8.155
+[LayerTiming]   3322.69 ms    [S4B1] done
+[TRACE] after Stage4                 C=384  8x8   min=-127 max= 127 mean=   8.155
+
+=== FinalDW out_shift sweep (real weight/bias/input, deployed shift=8 is baseline) ===
+[TRACE] FinalDW out_shift=8 (deployed) C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=6          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=4          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=2          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=0          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[LayerTiming]   3362.68 ms  done
+[accuracy_infer] accuracy_test_imgs/img_0000.bin -> /tmp/sweep_out_0000.bin  ret=0  nonzero=12240/12288
+--- img_0001 ---
+[LayerTiming]      0.00 ms  start
+[TRACE] raw input (copied)           C=3    128x128 min=-127 max= 127 mean=  -6.557
+[LayerTiming]     17.37 ms  Stem: Conv3x3 3->48 s=2
+[TRACE] after Stem Conv              C=48   64x64  min=  -1 max= 127 mean= 119.011
+[LayerTiming]    222.43 ms  Stem: DW3x3 48 + GELU
+[LayerTiming]    247.24 ms  Stem: PW 48->48
+[LayerTiming]    258.06 ms  Stem: DW3x3 48 (no act)
+[TRACE] after Stem                   C=48   64x64  min=-127 max= 127 mean=  -0.889
+[LayerTiming]    348.78 ms  Stage1 blk0 RepMixer C=48 64x64
+[LayerTiming]    348.80 ms    [S1B0] DW7-only C=48 64x64
+[TRACE]   [S1B0] after DW            C=48   64x64  min=-127 max= 127 mean=  -0.889
+[LayerTiming]    472.96 ms    [S1B0] PW1 48->144 64x64
+[TRACE]   [S1B0] after PW1           C=144  64x64  min=-127 max= 127 mean=   0.370
+[LayerTiming]    708.69 ms    [S1B0] GELU 589824 elem
+[LayerTiming]    714.62 ms    [S1B0] PW2 144->48 64x64
+[LayerTiming]    741.97 ms    [S1B0] Add C=48 64x64
+[TRACE]   [S1B0] after Add (block out) C=48   64x64  min=-127 max= 127 mean=  -0.889
+[LayerTiming]    833.83 ms    [S1B0] done
+[LayerTiming]    833.85 ms  Stage1 blk1 RepMixer C=48 64x64
+[LayerTiming]    833.87 ms    [S1B1] DW3 C=48 64x64
+[LayerTiming]    856.72 ms    [S1B1] DW7 C=48 64x64
+[TRACE]   [S1B1] after DW            C=48   64x64  min=-127 max= 127 mean=  -0.889
+[LayerTiming]    980.81 ms    [S1B1] PW1 48->144 64x64
+[TRACE]   [S1B1] after PW1           C=144  64x64  min=-127 max= 127 mean=   0.370
+[LayerTiming]   1216.56 ms    [S1B1] GELU 589824 elem
+[LayerTiming]   1222.49 ms    [S1B1] PW2 144->48 64x64
+[LayerTiming]   1249.84 ms    [S1B1] Add C=48 64x64
+[TRACE]   [S1B1] after Add (block out) C=48   64x64  min=-127 max= 127 mean=  -0.889
+[LayerTiming]   1341.71 ms    [S1B1] done
+[TRACE] after Stage1                 C=48   64x64  min=-127 max= 127 mean=  -0.889
+[LayerTiming]   1409.61 ms  Trans1 FPGA DW7 fpg=2 48->96 64->32
+[LayerTiming]   1439.14 ms  Trans1 PW 96->96
+[TRACE] after Trans1                 C=96   32x32  min=-127 max= 127 mean=  -2.778
+[LayerTiming]   1483.57 ms  Stage2 blk0 RepMixer C=96 32x32
+[LayerTiming]   1483.59 ms    [S2B0] DW3 C=96 32x32
+[LayerTiming]   1495.09 ms    [S2B0] DW7 C=96 32x32
+[TRACE]   [S2B0] after DW            C=96   32x32  min=-127 max= 127 mean=  -2.778
+[LayerTiming]   1557.31 ms    [S2B0] PW1 96->240 32x32
+[TRACE]   [S2B0] after PW1           C=240  32x32  min=-127 max= 127 mean=  -0.511
+[LayerTiming]   1668.29 ms    [S2B0] GELU 245760 elem
+[LayerTiming]   1670.77 ms    [S2B0] PW2 240->96 32x32
+[LayerTiming]   1695.01 ms    [S2B0] Add C=96 32x32
+[TRACE]   [S2B0] after Add (block out) C=96   32x32  min=-127 max= 127 mean=  -2.778
+[LayerTiming]   1741.04 ms    [S2B0] done
+[LayerTiming]   1741.06 ms  Stage2 blk1 RepMixer C=96 32x32
+[LayerTiming]   1741.08 ms    [S2B1] DW3 C=96 32x32
+[LayerTiming]   1752.57 ms    [S2B1] DW7 C=96 32x32
+[TRACE]   [S2B1] after DW            C=96   32x32  min=-127 max= 127 mean=  -2.778
+[LayerTiming]   1814.79 ms    [S2B1] PW1 96->288 32x32
+[TRACE]   [S2B1] after PW1           C=288  32x32  min=-127 max= 127 mean=  -0.259
+[LayerTiming]   1947.95 ms    [S2B1] GELU 294912 elem
+[LayerTiming]   1950.93 ms    [S2B1] PW2 288->96 32x32
+[LayerTiming]   1979.74 ms    [S2B1] Add C=96 32x32
+[TRACE]   [S2B1] after Add (block out) C=96   32x32  min=-127 max= 127 mean=  -2.778
+[LayerTiming]   2025.74 ms    [S2B1] done
+[TRACE] after Stage2                 C=96   32x32  min=-127 max= 127 mean=  -2.778
+[LayerTiming]   2060.05 ms  Trans2 FPGA DW7 fpg=2 96->192 32->16
+[LayerTiming]   2075.04 ms  Trans2 PW 192->192
+[TRACE] after Trans2                 C=192  16x16  min=-127 max= 127 mean=  -6.557
+[LayerTiming]   2105.48 ms  Stage3 blk0 RepMixer C=192 16x16
+[LayerTiming]   2105.51 ms    [S3B0] DW3 C=192 16x16
+[LayerTiming]   2111.36 ms    [S3B0] DW7 C=192 16x16
+[TRACE]   [S3B0] after DW            C=192  16x16  min=-127 max= 127 mean=  -6.557
+[LayerTiming]   2142.71 ms    [S3B0] PW1 192->576 16x16
+[TRACE]   [S3B0] after PW1           C=576  16x16  min=-127 max= 127 mean=  -1.519
+[LayerTiming]   2233.87 ms    [S3B0] GELU 147456 elem
+[LayerTiming]   2235.37 ms    [S3B0] PW2 576->192 16x16
+[LayerTiming]   2274.12 ms    [S3B0] Add C=192 16x16
+[TRACE]   [S3B0] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -6.557
+[LayerTiming]   2297.32 ms    [S3B0] done
+[LayerTiming]   2297.34 ms  Stage3 blk1 RepMixer C=192 16x16
+[LayerTiming]   2297.36 ms    [S3B1] DW3 C=192 16x16
+[LayerTiming]   2303.22 ms    [S3B1] DW7 C=192 16x16
+[TRACE]   [S3B1] after DW            C=192  16x16  min=-127 max= 127 mean=  -6.557
+[LayerTiming]   2334.60 ms    [S3B1] PW1 192->480 16x16
+[TRACE]   [S3B1] after PW1           C=480  16x16  min=-127 max= 127 mean=  -2.023
+[LayerTiming]   2410.58 ms    [S3B1] GELU 122880 elem
+[LayerTiming]   2411.84 ms    [S3B1] PW2 480->192 16x16
+[LayerTiming]   2444.26 ms    [S3B1] Add C=192 16x16
+[TRACE]   [S3B1] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -6.557
+[LayerTiming]   2467.25 ms    [S3B1] done
+[LayerTiming]   2467.27 ms  Stage3 blk2 RepMixer C=192 16x16
+[LayerTiming]   2467.29 ms    [S3B2] DW3 C=192 16x16
+[LayerTiming]   2473.14 ms    [S3B2] DW7 C=192 16x16
+[TRACE]   [S3B2] after DW            C=192  16x16  min=-127 max= 127 mean=  -6.557
+[LayerTiming]   2504.52 ms    [S3B2] PW1 192->576 16x16
+[TRACE]   [S3B2] after PW1           C=576  16x16  min=-127 max= 127 mean=  -1.519
+[LayerTiming]   2595.71 ms    [S3B2] GELU 147456 elem
+[LayerTiming]   2597.22 ms    [S3B2] PW2 576->192 16x16
+[LayerTiming]   2635.97 ms    [S3B2] Add C=192 16x16
+[TRACE]   [S3B2] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -6.557
+[LayerTiming]   2659.04 ms    [S3B2] done
+[LayerTiming]   2659.06 ms  Stage3 blk3 RepMixer C=192 16x16
+[LayerTiming]   2659.08 ms    [S3B3] DW3 C=192 16x16
+[LayerTiming]   2664.93 ms    [S3B3] DW7 C=192 16x16
+[TRACE]   [S3B3] after DW            C=192  16x16  min=-127 max= 127 mean=  -6.557
+[LayerTiming]   2696.31 ms    [S3B3] PW1 192->576 16x16
+[TRACE]   [S3B3] after PW1           C=576  16x16  min=-127 max= 127 mean=  -1.519
+[LayerTiming]   2787.55 ms    [S3B3] GELU 147456 elem
+[LayerTiming]   2789.05 ms    [S3B3] PW2 576->192 16x16
+[LayerTiming]   2827.80 ms    [S3B3] Add C=192 16x16
+[TRACE]   [S3B3] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -6.557
+[LayerTiming]   2850.79 ms    [S3B3] done
+[TRACE] after Stage3                 C=192  16x16  min=-127 max= 127 mean=  -6.557
+[LayerTiming]   2867.86 ms  Trans3 FPGA DW7 fpg=2 192->384 16->8
+[LayerTiming]   2875.75 ms  Trans3 PW 384->384
+[TRACE] after Trans3                 C=384  8x8   min=-127 max= 127 mean=  -8.263
+[LayerTiming]   2911.81 ms  Stage4 blk0 RepMixer C=384 8x8
+[LayerTiming]   2911.84 ms    [S4B0] DW3 C=384 8x8
+[LayerTiming]   2914.91 ms    [S4B0] DW7 C=384 8x8
+[TRACE]   [S4B0] after DW            C=384  8x8   min=-127 max= 127 mean=  -8.263
+[LayerTiming]   2931.01 ms    [S4B0] PW1 384->1152 8x8
+[TRACE]   [S4B0] after PW1           C=1152 8x8   min=-127 max= 127 mean=  -4.038
+[LayerTiming]   3039.12 ms    [S4B0] GELU 73728 elem
+[LayerTiming]   3039.88 ms    [S4B0] PW2 1152->384 8x8
+[LayerTiming]   3121.40 ms    [S4B0] Add C=384 8x8
+[TRACE]   [S4B0] after Add (block out) C=384  8x8   min=-127 max= 127 mean=  -8.263
+[LayerTiming]   3132.93 ms    [S4B0] done
+[LayerTiming]   3132.95 ms  Stage4 blk1 RepMixer C=384 8x8
+[LayerTiming]   3132.97 ms    [S4B1] DW3 C=384 8x8
+[LayerTiming]   3136.05 ms    [S4B1] DW7 C=384 8x8
+[TRACE]   [S4B1] after DW            C=384  8x8   min=-127 max= 127 mean=  -8.263
+[LayerTiming]   3152.15 ms    [S4B1] PW1 384->960 8x8
+[TRACE]   [S4B1] after PW1           C=960  8x8   min=-127 max= 127 mean=  -5.045
+[LayerTiming]   3242.25 ms    [S4B1] GELU 61440 elem
+[LayerTiming]   3242.89 ms    [S4B1] PW2 960->384 8x8
+[LayerTiming]   3310.92 ms    [S4B1] Add C=384 8x8
+[TRACE]   [S4B1] after Add (block out) C=384  8x8   min=-127 max= 127 mean=  -8.263
+[LayerTiming]   3322.46 ms    [S4B1] done
+[TRACE] after Stage4                 C=384  8x8   min=-127 max= 127 mean=  -8.263
+
+=== FinalDW out_shift sweep (real weight/bias/input, deployed shift=8 is baseline) ===
+[TRACE] FinalDW out_shift=8 (deployed) C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=6          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=4          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=2          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=0          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[LayerTiming]   3362.04 ms  done
+[accuracy_infer] accuracy_test_imgs/img_0001.bin -> /tmp/sweep_out_0001.bin  ret=0  nonzero=12251/12288
+--- img_0002 ---
+[LayerTiming]      0.00 ms  start
+[TRACE] raw input (copied)           C=3    128x128 min=-127 max= 127 mean=   5.153
+[LayerTiming]     17.34 ms  Stem: Conv3x3 3->48 s=2
+[TRACE] after Stem Conv              C=48   64x64  min=  -1 max= 127 mean= 119.011
+[LayerTiming]    222.41 ms  Stem: DW3x3 48 + GELU
+[LayerTiming]    247.23 ms  Stem: PW 48->48
+[LayerTiming]    258.05 ms  Stem: DW3x3 48 (no act)
+[TRACE] after Stem                   C=48   64x64  min=-127 max= 127 mean=   2.038
+[LayerTiming]    348.83 ms  Stage1 blk0 RepMixer C=48 64x64
+[LayerTiming]    348.85 ms    [S1B0] DW7-only C=48 64x64
+[TRACE]   [S1B0] after DW            C=48   64x64  min=-127 max= 127 mean=   2.038
+[LayerTiming]    472.97 ms    [S1B0] PW1 48->144 64x64
+[TRACE]   [S1B0] after PW1           C=144  64x64  min=-127 max= 127 mean=   1.346
+[LayerTiming]    708.86 ms    [S1B0] GELU 589824 elem
+[LayerTiming]    714.79 ms    [S1B0] PW2 144->48 64x64
+[LayerTiming]    742.14 ms    [S1B0] Add C=48 64x64
+[TRACE]   [S1B0] after Add (block out) C=48   64x64  min=-127 max= 127 mean=   2.038
+[LayerTiming]    834.01 ms    [S1B0] done
+[LayerTiming]    834.03 ms  Stage1 blk1 RepMixer C=48 64x64
+[LayerTiming]    834.04 ms    [S1B1] DW3 C=48 64x64
+[LayerTiming]    856.89 ms    [S1B1] DW7 C=48 64x64
+[TRACE]   [S1B1] after DW            C=48   64x64  min=-127 max= 127 mean=   2.038
+[LayerTiming]    981.00 ms    [S1B1] PW1 48->144 64x64
+[TRACE]   [S1B1] after PW1           C=144  64x64  min=-127 max= 127 mean=   1.346
+[LayerTiming]   1216.74 ms    [S1B1] GELU 589824 elem
+[LayerTiming]   1222.67 ms    [S1B1] PW2 144->48 64x64
+[LayerTiming]   1250.02 ms    [S1B1] Add C=48 64x64
+[TRACE]   [S1B1] after Add (block out) C=48   64x64  min=-127 max= 127 mean=   2.038
+[LayerTiming]   1341.85 ms    [S1B1] done
+[TRACE] after Stage1                 C=48   64x64  min=-127 max= 127 mean=   2.038
+[LayerTiming]   1409.81 ms  Trans1 FPGA DW7 fpg=2 48->96 64->32
+[LayerTiming]   1439.33 ms  Trans1 PW 96->96
+[TRACE] after Trans1                 C=96   32x32  min=-127 max= 127 mean=   3.077
+[LayerTiming]   1483.74 ms  Stage2 blk0 RepMixer C=96 32x32
+[LayerTiming]   1483.76 ms    [S2B0] DW3 C=96 32x32
+[LayerTiming]   1495.26 ms    [S2B0] DW7 C=96 32x32
+[TRACE]   [S2B0] after DW            C=96   32x32  min=-127 max= 127 mean=   3.077
+[LayerTiming]   1557.47 ms    [S2B0] PW1 96->240 32x32
+[TRACE]   [S2B0] after PW1           C=240  32x32  min=-127 max= 127 mean=   1.831
+[LayerTiming]   1668.47 ms    [S2B0] GELU 245760 elem
+[LayerTiming]   1670.96 ms    [S2B0] PW2 240->96 32x32
+[LayerTiming]   1695.20 ms    [S2B0] Add C=96 32x32
+[TRACE]   [S2B0] after Add (block out) C=96   32x32  min=-127 max= 127 mean=   3.077
+[LayerTiming]   1741.13 ms    [S2B0] done
+[LayerTiming]   1741.14 ms  Stage2 blk1 RepMixer C=96 32x32
+[LayerTiming]   1741.16 ms    [S2B1] DW3 C=96 32x32
+[LayerTiming]   1752.66 ms    [S2B1] DW7 C=96 32x32
+[TRACE]   [S2B1] after DW            C=96   32x32  min=-127 max= 127 mean=   3.077
+[LayerTiming]   1814.94 ms    [S2B1] PW1 96->288 32x32
+[TRACE]   [S2B1] after PW1           C=288  32x32  min=-127 max= 127 mean=   1.692
+[LayerTiming]   1948.11 ms    [S2B1] GELU 294912 elem
+[LayerTiming]   1951.09 ms    [S2B1] PW2 288->96 32x32
+[LayerTiming]   1979.90 ms    [S2B1] Add C=96 32x32
+[TRACE]   [S2B1] after Add (block out) C=96   32x32  min=-127 max= 127 mean=   3.077
+[LayerTiming]   2025.82 ms    [S2B1] done
+[TRACE] after Stage2                 C=96   32x32  min=-127 max= 127 mean=   3.077
+[LayerTiming]   2059.83 ms  Trans2 FPGA DW7 fpg=2 96->192 32->16
+[LayerTiming]   2074.82 ms  Trans2 PW 192->192
+[TRACE] after Trans2                 C=192  16x16  min=-127 max= 127 mean=   5.153
+[LayerTiming]   2105.28 ms  Stage3 blk0 RepMixer C=192 16x16
+[LayerTiming]   2105.30 ms    [S3B0] DW3 C=192 16x16
+[LayerTiming]   2111.15 ms    [S3B0] DW7 C=192 16x16
+[TRACE]   [S3B0] after DW            C=192  16x16  min=-127 max= 127 mean=   5.153
+[LayerTiming]   2142.54 ms    [S3B0] PW1 192->576 16x16
+[TRACE]   [S3B0] after PW1           C=576  16x16  min=-127 max= 127 mean=   2.384
+[LayerTiming]   2233.81 ms    [S3B0] GELU 147456 elem
+[LayerTiming]   2235.31 ms    [S3B0] PW2 576->192 16x16
+[LayerTiming]   2274.06 ms    [S3B0] Add C=192 16x16
+[TRACE]   [S3B0] after Add (block out) C=192  16x16  min=-127 max= 127 mean=   5.153
+[LayerTiming]   2297.05 ms    [S3B0] done
+[LayerTiming]   2297.07 ms  Stage3 blk1 RepMixer C=192 16x16
+[LayerTiming]   2297.08 ms    [S3B1] DW3 C=192 16x16
+[LayerTiming]   2302.93 ms    [S3B1] DW7 C=192 16x16
+[TRACE]   [S3B1] after DW            C=192  16x16  min=-127 max= 127 mean=   5.153
+[LayerTiming]   2334.36 ms    [S3B1] PW1 192->480 16x16
+[TRACE]   [S3B1] after PW1           C=480  16x16  min=-127 max= 127 mean=   2.661
+[LayerTiming]   2410.36 ms    [S3B1] GELU 122880 elem
+[LayerTiming]   2411.61 ms    [S3B1] PW2 480->192 16x16
+[LayerTiming]   2444.03 ms    [S3B1] Add C=192 16x16
+[TRACE]   [S3B1] after Add (block out) C=192  16x16  min=-127 max= 127 mean=   5.153
+[LayerTiming]   2467.02 ms    [S3B1] done
+[LayerTiming]   2467.04 ms  Stage3 blk2 RepMixer C=192 16x16
+[LayerTiming]   2467.06 ms    [S3B2] DW3 C=192 16x16
+[LayerTiming]   2472.91 ms    [S3B2] DW7 C=192 16x16
+[TRACE]   [S3B2] after DW            C=192  16x16  min=-127 max= 127 mean=   5.153
+[LayerTiming]   2504.31 ms    [S3B2] PW1 192->576 16x16
+[TRACE]   [S3B2] after PW1           C=576  16x16  min=-127 max= 127 mean=   2.384
+[LayerTiming]   2595.48 ms    [S3B2] GELU 147456 elem
+[LayerTiming]   2596.99 ms    [S3B2] PW2 576->192 16x16
+[LayerTiming]   2635.73 ms    [S3B2] Add C=192 16x16
+[TRACE]   [S3B2] after Add (block out) C=192  16x16  min=-127 max= 127 mean=   5.153
+[LayerTiming]   2658.78 ms    [S3B2] done
+[LayerTiming]   2658.80 ms  Stage3 blk3 RepMixer C=192 16x16
+[LayerTiming]   2658.82 ms    [S3B3] DW3 C=192 16x16
+[LayerTiming]   2664.66 ms    [S3B3] DW7 C=192 16x16
+[TRACE]   [S3B3] after DW            C=192  16x16  min=-127 max= 127 mean=   5.153
+[LayerTiming]   2696.02 ms    [S3B3] PW1 192->576 16x16
+[TRACE]   [S3B3] after PW1           C=576  16x16  min=-127 max= 127 mean=   2.384
+[LayerTiming]   2787.19 ms    [S3B3] GELU 147456 elem
+[LayerTiming]   2788.69 ms    [S3B3] PW2 576->192 16x16
+[LayerTiming]   2827.44 ms    [S3B3] Add C=192 16x16
+[TRACE]   [S3B3] after Add (block out) C=192  16x16  min=-127 max= 127 mean=   5.153
+[LayerTiming]   2850.44 ms    [S3B3] done
+[TRACE] after Stage3                 C=192  16x16  min=-127 max= 127 mean=   5.153
+[LayerTiming]   2867.48 ms  Trans3 FPGA DW7 fpg=2 192->384 16->8
+[LayerTiming]   2875.38 ms  Trans3 PW 384->384
+[TRACE] after Trans3                 C=384  8x8   min=-127 max= 127 mean=   5.614
+[LayerTiming]   2911.46 ms  Stage4 blk0 RepMixer C=384 8x8
+[LayerTiming]   2911.48 ms    [S4B0] DW3 C=384 8x8
+[LayerTiming]   2914.55 ms    [S4B0] DW7 C=384 8x8
+[TRACE]   [S4B0] after DW            C=384  8x8   min=-127 max= 127 mean=   5.614
+[LayerTiming]   2930.66 ms    [S4B0] PW1 384->1152 8x8
+[TRACE]   [S4B0] after PW1           C=1152 8x8   min=-127 max= 127 mean=   3.769
+[LayerTiming]   3038.76 ms    [S4B0] GELU 73728 elem
+[LayerTiming]   3039.53 ms    [S4B0] PW2 1152->384 8x8
+[LayerTiming]   3121.04 ms    [S4B0] Add C=384 8x8
+[TRACE]   [S4B0] after Add (block out) C=384  8x8   min=-127 max= 127 mean=   5.614
+[LayerTiming]   3132.59 ms    [S4B0] done
+[LayerTiming]   3132.61 ms  Stage4 blk1 RepMixer C=384 8x8
+[LayerTiming]   3132.63 ms    [S4B1] DW3 C=384 8x8
+[LayerTiming]   3135.71 ms    [S4B1] DW7 C=384 8x8
+[TRACE]   [S4B1] after DW            C=384  8x8   min=-127 max= 127 mean=   5.614
+[LayerTiming]   3151.81 ms    [S4B1] PW1 384->960 8x8
+[TRACE]   [S4B1] after PW1           C=960  8x8   min=-127 max= 127 mean=   4.323
+[LayerTiming]   3241.90 ms    [S4B1] GELU 61440 elem
+[LayerTiming]   3242.55 ms    [S4B1] PW2 960->384 8x8
+[LayerTiming]   3310.58 ms    [S4B1] Add C=384 8x8
+[TRACE]   [S4B1] after Add (block out) C=384  8x8   min=-127 max= 127 mean=   5.614
+[LayerTiming]   3322.12 ms    [S4B1] done
+[TRACE] after Stage4                 C=384  8x8   min=-127 max= 127 mean=   5.614
+
+=== FinalDW out_shift sweep (real weight/bias/input, deployed shift=8 is baseline) ===
+[TRACE] FinalDW out_shift=8 (deployed) C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=6          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=4          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=2          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=0          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[LayerTiming]   3361.72 ms  done
+[accuracy_infer] accuracy_test_imgs/img_0002.bin -> /tmp/sweep_out_0002.bin  ret=0  nonzero=12242/12288
+--- img_0003 ---
+[LayerTiming]      0.00 ms  start
+[TRACE] raw input (copied)           C=3    128x128 min=-127 max= 127 mean=  -0.379
+[LayerTiming]     17.43 ms  Stem: Conv3x3 3->48 s=2
+[TRACE] after Stem Conv              C=48   64x64  min=  -1 max= 127 mean= 119.011
+[LayerTiming]    222.69 ms  Stem: DW3x3 48 + GELU
+[LayerTiming]    247.51 ms  Stem: PW 48->48
+[LayerTiming]    258.33 ms  Stem: DW3x3 48 (no act)
+[TRACE] after Stem                   C=48   64x64  min=-127 max= 127 mean=   0.655
+[LayerTiming]    349.04 ms  Stage1 blk0 RepMixer C=48 64x64
+[LayerTiming]    349.06 ms    [S1B0] DW7-only C=48 64x64
+[TRACE]   [S1B0] after DW            C=48   64x64  min=-127 max= 127 mean=   0.655
+[LayerTiming]    473.52 ms    [S1B0] PW1 48->144 64x64
+[TRACE]   [S1B0] after PW1           C=144  64x64  min=-127 max= 127 mean=   0.885
+[LayerTiming]    709.24 ms    [S1B0] GELU 589824 elem
+[LayerTiming]    715.19 ms    [S1B0] PW2 144->48 64x64
+[LayerTiming]    742.53 ms    [S1B0] Add C=48 64x64
+[TRACE]   [S1B0] after Add (block out) C=48   64x64  min=-127 max= 127 mean=   0.655
+[LayerTiming]    834.38 ms    [S1B0] done
+[LayerTiming]    834.40 ms  Stage1 blk1 RepMixer C=48 64x64
+[LayerTiming]    834.41 ms    [S1B1] DW3 C=48 64x64
+[LayerTiming]    857.26 ms    [S1B1] DW7 C=48 64x64
+[TRACE]   [S1B1] after DW            C=48   64x64  min=-127 max= 127 mean=   0.655
+[LayerTiming]    981.46 ms    [S1B1] PW1 48->144 64x64
+[TRACE]   [S1B1] after PW1           C=144  64x64  min=-127 max= 127 mean=   0.885
+[LayerTiming]   1217.20 ms    [S1B1] GELU 589824 elem
+[LayerTiming]   1223.13 ms    [S1B1] PW2 144->48 64x64
+[LayerTiming]   1250.47 ms    [S1B1] Add C=48 64x64
+[TRACE]   [S1B1] after Add (block out) C=48   64x64  min=-127 max= 127 mean=   0.655
+[LayerTiming]   1342.32 ms    [S1B1] done
+[TRACE] after Stage1                 C=48   64x64  min=-127 max= 127 mean=   0.655
+[LayerTiming]   1410.21 ms  Trans1 FPGA DW7 fpg=2 48->96 64->32
+[LayerTiming]   1439.73 ms  Trans1 PW 96->96
+[TRACE] after Trans1                 C=96   32x32  min=-127 max= 127 mean=   0.311
+[LayerTiming]   1484.25 ms  Stage2 blk0 RepMixer C=96 32x32
+[LayerTiming]   1484.27 ms    [S2B0] DW3 C=96 32x32
+[LayerTiming]   1495.77 ms    [S2B0] DW7 C=96 32x32
+[TRACE]   [S2B0] after DW            C=96   32x32  min=-127 max= 127 mean=   0.311
+[LayerTiming]   1557.99 ms    [S2B0] PW1 96->240 32x32
+[TRACE]   [S2B0] after PW1           C=240  32x32  min=-127 max= 127 mean=   0.724
+[LayerTiming]   1669.02 ms    [S2B0] GELU 245760 elem
+[LayerTiming]   1671.50 ms    [S2B0] PW2 240->96 32x32
+[LayerTiming]   1695.74 ms    [S2B0] Add C=96 32x32
+[TRACE]   [S2B0] after Add (block out) C=96   32x32  min=-127 max= 127 mean=   0.311
+[LayerTiming]   1741.89 ms    [S2B0] done
+[LayerTiming]   1741.91 ms  Stage2 blk1 RepMixer C=96 32x32
+[LayerTiming]   1741.93 ms    [S2B1] DW3 C=96 32x32
+[LayerTiming]   1753.43 ms    [S2B1] DW7 C=96 32x32
+[TRACE]   [S2B1] after DW            C=96   32x32  min=-127 max= 127 mean=   0.311
+[LayerTiming]   1815.67 ms    [S2B1] PW1 96->288 32x32
+[TRACE]   [S2B1] after PW1           C=288  32x32  min=-127 max= 127 mean=   0.770
+[LayerTiming]   1948.85 ms    [S2B1] GELU 294912 elem
+[LayerTiming]   1951.82 ms    [S2B1] PW2 288->96 32x32
+[LayerTiming]   1980.63 ms    [S2B1] Add C=96 32x32
+[TRACE]   [S2B1] after Add (block out) C=96   32x32  min=-127 max= 127 mean=   0.311
+[LayerTiming]   2026.64 ms    [S2B1] done
+[TRACE] after Stage2                 C=96   32x32  min=-127 max= 127 mean=   0.311
+[LayerTiming]   2060.58 ms  Trans2 FPGA DW7 fpg=2 96->192 32->16
+[LayerTiming]   2075.57 ms  Trans2 PW 192->192
+[TRACE] after Trans2                 C=192  16x16  min=-127 max= 127 mean=  -0.379
+[LayerTiming]   2106.01 ms  Stage3 blk0 RepMixer C=192 16x16
+[LayerTiming]   2106.03 ms    [S3B0] DW3 C=192 16x16
+[LayerTiming]   2111.88 ms    [S3B0] DW7 C=192 16x16
+[TRACE]   [S3B0] after DW            C=192  16x16  min=-127 max= 127 mean=  -0.379
+[LayerTiming]   2143.23 ms    [S3B0] PW1 192->576 16x16
+[TRACE]   [S3B0] after PW1           C=576  16x16  min=-127 max= 127 mean=   0.540
+[LayerTiming]   2234.41 ms    [S3B0] GELU 147456 elem
+[LayerTiming]   2235.91 ms    [S3B0] PW2 576->192 16x16
+[LayerTiming]   2274.66 ms    [S3B0] Add C=192 16x16
+[TRACE]   [S3B0] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -0.379
+[LayerTiming]   2297.67 ms    [S3B0] done
+[LayerTiming]   2297.69 ms  Stage3 blk1 RepMixer C=192 16x16
+[LayerTiming]   2297.71 ms    [S3B1] DW3 C=192 16x16
+[LayerTiming]   2303.56 ms    [S3B1] DW7 C=192 16x16
+[TRACE]   [S3B1] after DW            C=192  16x16  min=-127 max= 127 mean=  -0.379
+[LayerTiming]   2334.90 ms    [S3B1] PW1 192->480 16x16
+[TRACE]   [S3B1] after PW1           C=480  16x16  min=-127 max= 127 mean=   0.448
+[LayerTiming]   2410.87 ms    [S3B1] GELU 122880 elem
+[LayerTiming]   2412.13 ms    [S3B1] PW2 480->192 16x16
+[LayerTiming]   2444.55 ms    [S3B1] Add C=192 16x16
+[TRACE]   [S3B1] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -0.379
+[LayerTiming]   2467.54 ms    [S3B1] done
+[LayerTiming]   2467.56 ms  Stage3 blk2 RepMixer C=192 16x16
+[LayerTiming]   2467.58 ms    [S3B2] DW3 C=192 16x16
+[LayerTiming]   2473.43 ms    [S3B2] DW7 C=192 16x16
+[TRACE]   [S3B2] after DW            C=192  16x16  min=-127 max= 127 mean=  -0.379
+[LayerTiming]   2504.77 ms    [S3B2] PW1 192->576 16x16
+[TRACE]   [S3B2] after PW1           C=576  16x16  min=-127 max= 127 mean=   0.540
+[LayerTiming]   2595.99 ms    [S3B2] GELU 147456 elem
+[LayerTiming]   2597.49 ms    [S3B2] PW2 576->192 16x16
+[LayerTiming]   2636.24 ms    [S3B2] Add C=192 16x16
+[TRACE]   [S3B2] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -0.379
+[LayerTiming]   2659.25 ms    [S3B2] done
+[LayerTiming]   2659.27 ms  Stage3 blk3 RepMixer C=192 16x16
+[LayerTiming]   2659.29 ms    [S3B3] DW3 C=192 16x16
+[LayerTiming]   2665.14 ms    [S3B3] DW7 C=192 16x16
+[TRACE]   [S3B3] after DW            C=192  16x16  min=-127 max= 127 mean=  -0.379
+[LayerTiming]   2696.53 ms    [S3B3] PW1 192->576 16x16
+[TRACE]   [S3B3] after PW1           C=576  16x16  min=-127 max= 127 mean=   0.540
+[LayerTiming]   2787.71 ms    [S3B3] GELU 147456 elem
+[LayerTiming]   2789.21 ms    [S3B3] PW2 576->192 16x16
+[LayerTiming]   2827.96 ms    [S3B3] Add C=192 16x16
+[TRACE]   [S3B3] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -0.379
+[LayerTiming]   2850.97 ms    [S3B3] done
+[TRACE] after Stage3                 C=192  16x16  min=-127 max= 127 mean=  -0.379
+[LayerTiming]   2868.03 ms  Trans3 FPGA DW7 fpg=2 192->384 16->8
+[LayerTiming]   2875.92 ms  Trans3 PW 384->384
+[TRACE] after Trans3                 C=384  8x8   min=-127 max= 127 mean=  -0.355
+[LayerTiming]   2912.00 ms  Stage4 blk0 RepMixer C=384 8x8
+[LayerTiming]   2912.02 ms    [S4B0] DW3 C=384 8x8
+[LayerTiming]   2915.10 ms    [S4B0] DW7 C=384 8x8
+[TRACE]   [S4B0] after DW            C=384  8x8   min=-127 max= 127 mean=  -0.355
+[LayerTiming]   2931.21 ms    [S4B0] PW1 384->1152 8x8
+[TRACE]   [S4B0] after PW1           C=1152 8x8   min=-127 max= 127 mean=   0.081
+[LayerTiming]   3039.33 ms    [S4B0] GELU 73728 elem
+[LayerTiming]   3040.10 ms    [S4B0] PW2 1152->384 8x8
+[LayerTiming]   3121.61 ms    [S4B0] Add C=384 8x8
+[TRACE]   [S4B0] after Add (block out) C=384  8x8   min=-127 max= 127 mean=  -0.355
+[LayerTiming]   3133.15 ms    [S4B0] done
+[LayerTiming]   3133.17 ms  Stage4 blk1 RepMixer C=384 8x8
+[LayerTiming]   3133.18 ms    [S4B1] DW3 C=384 8x8
+[LayerTiming]   3136.26 ms    [S4B1] DW7 C=384 8x8
+[TRACE]   [S4B1] after DW            C=384  8x8   min=-127 max= 127 mean=  -0.355
+[LayerTiming]   3152.38 ms    [S4B1] PW1 384->960 8x8
+[TRACE]   [S4B1] after PW1           C=960  8x8   min=-127 max= 127 mean=  -0.103
+[LayerTiming]   3242.49 ms    [S4B1] GELU 61440 elem
+[LayerTiming]   3243.14 ms    [S4B1] PW2 960->384 8x8
+[LayerTiming]   3311.17 ms    [S4B1] Add C=384 8x8
+[TRACE]   [S4B1] after Add (block out) C=384  8x8   min=-127 max= 127 mean=  -0.355
+[LayerTiming]   3322.72 ms    [S4B1] done
+[TRACE] after Stage4                 C=384  8x8   min=-127 max= 127 mean=  -0.355
+
+=== FinalDW out_shift sweep (real weight/bias/input, deployed shift=8 is baseline) ===
+[TRACE] FinalDW out_shift=8 (deployed) C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=6          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=4          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=2          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=0          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[LayerTiming]   3362.31 ms  done
+[accuracy_infer] accuracy_test_imgs/img_0003.bin -> /tmp/sweep_out_0003.bin  ret=0  nonzero=12255/12288
+--- img_0004 ---
+[LayerTiming]      0.00 ms  start
+[TRACE] raw input (copied)           C=3    128x128 min=-127 max= 127 mean=  -6.935
+[LayerTiming]     17.38 ms  Stem: Conv3x3 3->48 s=2
+[TRACE] after Stem Conv              C=48   64x64  min=  -1 max= 127 mean= 119.011
+[LayerTiming]    222.82 ms  Stem: DW3x3 48 + GELU
+[LayerTiming]    247.64 ms  Stem: PW 48->48
+[LayerTiming]    258.45 ms  Stem: DW3x3 48 (no act)
+[TRACE] after Stem                   C=48   64x64  min=-127 max= 127 mean=  -0.984
+[LayerTiming]    349.22 ms  Stage1 blk0 RepMixer C=48 64x64
+[LayerTiming]    349.24 ms    [S1B0] DW7-only C=48 64x64
+[TRACE]   [S1B0] after DW            C=48   64x64  min=-127 max= 127 mean=  -0.984
+[LayerTiming]    473.34 ms    [S1B0] PW1 48->144 64x64
+[TRACE]   [S1B0] after PW1           C=144  64x64  min=-127 max= 127 mean=   0.339
+[LayerTiming]    709.12 ms    [S1B0] GELU 589824 elem
+[LayerTiming]    715.04 ms    [S1B0] PW2 144->48 64x64
+[LayerTiming]    742.39 ms    [S1B0] Add C=48 64x64
+[TRACE]   [S1B0] after Add (block out) C=48   64x64  min=-127 max= 127 mean=  -0.984
+[LayerTiming]    834.28 ms    [S1B0] done
+[LayerTiming]    834.30 ms  Stage1 blk1 RepMixer C=48 64x64
+[LayerTiming]    834.32 ms    [S1B1] DW3 C=48 64x64
+[LayerTiming]    857.17 ms    [S1B1] DW7 C=48 64x64
+[TRACE]   [S1B1] after DW            C=48   64x64  min=-127 max= 127 mean=  -0.984
+[LayerTiming]    981.26 ms    [S1B1] PW1 48->144 64x64
+[TRACE]   [S1B1] after PW1           C=144  64x64  min=-127 max= 127 mean=   0.339
+[LayerTiming]   1216.97 ms    [S1B1] GELU 589824 elem
+[LayerTiming]   1222.90 ms    [S1B1] PW2 144->48 64x64
+[LayerTiming]   1250.24 ms    [S1B1] Add C=48 64x64
+[TRACE]   [S1B1] after Add (block out) C=48   64x64  min=-127 max= 127 mean=  -0.984
+[LayerTiming]   1342.26 ms    [S1B1] done
+[TRACE] after Stage1                 C=48   64x64  min=-127 max= 127 mean=  -0.984
+[LayerTiming]   1410.23 ms  Trans1 FPGA DW7 fpg=2 48->96 64->32
+[LayerTiming]   1439.76 ms  Trans1 PW 96->96
+[TRACE] after Trans1                 C=96   32x32  min=-127 max= 127 mean=  -2.967
+[LayerTiming]   1484.19 ms  Stage2 blk0 RepMixer C=96 32x32
+[LayerTiming]   1484.21 ms    [S2B0] DW3 C=96 32x32
+[LayerTiming]   1495.71 ms    [S2B0] DW7 C=96 32x32
+[TRACE]   [S2B0] after DW            C=96   32x32  min=-127 max= 127 mean=  -2.967
+[LayerTiming]   1557.99 ms    [S2B0] PW1 96->240 32x32
+[TRACE]   [S2B0] after PW1           C=240  32x32  min=-127 max= 127 mean=  -0.587
+[LayerTiming]   1669.02 ms    [S2B0] GELU 245760 elem
+[LayerTiming]   1671.51 ms    [S2B0] PW2 240->96 32x32
+[LayerTiming]   1695.76 ms    [S2B0] Add C=96 32x32
+[TRACE]   [S2B0] after Add (block out) C=96   32x32  min=-127 max= 127 mean=  -2.967
+[LayerTiming]   1741.71 ms    [S2B0] done
+[LayerTiming]   1741.73 ms  Stage2 blk1 RepMixer C=96 32x32
+[LayerTiming]   1741.74 ms    [S2B1] DW3 C=96 32x32
+[LayerTiming]   1753.24 ms    [S2B1] DW7 C=96 32x32
+[TRACE]   [S2B1] after DW            C=96   32x32  min=-127 max= 127 mean=  -2.967
+[LayerTiming]   1815.45 ms    [S2B1] PW1 96->288 32x32
+[TRACE]   [S2B1] after PW1           C=288  32x32  min=-127 max= 127 mean=  -0.322
+[LayerTiming]   1948.61 ms    [S2B1] GELU 294912 elem
+[LayerTiming]   1951.59 ms    [S2B1] PW2 288->96 32x32
+[LayerTiming]   1980.40 ms    [S2B1] Add C=96 32x32
+[TRACE]   [S2B1] after Add (block out) C=96   32x32  min=-127 max= 127 mean=  -2.967
+[LayerTiming]   2026.32 ms    [S2B1] done
+[TRACE] after Stage2                 C=96   32x32  min=-127 max= 127 mean=  -2.967
+[LayerTiming]   2060.31 ms  Trans2 FPGA DW7 fpg=2 96->192 32->16
+[LayerTiming]   2075.30 ms  Trans2 PW 192->192
+[TRACE] after Trans2                 C=192  16x16  min=-127 max= 127 mean=  -6.935
+[LayerTiming]   2105.73 ms  Stage3 blk0 RepMixer C=192 16x16
+[LayerTiming]   2105.75 ms    [S3B0] DW3 C=192 16x16
+[LayerTiming]   2111.60 ms    [S3B0] DW7 C=192 16x16
+[TRACE]   [S3B0] after DW            C=192  16x16  min=-127 max= 127 mean=  -6.935
+[LayerTiming]   2142.97 ms    [S3B0] PW1 192->576 16x16
+[TRACE]   [S3B0] after PW1           C=576  16x16  min=-127 max= 127 mean=  -1.645
+[LayerTiming]   2234.20 ms    [S3B0] GELU 147456 elem
+[LayerTiming]   2235.70 ms    [S3B0] PW2 576->192 16x16
+[LayerTiming]   2274.45 ms    [S3B0] Add C=192 16x16
+[TRACE]   [S3B0] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -6.935
+[LayerTiming]   2297.46 ms    [S3B0] done
+[LayerTiming]   2297.48 ms  Stage3 blk1 RepMixer C=192 16x16
+[LayerTiming]   2297.50 ms    [S3B1] DW3 C=192 16x16
+[LayerTiming]   2303.34 ms    [S3B1] DW7 C=192 16x16
+[TRACE]   [S3B1] after DW            C=192  16x16  min=-127 max= 127 mean=  -6.935
+[LayerTiming]   2334.73 ms    [S3B1] PW1 192->480 16x16
+[TRACE]   [S3B1] after PW1           C=480  16x16  min=-127 max= 127 mean=  -2.174
+[LayerTiming]   2410.72 ms    [S3B1] GELU 122880 elem
+[LayerTiming]   2411.98 ms    [S3B1] PW2 480->192 16x16
+[LayerTiming]   2444.40 ms    [S3B1] Add C=192 16x16
+[TRACE]   [S3B1] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -6.935
+[LayerTiming]   2467.40 ms    [S3B1] done
+[LayerTiming]   2467.42 ms  Stage3 blk2 RepMixer C=192 16x16
+[LayerTiming]   2467.44 ms    [S3B2] DW3 C=192 16x16
+[LayerTiming]   2473.29 ms    [S3B2] DW7 C=192 16x16
+[TRACE]   [S3B2] after DW            C=192  16x16  min=-127 max= 127 mean=  -6.935
+[LayerTiming]   2504.66 ms    [S3B2] PW1 192->576 16x16
+[TRACE]   [S3B2] after PW1           C=576  16x16  min=-127 max= 127 mean=  -1.645
+[LayerTiming]   2595.87 ms    [S3B2] GELU 147456 elem
+[LayerTiming]   2597.38 ms    [S3B2] PW2 576->192 16x16
+[LayerTiming]   2636.12 ms    [S3B2] Add C=192 16x16
+[TRACE]   [S3B2] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -6.935
+[LayerTiming]   2659.10 ms    [S3B2] done
+[LayerTiming]   2659.12 ms  Stage3 blk3 RepMixer C=192 16x16
+[LayerTiming]   2659.14 ms    [S3B3] DW3 C=192 16x16
+[LayerTiming]   2664.99 ms    [S3B3] DW7 C=192 16x16
+[TRACE]   [S3B3] after DW            C=192  16x16  min=-127 max= 127 mean=  -6.935
+[LayerTiming]   2696.36 ms    [S3B3] PW1 192->576 16x16
+[TRACE]   [S3B3] after PW1           C=576  16x16  min=-127 max= 127 mean=  -1.645
+[LayerTiming]   2787.53 ms    [S3B3] GELU 147456 elem
+[LayerTiming]   2789.03 ms    [S3B3] PW2 576->192 16x16
+[LayerTiming]   2827.80 ms    [S3B3] Add C=192 16x16
+[TRACE]   [S3B3] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -6.935
+[LayerTiming]   2850.80 ms    [S3B3] done
+[TRACE] after Stage3                 C=192  16x16  min=-127 max= 127 mean=  -6.935
+[LayerTiming]   2867.90 ms  Trans3 FPGA DW7 fpg=2 192->384 16->8
+[LayerTiming]   2875.80 ms  Trans3 PW 384->384
+[TRACE] after Trans3                 C=384  8x8   min=-127 max= 127 mean=   5.931
+[LayerTiming]   2911.88 ms  Stage4 blk0 RepMixer C=384 8x8
+[LayerTiming]   2911.91 ms    [S4B0] DW3 C=384 8x8
+[LayerTiming]   2914.98 ms    [S4B0] DW7 C=384 8x8
+[TRACE]   [S4B0] after DW            C=384  8x8   min=-127 max= 127 mean=   5.931
+[LayerTiming]   2931.07 ms    [S4B0] PW1 384->1152 8x8
+[TRACE]   [S4B0] after PW1           C=1152 8x8   min=-127 max= 127 mean=  -4.290
+[LayerTiming]   3039.16 ms    [S4B0] GELU 73728 elem
+[LayerTiming]   3039.92 ms    [S4B0] PW2 1152->384 8x8
+[LayerTiming]   3121.43 ms    [S4B0] Add C=384 8x8
+[TRACE]   [S4B0] after Add (block out) C=384  8x8   min=-127 max= 127 mean=   5.931
+[LayerTiming]   3132.97 ms    [S4B0] done
+[LayerTiming]   3132.98 ms  Stage4 blk1 RepMixer C=384 8x8
+[LayerTiming]   3133.00 ms    [S4B1] DW3 C=384 8x8
+[LayerTiming]   3136.08 ms    [S4B1] DW7 C=384 8x8
+[TRACE]   [S4B1] after DW            C=384  8x8   min=-127 max= 127 mean=   5.931
+[LayerTiming]   3152.19 ms    [S4B1] PW1 384->960 8x8
+[TRACE]   [S4B1] after PW1           C=960  8x8   min=-127 max= 127 mean=  -5.348
+[LayerTiming]   3242.30 ms    [S4B1] GELU 61440 elem
+[LayerTiming]   3242.94 ms    [S4B1] PW2 960->384 8x8
+[LayerTiming]   3310.98 ms    [S4B1] Add C=384 8x8
+[TRACE]   [S4B1] after Add (block out) C=384  8x8   min=-127 max= 127 mean=   5.931
+[LayerTiming]   3322.53 ms    [S4B1] done
+[TRACE] after Stage4                 C=384  8x8   min=-127 max= 127 mean=   5.931
+
+=== FinalDW out_shift sweep (real weight/bias/input, deployed shift=8 is baseline) ===
+[TRACE] FinalDW out_shift=8 (deployed) C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=6          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=4          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=2          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=0          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[LayerTiming]   3362.20 ms  done
+[accuracy_infer] accuracy_test_imgs/img_0004.bin -> /tmp/sweep_out_0004.bin  ret=0  nonzero=12223/12288
+--- img_0005 ---
+[LayerTiming]      0.00 ms  start
+[TRACE] raw input (copied)           C=3    128x128 min=-127 max= 127 mean=  -5.739
+[LayerTiming]     17.44 ms  Stem: Conv3x3 3->48 s=2
+[TRACE] after Stem Conv              C=48   64x64  min=  -1 max= 127 mean= 119.011
+[LayerTiming]    222.52 ms  Stem: DW3x3 48 + GELU
+[LayerTiming]    247.34 ms  Stem: PW 48->48
+[LayerTiming]    258.16 ms  Stem: DW3x3 48 (no act)
+[TRACE] after Stem                   C=48   64x64  min=-127 max= 127 mean=  -0.685
+[LayerTiming]    348.87 ms  Stage1 blk0 RepMixer C=48 64x64
+[LayerTiming]    348.89 ms    [S1B0] DW7-only C=48 64x64
+[TRACE]   [S1B0] after DW            C=48   64x64  min=-127 max= 127 mean=  -0.685
+[LayerTiming]    473.02 ms    [S1B0] PW1 48->144 64x64
+[TRACE]   [S1B0] after PW1           C=144  64x64  min=-127 max= 127 mean=   0.438
+[LayerTiming]    708.74 ms    [S1B0] GELU 589824 elem
+[LayerTiming]    714.67 ms    [S1B0] PW2 144->48 64x64
+[LayerTiming]    742.01 ms    [S1B0] Add C=48 64x64
+[TRACE]   [S1B0] after Add (block out) C=48   64x64  min=-127 max= 127 mean=  -0.685
+[LayerTiming]    833.85 ms    [S1B0] done
+[LayerTiming]    833.87 ms  Stage1 blk1 RepMixer C=48 64x64
+[LayerTiming]    833.88 ms    [S1B1] DW3 C=48 64x64
+[LayerTiming]    856.73 ms    [S1B1] DW7 C=48 64x64
+[TRACE]   [S1B1] after DW            C=48   64x64  min=-127 max= 127 mean=  -0.685
+[LayerTiming]    981.41 ms    [S1B1] PW1 48->144 64x64
+[TRACE]   [S1B1] after PW1           C=144  64x64  min=-127 max= 127 mean=   0.438
+[LayerTiming]   1217.21 ms    [S1B1] GELU 589824 elem
+[LayerTiming]   1223.14 ms    [S1B1] PW2 144->48 64x64
+[LayerTiming]   1250.48 ms    [S1B1] Add C=48 64x64
+[TRACE]   [S1B1] after Add (block out) C=48   64x64  min=-127 max= 127 mean=  -0.685
+[LayerTiming]   1342.33 ms    [S1B1] done
+[TRACE] after Stage1                 C=48   64x64  min=-127 max= 127 mean=  -0.685
+[LayerTiming]   1410.22 ms  Trans1 FPGA DW7 fpg=2 48->96 64->32
+[LayerTiming]   1439.75 ms  Trans1 PW 96->96
+[TRACE] after Trans1                 C=96   32x32  min=-127 max= 127 mean=  -2.369
+[LayerTiming]   1484.15 ms  Stage2 blk0 RepMixer C=96 32x32
+[LayerTiming]   1484.17 ms    [S2B0] DW3 C=96 32x32
+[LayerTiming]   1495.67 ms    [S2B0] DW7 C=96 32x32
+[TRACE]   [S2B0] after DW            C=96   32x32  min=-127 max= 127 mean=  -2.369
+[LayerTiming]   1557.88 ms    [S2B0] PW1 96->240 32x32
+[TRACE]   [S2B0] after PW1           C=240  32x32  min=-127 max= 127 mean=  -0.348
+[LayerTiming]   1668.87 ms    [S2B0] GELU 245760 elem
+[LayerTiming]   1671.36 ms    [S2B0] PW2 240->96 32x32
+[LayerTiming]   1695.59 ms    [S2B0] Add C=96 32x32
+[TRACE]   [S2B0] after Add (block out) C=96   32x32  min=-127 max= 127 mean=  -2.369
+[LayerTiming]   1741.52 ms    [S2B0] done
+[LayerTiming]   1741.54 ms  Stage2 blk1 RepMixer C=96 32x32
+[LayerTiming]   1741.56 ms    [S2B1] DW3 C=96 32x32
+[LayerTiming]   1753.05 ms    [S2B1] DW7 C=96 32x32
+[TRACE]   [S2B1] after DW            C=96   32x32  min=-127 max= 127 mean=  -2.369
+[LayerTiming]   1815.32 ms    [S2B1] PW1 96->288 32x32
+[TRACE]   [S2B1] after PW1           C=288  32x32  min=-127 max= 127 mean=  -0.123
+[LayerTiming]   1948.51 ms    [S2B1] GELU 294912 elem
+[LayerTiming]   1951.48 ms    [S2B1] PW2 288->96 32x32
+[LayerTiming]   1980.29 ms    [S2B1] Add C=96 32x32
+[TRACE]   [S2B1] after Add (block out) C=96   32x32  min=-127 max= 127 mean=  -2.369
+[LayerTiming]   2026.22 ms    [S2B1] done
+[TRACE] after Stage2                 C=96   32x32  min=-127 max= 127 mean=  -2.369
+[LayerTiming]   2060.25 ms  Trans2 FPGA DW7 fpg=2 96->192 32->16
+[LayerTiming]   2075.23 ms  Trans2 PW 192->192
+[TRACE] after Trans2                 C=192  16x16  min=-127 max= 127 mean=  -5.739
+[LayerTiming]   2105.65 ms  Stage3 blk0 RepMixer C=192 16x16
+[LayerTiming]   2105.68 ms    [S3B0] DW3 C=192 16x16
+[LayerTiming]   2111.53 ms    [S3B0] DW7 C=192 16x16
+[TRACE]   [S3B0] after DW            C=192  16x16  min=-127 max= 127 mean=  -5.739
+[LayerTiming]   2142.88 ms    [S3B0] PW1 192->576 16x16
+[TRACE]   [S3B0] after PW1           C=576  16x16  min=-127 max= 127 mean=  -1.246
+[LayerTiming]   2234.15 ms    [S3B0] GELU 147456 elem
+[LayerTiming]   2235.65 ms    [S3B0] PW2 576->192 16x16
+[LayerTiming]   2274.40 ms    [S3B0] Add C=192 16x16
+[TRACE]   [S3B0] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -5.739
+[LayerTiming]   2297.41 ms    [S3B0] done
+[LayerTiming]   2297.42 ms  Stage3 blk1 RepMixer C=192 16x16
+[LayerTiming]   2297.44 ms    [S3B1] DW3 C=192 16x16
+[LayerTiming]   2303.29 ms    [S3B1] DW7 C=192 16x16
+[TRACE]   [S3B1] after DW            C=192  16x16  min=-127 max= 127 mean=  -5.739
+[LayerTiming]   2334.65 ms    [S3B1] PW1 192->480 16x16
+[TRACE]   [S3B1] after PW1           C=480  16x16  min=-127 max= 127 mean=  -1.695
+[LayerTiming]   2410.68 ms    [S3B1] GELU 122880 elem
+[LayerTiming]   2411.94 ms    [S3B1] PW2 480->192 16x16
+[LayerTiming]   2444.38 ms    [S3B1] Add C=192 16x16
+[TRACE]   [S3B1] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -5.739
+[LayerTiming]   2467.38 ms    [S3B1] done
+[LayerTiming]   2467.40 ms  Stage3 blk2 RepMixer C=192 16x16
+[LayerTiming]   2467.41 ms    [S3B2] DW3 C=192 16x16
+[LayerTiming]   2473.26 ms    [S3B2] DW7 C=192 16x16
+[TRACE]   [S3B2] after DW            C=192  16x16  min=-127 max= 127 mean=  -5.739
+[LayerTiming]   2504.64 ms    [S3B2] PW1 192->576 16x16
+[TRACE]   [S3B2] after PW1           C=576  16x16  min=-127 max= 127 mean=  -1.246
+[LayerTiming]   2595.81 ms    [S3B2] GELU 147456 elem
+[LayerTiming]   2597.31 ms    [S3B2] PW2 576->192 16x16
+[LayerTiming]   2636.05 ms    [S3B2] Add C=192 16x16
+[TRACE]   [S3B2] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -5.739
+[LayerTiming]   2659.06 ms    [S3B2] done
+[LayerTiming]   2659.08 ms  Stage3 blk3 RepMixer C=192 16x16
+[LayerTiming]   2659.10 ms    [S3B3] DW3 C=192 16x16
+[LayerTiming]   2664.95 ms    [S3B3] DW7 C=192 16x16
+[TRACE]   [S3B3] after DW            C=192  16x16  min=-127 max= 127 mean=  -5.739
+[LayerTiming]   2696.29 ms    [S3B3] PW1 192->576 16x16
+[TRACE]   [S3B3] after PW1           C=576  16x16  min=-127 max= 127 mean=  -1.246
+[LayerTiming]   2787.45 ms    [S3B3] GELU 147456 elem
+[LayerTiming]   2788.95 ms    [S3B3] PW2 576->192 16x16
+[LayerTiming]   2827.70 ms    [S3B3] Add C=192 16x16
+[TRACE]   [S3B3] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -5.739
+[LayerTiming]   2850.70 ms    [S3B3] done
+[TRACE] after Stage3                 C=192  16x16  min=-127 max= 127 mean=  -5.739
+[LayerTiming]   2867.75 ms  Trans3 FPGA DW7 fpg=2 192->384 16->8
+[LayerTiming]   2875.64 ms  Trans3 PW 384->384
+[TRACE] after Trans3                 C=384  8x8   min=-127 max= 127 mean=  -8.716
+[LayerTiming]   2911.71 ms  Stage4 blk0 RepMixer C=384 8x8
+[LayerTiming]   2911.74 ms    [S4B0] DW3 C=384 8x8
+[LayerTiming]   2914.81 ms    [S4B0] DW7 C=384 8x8
+[TRACE]   [S4B0] after DW            C=384  8x8   min=-127 max= 127 mean=  -8.716
+[LayerTiming]   2930.91 ms    [S4B0] PW1 384->1152 8x8
+[TRACE]   [S4B0] after PW1           C=1152 8x8   min=-127 max= 127 mean=  -3.492
+[LayerTiming]   3039.40 ms    [S4B0] GELU 73728 elem
+[LayerTiming]   3040.17 ms    [S4B0] PW2 1152->384 8x8
+[LayerTiming]   3121.68 ms    [S4B0] Add C=384 8x8
+[TRACE]   [S4B0] after Add (block out) C=384  8x8   min=-127 max= 127 mean=  -8.716
+[LayerTiming]   3133.22 ms    [S4B0] done
+[LayerTiming]   3133.24 ms  Stage4 blk1 RepMixer C=384 8x8
+[LayerTiming]   3133.26 ms    [S4B1] DW3 C=384 8x8
+[LayerTiming]   3136.33 ms    [S4B1] DW7 C=384 8x8
+[TRACE]   [S4B1] after DW            C=384  8x8   min=-127 max= 127 mean=  -8.716
+[LayerTiming]   3152.50 ms    [S4B1] PW1 384->960 8x8
+[TRACE]   [S4B1] after PW1           C=960  8x8   min=-127 max= 127 mean=  -4.391
+[LayerTiming]   3242.58 ms    [S4B1] GELU 61440 elem
+[LayerTiming]   3243.23 ms    [S4B1] PW2 960->384 8x8
+[LayerTiming]   3311.26 ms    [S4B1] Add C=384 8x8
+[TRACE]   [S4B1] after Add (block out) C=384  8x8   min=-127 max= 127 mean=  -8.716
+[LayerTiming]   3322.80 ms    [S4B1] done
+[TRACE] after Stage4                 C=384  8x8   min=-127 max= 127 mean=  -8.716
+
+=== FinalDW out_shift sweep (real weight/bias/input, deployed shift=8 is baseline) ===
+[TRACE] FinalDW out_shift=8 (deployed) C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=6          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=4          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=2          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=0          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[LayerTiming]   3362.38 ms  done
+[accuracy_infer] accuracy_test_imgs/img_0005.bin -> /tmp/sweep_out_0005.bin  ret=0  nonzero=12242/12288
+--- img_0006 ---
+[LayerTiming]      0.00 ms  start
+[TRACE] raw input (copied)           C=3    128x128 min=-127 max= 127 mean=   0.835
+[LayerTiming]     17.44 ms  Stem: Conv3x3 3->48 s=2
+[TRACE] after Stem Conv              C=48   64x64  min=  -1 max= 127 mean= 119.011
+[LayerTiming]    222.49 ms  Stem: DW3x3 48 + GELU
+[LayerTiming]    247.31 ms  Stem: PW 48->48
+[LayerTiming]    258.13 ms  Stem: DW3x3 48 (no act)
+[TRACE] after Stem                   C=48   64x64  min=-127 max= 127 mean=   0.959
+[LayerTiming]    348.84 ms  Stage1 blk0 RepMixer C=48 64x64
+[LayerTiming]    348.86 ms    [S1B0] DW7-only C=48 64x64
+[TRACE]   [S1B0] after DW            C=48   64x64  min=-127 max= 127 mean=   0.959
+[LayerTiming]    472.96 ms    [S1B0] PW1 48->144 64x64
+[TRACE]   [S1B0] after PW1           C=144  64x64  min=-127 max= 127 mean=   0.986
+[LayerTiming]    709.36 ms    [S1B0] GELU 589824 elem
+[LayerTiming]    715.29 ms    [S1B0] PW2 144->48 64x64
+[LayerTiming]    742.64 ms    [S1B0] Add C=48 64x64
+[TRACE]   [S1B0] after Add (block out) C=48   64x64  min=-127 max= 127 mean=   0.959
+[LayerTiming]    834.51 ms    [S1B0] done
+[LayerTiming]    834.53 ms  Stage1 blk1 RepMixer C=48 64x64
+[LayerTiming]    834.55 ms    [S1B1] DW3 C=48 64x64
+[LayerTiming]    857.40 ms    [S1B1] DW7 C=48 64x64
+[TRACE]   [S1B1] after DW            C=48   64x64  min=-127 max= 127 mean=   0.959
+[LayerTiming]    981.50 ms    [S1B1] PW1 48->144 64x64
+[TRACE]   [S1B1] after PW1           C=144  64x64  min=-127 max= 127 mean=   0.986
+[LayerTiming]   1217.24 ms    [S1B1] GELU 589824 elem
+[LayerTiming]   1223.17 ms    [S1B1] PW2 144->48 64x64
+[LayerTiming]   1250.51 ms    [S1B1] Add C=48 64x64
+[TRACE]   [S1B1] after Add (block out) C=48   64x64  min=-127 max= 127 mean=   0.959
+[LayerTiming]   1342.47 ms    [S1B1] done
+[TRACE] after Stage1                 C=48   64x64  min=-127 max= 127 mean=   0.959
+[LayerTiming]   1410.39 ms  Trans1 FPGA DW7 fpg=2 48->96 64->32
+[LayerTiming]   1439.92 ms  Trans1 PW 96->96
+[TRACE] after Trans1                 C=96   32x32  min=-127 max= 127 mean=   0.918
+[LayerTiming]   1484.37 ms  Stage2 blk0 RepMixer C=96 32x32
+[LayerTiming]   1484.39 ms    [S2B0] DW3 C=96 32x32
+[LayerTiming]   1495.89 ms    [S2B0] DW7 C=96 32x32
+[TRACE]   [S2B0] after DW            C=96   32x32  min=-127 max= 127 mean=   0.918
+[LayerTiming]   1558.15 ms    [S2B0] PW1 96->240 32x32
+[TRACE]   [S2B0] after PW1           C=240  32x32  min=-127 max= 127 mean=   0.967
+[LayerTiming]   1669.15 ms    [S2B0] GELU 245760 elem
+[LayerTiming]   1671.64 ms    [S2B0] PW2 240->96 32x32
+[LayerTiming]   1695.87 ms    [S2B0] Add C=96 32x32
+[TRACE]   [S2B0] after Add (block out) C=96   32x32  min=-127 max= 127 mean=   0.918
+[LayerTiming]   1742.19 ms    [S2B0] done
+[LayerTiming]   1742.21 ms  Stage2 blk1 RepMixer C=96 32x32
+[LayerTiming]   1742.22 ms    [S2B1] DW3 C=96 32x32
+[LayerTiming]   1753.72 ms    [S2B1] DW7 C=96 32x32
+[TRACE]   [S2B1] after DW            C=96   32x32  min=-127 max= 127 mean=   0.918
+[LayerTiming]   1816.06 ms    [S2B1] PW1 96->288 32x32
+[TRACE]   [S2B1] after PW1           C=288  32x32  min=-127 max= 127 mean=   0.973
+[LayerTiming]   1949.21 ms    [S2B1] GELU 294912 elem
+[LayerTiming]   1952.19 ms    [S2B1] PW2 288->96 32x32
+[LayerTiming]   1981.00 ms    [S2B1] Add C=96 32x32
+[TRACE]   [S2B1] after Add (block out) C=96   32x32  min=-127 max= 127 mean=   0.918
+[LayerTiming]   2027.07 ms    [S2B1] done
+[TRACE] after Stage2                 C=96   32x32  min=-127 max= 127 mean=   0.918
+[LayerTiming]   2061.14 ms  Trans2 FPGA DW7 fpg=2 96->192 32->16
+[LayerTiming]   2076.13 ms  Trans2 PW 192->192
+[TRACE] after Trans2                 C=192  16x16  min=-127 max= 127 mean=   0.835
+[LayerTiming]   2106.57 ms  Stage3 blk0 RepMixer C=192 16x16
+[LayerTiming]   2106.59 ms    [S3B0] DW3 C=192 16x16
+[LayerTiming]   2112.44 ms    [S3B0] DW7 C=192 16x16
+[TRACE]   [S3B0] after DW            C=192  16x16  min=-127 max= 127 mean=   0.835
+[LayerTiming]   2143.79 ms    [S3B0] PW1 192->576 16x16
+[TRACE]   [S3B0] after PW1           C=576  16x16  min=-127 max= 127 mean=   0.945
+[LayerTiming]   2235.03 ms    [S3B0] GELU 147456 elem
+[LayerTiming]   2236.53 ms    [S3B0] PW2 576->192 16x16
+[LayerTiming]   2275.28 ms    [S3B0] Add C=192 16x16
+[TRACE]   [S3B0] after Add (block out) C=192  16x16  min=-127 max= 127 mean=   0.835
+[LayerTiming]   2298.29 ms    [S3B0] done
+[LayerTiming]   2298.31 ms  Stage3 blk1 RepMixer C=192 16x16
+[LayerTiming]   2298.33 ms    [S3B1] DW3 C=192 16x16
+[LayerTiming]   2304.18 ms    [S3B1] DW7 C=192 16x16
+[TRACE]   [S3B1] after DW            C=192  16x16  min=-127 max= 127 mean=   0.835
+[LayerTiming]   2335.54 ms    [S3B1] PW1 192->480 16x16
+[TRACE]   [S3B1] after PW1           C=480  16x16  min=-127 max= 127 mean=   0.934
+[LayerTiming]   2411.53 ms    [S3B1] GELU 122880 elem
+[LayerTiming]   2412.78 ms    [S3B1] PW2 480->192 16x16
+[LayerTiming]   2445.20 ms    [S3B1] Add C=192 16x16
+[TRACE]   [S3B1] after Add (block out) C=192  16x16  min=-127 max= 127 mean=   0.835
+[LayerTiming]   2468.20 ms    [S3B1] done
+[LayerTiming]   2468.22 ms  Stage3 blk2 RepMixer C=192 16x16
+[LayerTiming]   2468.24 ms    [S3B2] DW3 C=192 16x16
+[LayerTiming]   2474.09 ms    [S3B2] DW7 C=192 16x16
+[TRACE]   [S3B2] after DW            C=192  16x16  min=-127 max= 127 mean=   0.835
+[LayerTiming]   2505.50 ms    [S3B2] PW1 192->576 16x16
+[TRACE]   [S3B2] after PW1           C=576  16x16  min=-127 max= 127 mean=   0.945
+[LayerTiming]   2596.69 ms    [S3B2] GELU 147456 elem
+[LayerTiming]   2598.19 ms    [S3B2] PW2 576->192 16x16
+[LayerTiming]   2636.94 ms    [S3B2] Add C=192 16x16
+[TRACE]   [S3B2] after Add (block out) C=192  16x16  min=-127 max= 127 mean=   0.835
+[LayerTiming]   2659.94 ms    [S3B2] done
+[LayerTiming]   2659.96 ms  Stage3 blk3 RepMixer C=192 16x16
+[LayerTiming]   2659.98 ms    [S3B3] DW3 C=192 16x16
+[LayerTiming]   2665.84 ms    [S3B3] DW7 C=192 16x16
+[TRACE]   [S3B3] after DW            C=192  16x16  min=-127 max= 127 mean=   0.835
+[LayerTiming]   2697.21 ms    [S3B3] PW1 192->576 16x16
+[TRACE]   [S3B3] after PW1           C=576  16x16  min=-127 max= 127 mean=   0.945
+[LayerTiming]   2788.82 ms    [S3B3] GELU 147456 elem
+[LayerTiming]   2790.32 ms    [S3B3] PW2 576->192 16x16
+[LayerTiming]   2829.06 ms    [S3B3] Add C=192 16x16
+[TRACE]   [S3B3] after Add (block out) C=192  16x16  min=-127 max= 127 mean=   0.835
+[LayerTiming]   2852.05 ms    [S3B3] done
+[TRACE] after Stage3                 C=192  16x16  min=-127 max= 127 mean=   0.835
+[LayerTiming]   2869.13 ms  Trans3 FPGA DW7 fpg=2 192->384 16->8
+[LayerTiming]   2877.03 ms  Trans3 PW 384->384
+[TRACE] after Trans3                 C=384  8x8   min=-127 max= 127 mean=   0.844
+[LayerTiming]   2913.09 ms  Stage4 blk0 RepMixer C=384 8x8
+[LayerTiming]   2913.11 ms    [S4B0] DW3 C=384 8x8
+[LayerTiming]   2916.19 ms    [S4B0] DW7 C=384 8x8
+[TRACE]   [S4B0] after DW            C=384  8x8   min=-127 max= 127 mean=   0.844
+[LayerTiming]   2932.30 ms    [S4B0] PW1 384->1152 8x8
+[TRACE]   [S4B0] after PW1           C=1152 8x8   min=-127 max= 127 mean=   0.890
+[LayerTiming]   3040.39 ms    [S4B0] GELU 73728 elem
+[LayerTiming]   3041.16 ms    [S4B0] PW2 1152->384 8x8
+[LayerTiming]   3122.67 ms    [S4B0] Add C=384 8x8
+[TRACE]   [S4B0] after Add (block out) C=384  8x8   min=-127 max= 127 mean=   0.844
+[LayerTiming]   3134.19 ms    [S4B0] done
+[LayerTiming]   3134.21 ms  Stage4 blk1 RepMixer C=384 8x8
+[LayerTiming]   3134.25 ms    [S4B1] DW3 C=384 8x8
+[LayerTiming]   3137.32 ms    [S4B1] DW7 C=384 8x8
+[TRACE]   [S4B1] after DW            C=384  8x8   min=-127 max= 127 mean=   0.844
+[LayerTiming]   3153.42 ms    [S4B1] PW1 384->960 8x8
+[TRACE]   [S4B1] after PW1           C=960  8x8   min=-127 max= 127 mean=   0.868
+[LayerTiming]   3243.50 ms    [S4B1] GELU 61440 elem
+[LayerTiming]   3244.14 ms    [S4B1] PW2 960->384 8x8
+[LayerTiming]   3312.17 ms    [S4B1] Add C=384 8x8
+[TRACE]   [S4B1] after Add (block out) C=384  8x8   min=-127 max= 127 mean=   0.844
+[LayerTiming]   3323.69 ms    [S4B1] done
+[TRACE] after Stage4                 C=384  8x8   min=-127 max= 127 mean=   0.844
+
+=== FinalDW out_shift sweep (real weight/bias/input, deployed shift=8 is baseline) ===
+[TRACE] FinalDW out_shift=8 (deployed) C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=6          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=4          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=2          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=0          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[LayerTiming]   3363.33 ms  done
+[accuracy_infer] accuracy_test_imgs/img_0006.bin -> /tmp/sweep_out_0006.bin  ret=0  nonzero=12271/12288
+--- img_0007 ---
+[LayerTiming]      0.00 ms  start
+[TRACE] raw input (copied)           C=3    128x128 min=-127 max= 127 mean=  -0.489
+[LayerTiming]     17.33 ms  Stem: Conv3x3 3->48 s=2
+[TRACE] after Stem Conv              C=48   64x64  min=  -1 max= 127 mean= 119.011
+[LayerTiming]    222.44 ms  Stem: DW3x3 48 + GELU
+[LayerTiming]    247.26 ms  Stem: PW 48->48
+[LayerTiming]    258.07 ms  Stem: DW3x3 48 (no act)
+[TRACE] after Stem                   C=48   64x64  min=-127 max= 127 mean=   0.628
+[LayerTiming]    348.77 ms  Stage1 blk0 RepMixer C=48 64x64
+[LayerTiming]    348.79 ms    [S1B0] DW7-only C=48 64x64
+[TRACE]   [S1B0] after DW            C=48   64x64  min=-127 max= 127 mean=   0.628
+[LayerTiming]    472.90 ms    [S1B0] PW1 48->144 64x64
+[TRACE]   [S1B0] after PW1           C=144  64x64  min=-127 max= 127 mean=   0.876
+[LayerTiming]    708.69 ms    [S1B0] GELU 589824 elem
+[LayerTiming]    714.62 ms    [S1B0] PW2 144->48 64x64
+[LayerTiming]    741.96 ms    [S1B0] Add C=48 64x64
+[TRACE]   [S1B0] after Add (block out) C=48   64x64  min=-127 max= 127 mean=   0.628
+[LayerTiming]    833.82 ms    [S1B0] done
+[LayerTiming]    833.83 ms  Stage1 blk1 RepMixer C=48 64x64
+[LayerTiming]    833.85 ms    [S1B1] DW3 C=48 64x64
+[LayerTiming]    856.70 ms    [S1B1] DW7 C=48 64x64
+[TRACE]   [S1B1] after DW            C=48   64x64  min=-127 max= 127 mean=   0.628
+[LayerTiming]    980.80 ms    [S1B1] PW1 48->144 64x64
+[TRACE]   [S1B1] after PW1           C=144  64x64  min=-127 max= 127 mean=   0.876
+[LayerTiming]   1216.55 ms    [S1B1] GELU 589824 elem
+[LayerTiming]   1222.48 ms    [S1B1] PW2 144->48 64x64
+[LayerTiming]   1249.82 ms    [S1B1] Add C=48 64x64
+[TRACE]   [S1B1] after Add (block out) C=48   64x64  min=-127 max= 127 mean=   0.628
+[LayerTiming]   1341.69 ms    [S1B1] done
+[TRACE] after Stage1                 C=48   64x64  min=-127 max= 127 mean=   0.628
+[LayerTiming]   1409.65 ms  Trans1 FPGA DW7 fpg=2 48->96 64->32
+[LayerTiming]   1439.55 ms  Trans1 PW 96->96
+[TRACE] after Trans1                 C=96   32x32  min=-127 max= 127 mean=   0.255
+[LayerTiming]   1483.97 ms  Stage2 blk0 RepMixer C=96 32x32
+[LayerTiming]   1484.00 ms    [S2B0] DW3 C=96 32x32
+[LayerTiming]   1495.49 ms    [S2B0] DW7 C=96 32x32
+[TRACE]   [S2B0] after DW            C=96   32x32  min=-127 max= 127 mean=   0.255
+[LayerTiming]   1557.71 ms    [S2B0] PW1 96->240 32x32
+[TRACE]   [S2B0] after PW1           C=240  32x32  min=-127 max= 127 mean=   0.702
+[LayerTiming]   1668.86 ms    [S2B0] GELU 245760 elem
+[LayerTiming]   1671.35 ms    [S2B0] PW2 240->96 32x32
+[LayerTiming]   1695.58 ms    [S2B0] Add C=96 32x32
+[TRACE]   [S2B0] after Add (block out) C=96   32x32  min=-127 max= 127 mean=   0.255
+[LayerTiming]   1741.53 ms    [S2B0] done
+[LayerTiming]   1741.55 ms  Stage2 blk1 RepMixer C=96 32x32
+[LayerTiming]   1741.56 ms    [S2B1] DW3 C=96 32x32
+[LayerTiming]   1753.06 ms    [S2B1] DW7 C=96 32x32
+[TRACE]   [S2B1] after DW            C=96   32x32  min=-127 max= 127 mean=   0.255
+[LayerTiming]   1815.32 ms    [S2B1] PW1 96->288 32x32
+[TRACE]   [S2B1] after PW1           C=288  32x32  min=-127 max= 127 mean=   0.752
+[LayerTiming]   1948.48 ms    [S2B1] GELU 294912 elem
+[LayerTiming]   1951.45 ms    [S2B1] PW2 288->96 32x32
+[LayerTiming]   1980.27 ms    [S2B1] Add C=96 32x32
+[TRACE]   [S2B1] after Add (block out) C=96   32x32  min=-127 max= 127 mean=   0.255
+[LayerTiming]   2026.18 ms    [S2B1] done
+[TRACE] after Stage2                 C=96   32x32  min=-127 max= 127 mean=   0.255
+[LayerTiming]   2060.19 ms  Trans2 FPGA DW7 fpg=2 96->192 32->16
+[LayerTiming]   2075.18 ms  Trans2 PW 192->192
+[TRACE] after Trans2                 C=192  16x16  min=-127 max= 127 mean=  -0.489
+[LayerTiming]   2105.62 ms  Stage3 blk0 RepMixer C=192 16x16
+[LayerTiming]   2105.64 ms    [S3B0] DW3 C=192 16x16
+[LayerTiming]   2111.49 ms    [S3B0] DW7 C=192 16x16
+[TRACE]   [S3B0] after DW            C=192  16x16  min=-127 max= 127 mean=  -0.489
+[LayerTiming]   2142.85 ms    [S3B0] PW1 192->576 16x16
+[TRACE]   [S3B0] after PW1           C=576  16x16  min=-127 max= 127 mean=   0.504
+[LayerTiming]   2234.09 ms    [S3B0] GELU 147456 elem
+[LayerTiming]   2235.60 ms    [S3B0] PW2 576->192 16x16
+[LayerTiming]   2274.34 ms    [S3B0] Add C=192 16x16
+[TRACE]   [S3B0] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -0.489
+[LayerTiming]   2297.33 ms    [S3B0] done
+[LayerTiming]   2297.35 ms  Stage3 blk1 RepMixer C=192 16x16
+[LayerTiming]   2297.36 ms    [S3B1] DW3 C=192 16x16
+[LayerTiming]   2303.21 ms    [S3B1] DW7 C=192 16x16
+[TRACE]   [S3B1] after DW            C=192  16x16  min=-127 max= 127 mean=  -0.489
+[LayerTiming]   2334.59 ms    [S3B1] PW1 192->480 16x16
+[TRACE]   [S3B1] after PW1           C=480  16x16  min=-127 max= 127 mean=   0.404
+[LayerTiming]   2410.96 ms    [S3B1] GELU 122880 elem
+[LayerTiming]   2412.23 ms    [S3B1] PW2 480->192 16x16
+[LayerTiming]   2444.65 ms    [S3B1] Add C=192 16x16
+[TRACE]   [S3B1] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -0.489
+[LayerTiming]   2467.63 ms    [S3B1] done
+[LayerTiming]   2467.65 ms  Stage3 blk2 RepMixer C=192 16x16
+[LayerTiming]   2467.67 ms    [S3B2] DW3 C=192 16x16
+[LayerTiming]   2473.52 ms    [S3B2] DW7 C=192 16x16
+[TRACE]   [S3B2] after DW            C=192  16x16  min=-127 max= 127 mean=  -0.489
+[LayerTiming]   2504.90 ms    [S3B2] PW1 192->576 16x16
+[TRACE]   [S3B2] after PW1           C=576  16x16  min=-127 max= 127 mean=   0.504
+[LayerTiming]   2596.13 ms    [S3B2] GELU 147456 elem
+[LayerTiming]   2597.63 ms    [S3B2] PW2 576->192 16x16
+[LayerTiming]   2636.38 ms    [S3B2] Add C=192 16x16
+[TRACE]   [S3B2] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -0.489
+[LayerTiming]   2659.40 ms    [S3B2] done
+[LayerTiming]   2659.42 ms  Stage3 blk3 RepMixer C=192 16x16
+[LayerTiming]   2659.43 ms    [S3B3] DW3 C=192 16x16
+[LayerTiming]   2665.28 ms    [S3B3] DW7 C=192 16x16
+[TRACE]   [S3B3] after DW            C=192  16x16  min=-127 max= 127 mean=  -0.489
+[LayerTiming]   2696.63 ms    [S3B3] PW1 192->576 16x16
+[TRACE]   [S3B3] after PW1           C=576  16x16  min=-127 max= 127 mean=   0.504
+[LayerTiming]   2787.80 ms    [S3B3] GELU 147456 elem
+[LayerTiming]   2789.30 ms    [S3B3] PW2 576->192 16x16
+[LayerTiming]   2828.05 ms    [S3B3] Add C=192 16x16
+[TRACE]   [S3B3] after Add (block out) C=192  16x16  min=-127 max= 127 mean=  -0.489
+[LayerTiming]   2851.04 ms    [S3B3] done
+[TRACE] after Stage3                 C=192  16x16  min=-127 max= 127 mean=  -0.489
+[LayerTiming]   2868.10 ms  Trans3 FPGA DW7 fpg=2 192->384 16->8
+[LayerTiming]   2875.99 ms  Trans3 PW 384->384
+[TRACE] after Trans3                 C=384  8x8   min=-127 max= 127 mean=  -0.084
+[LayerTiming]   2912.07 ms  Stage4 blk0 RepMixer C=384 8x8
+[LayerTiming]   2912.09 ms    [S4B0] DW3 C=384 8x8
+[LayerTiming]   2915.17 ms    [S4B0] DW7 C=384 8x8
+[TRACE]   [S4B0] after DW            C=384  8x8   min=-127 max= 127 mean=  -0.084
+[LayerTiming]   2931.27 ms    [S4B0] PW1 384->1152 8x8
+[TRACE]   [S4B0] after PW1           C=1152 8x8   min=-127 max= 127 mean=   0.007
+[LayerTiming]   3039.37 ms    [S4B0] GELU 73728 elem
+[LayerTiming]   3040.14 ms    [S4B0] PW2 1152->384 8x8
+[LayerTiming]   3121.65 ms    [S4B0] Add C=384 8x8
+[TRACE]   [S4B0] after Add (block out) C=384  8x8   min=-127 max= 127 mean=  -0.084
+[LayerTiming]   3133.21 ms    [S4B0] done
+[LayerTiming]   3133.23 ms  Stage4 blk1 RepMixer C=384 8x8
+[LayerTiming]   3133.25 ms    [S4B1] DW3 C=384 8x8
+[LayerTiming]   3136.33 ms    [S4B1] DW7 C=384 8x8
+[TRACE]   [S4B1] after DW            C=384  8x8   min=-127 max= 127 mean=  -0.084
+[LayerTiming]   3152.57 ms    [S4B1] PW1 384->960 8x8
+[TRACE]   [S4B1] after PW1           C=960  8x8   min=-127 max= 127 mean=  -0.191
+[LayerTiming]   3242.68 ms    [S4B1] GELU 61440 elem
+[LayerTiming]   3243.32 ms    [S4B1] PW2 960->384 8x8
+[LayerTiming]   3311.35 ms    [S4B1] Add C=384 8x8
+[TRACE]   [S4B1] after Add (block out) C=384  8x8   min=-127 max= 127 mean=  -0.084
+[LayerTiming]   3322.89 ms    [S4B1] done
+[TRACE] after Stage4                 C=384  8x8   min=-127 max= 127 mean=  -0.084
+
+=== FinalDW out_shift sweep (real weight/bias/input, deployed shift=8 is baseline) ===
+[TRACE] FinalDW out_shift=8 (deployed) C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=6          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=4          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=2          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[TRACE] FinalDW out_shift=0          C=768  4x4   min=  -1 max=   0 mean=  -0.829
+    nonzero: 10192 / 12288 (82.9%)
+[LayerTiming]   3362.56 ms  done
+[accuracy_infer] accuracy_test_imgs/img_0007.bin -> /tmp/sweep_out_0007.bin  ret=0  nonzero=12259/12288
