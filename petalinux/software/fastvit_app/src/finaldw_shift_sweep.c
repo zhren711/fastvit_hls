@@ -20,6 +20,9 @@
 #include <time.h>
 #include <math.h>
 
+#define FV_FEAT_PING_BASE 0x12100000UL
+#define FV_FEAT_PONG_BASE 0x12300000UL
+
 /* ── timing macro ─────────────────────────────────── */
 static struct timespec _ts_base;
 static int _ts_init = 0;
@@ -346,6 +349,20 @@ int fastvit_t8_infer(
         if (fdump) { fwrite(cur, 1, 384 * 8 * 8, fdump); fclose(fdump); }
     }
 
+    /* ─── Phase 0.7 step 6: single-variable cache test ───────
+     * Per ZHR-8 review: the full-network path (this file, unlike the
+     * Phase 0.6 isolated tests) never calls fv_cache_flush/invalidate
+     * anywhere. Add flush-before/invalidate-after ONLY around the
+     * FinalDW call below -- nothing else in the network path changes
+     * -- to test whether that alone explains the frozen {-1,0}
+     * output. `ping`/`pong` are this function's own parameters
+     * (unchanged by SWAP()), so comparing cur/nxt against them gives
+     * the real physical address to flush/invalidate, not a guess. */
+    uintptr_t cur_phys = (cur == ping) ? FV_FEAT_PING_BASE : FV_FEAT_PONG_BASE;
+    uintptr_t nxt_phys = (nxt == ping) ? FV_FEAT_PING_BASE : FV_FEAT_PONG_BASE;
+    fprintf(stderr, "\n[cache-test] cur_phys=0x%lx nxt_phys=0x%lx\n",
+            (unsigned long)cur_phys, (unsigned long)nxt_phys);
+
     /* ─── Phase 0.7 step 2: FinalDW out_shift SWEEP ──────────
      * `cur` at this point holds Stage4's REAL output (healthy full
      * int8 range, confirmed by the "after Stage4" trace above) --
@@ -362,8 +379,15 @@ int fastvit_t8_infer(
         int shifts[] = {8, 6, 4, 2, 0};
         fprintf(stderr, "\n=== FinalDW out_shift sweep (real weight/bias/input, deployed shift=8 is baseline) ===\n");
         for (int si = 0; si < 5; si++) {
+            fv_cache_flush(cur_phys, 384 * 8 * 8);
+            fv_cache_flush(lw[49].w_addr, 768 * 3 * 3);
+            fv_cache_flush(lw[49].b_addr, 768 * 4);
+
             fv_run_dwconv((uintptr_t)cur, lw[49].w_addr, lw[49].b_addr, (uintptr_t)nxt,
                           384, 8, 8, 3, 3, 2, 2, 1, 1, 2, ACT_NONE, shifts[si]);
+
+            fv_cache_invalidate(nxt_phys, 768 * 4 * 4);
+
             char lbl[64];
             snprintf(lbl, sizeof(lbl), "FinalDW out_shift=%d%s", shifts[si], shifts[si] == 8 ? " (deployed)" : "");
             DUMP_STATS(nxt, 768, 4, 4, lbl);
