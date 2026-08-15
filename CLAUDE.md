@@ -99,6 +99,14 @@ supposedly standing in for.
 - Board safety: the currently-deployed bitstream is the golden rollback image — never overwrite it
   without being told to. Any new binary/bitstream gets a small isolated test before a full-network
   run (ZHR-10: a change that was "HLS/Vivado all-green" hung the real board).
+- When the code itself contains an admitted placeholder/TODO (a hardcoded stand-in value, a comment
+  saying "not yet calibrated"/"not yet implemented", etc.) and the observed symptom is consistent with
+  that placeholder being the cause, verify the placeholder first — before chasing a more interesting
+  or more specific-sounding hypothesis. `calibrate_activations.py`'s `default_act_scale=1/127` was
+  flagged as Phase 0.7's own step 3 at kickoff ("replace the placeholder with real calibration") and
+  then deferred through 9+ debugging rounds while more specific theories (SE `out_shift`, a missing
+  final GELU, LayerScale) got chased instead — it turned out to be the dominant root cause, off by
+  ~37x, confirmed only in Phase 0.8 step 5 by finally checking it directly.
 
 ## Known open issues as of 2026-08-15
 

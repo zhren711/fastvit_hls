@@ -24,6 +24,21 @@
 #define FV_FEAT_PING_BASE   0x12100000UL   // Ping feature buffer (~2MB each)
 #define FV_FEAT_PONG_BASE   0x12300000UL
 #define FV_FEAT_TEMP_BASE   0x12500000UL   // 临时 buffer (残差分支用)
+/* token_mixer(DW3) 输出保留区 (Phase 0.8 dataflow fix, 2026-08-15): DW3 的
+ * 输出扇出给 DW7 和残差 Add 两个消费者，需要一块在 DW7->PW1->GELU->PW2 整个
+ * 链路期间不被覆盖的独立缓冲区，ping/pong/temp 都会在此期间被覆写，不能复用。
+ * 地址选在 ping 窗口内部 (0x12100000 + 1MB 偏移，ping/pong 相隔 2MB，全网
+ * 最大单张特征图 196608 字节 = 0x30000，1MB 偏移留了 >3x 安全余量，不会和
+ * ping 自己的内容重叠) 而不是在 temp 之后新开一个地址窗口——2026-08-15 用
+ * 0x12700000 时 fv_run_add() 对这块地址静默不写入 (输出内容 = 调用前旧值)，
+ * 疑似 fastvit_ip 里 add_worker 绑定的 m_axi master 的可寻址窗口没有覆盖到
+ * 这个新地址 (5 个 worker 共享 4 个 m_axi master、op_code 分发，不同 worker
+ * 绑不同 master，各自窗口独立声明)。落在 ping/pong/temp 已知可用的窗口内部
+ * 规避这个问题，不需要新增地址窗口，也不需要额外的 cache 覆盖逻辑。 */
+#define FV_FEAT_MIXED_BASE  0x12200000UL  /* inside the known-good ping window; address
+                                            * theory tested and ruled out 2026-08-15, see
+                                            * ZHR-8 -- kept here as the least-confounded
+                                            * option pending further investigation */
 
 /* ── 层权重地址表（fastvit_infer.c 使用）────────────────── */
 typedef struct {

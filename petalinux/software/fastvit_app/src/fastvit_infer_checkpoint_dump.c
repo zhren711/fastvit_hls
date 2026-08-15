@@ -98,10 +98,11 @@ static void dump_tensor(const int8_t *buf, int C, int H, int W, const char *tag)
 #define SWAP() do { int8_t *_t = cur; cur = nxt; nxt = _t; } while(0)
 
 /* identical structure to repmixer_block() in fastvit_infer.c -- see that
- * file for the buffer-choreography rationale (token_mixer(X) residual,
- * not X itself, per RepMixer's fused reparam_conv). */
+ * file for the dataflow-fix rationale (DW3/token_mixer fans out to BOTH
+ * DW7 and the residual Add; mixed_buf preserves DW3's own output across
+ * the DW7->PW1->GELU->PW2 chain so the Add uses the real operand). */
 static void repmixer_block(
-    int8_t **p_cur, int8_t **p_nxt, int8_t *temp,
+    int8_t **p_cur, int8_t **p_nxt, int8_t *temp, int8_t *mixed_buf,
     const LayerWeight *lw, int base_idx)
 {
     int8_t *cur = *p_cur, *nxt = *p_nxt;
@@ -115,20 +116,28 @@ static void repmixer_block(
     int C = t_dw3->cin, H = t_dw3->h_in, W = t_dw3->w_in;
     int C_expand = t_pw1->cout;
 
-    fv_run_dwconv((uintptr_t)cur, w_dw3->w_addr, w_dw3->b_addr, (uintptr_t)temp,
+    fv_run_dwconv((uintptr_t)cur, w_dw3->w_addr, w_dw3->b_addr, (uintptr_t)mixed_buf,
                   C, H, W, t_dw3->k, t_dw3->k, t_dw3->stride, t_dw3->stride,
                   t_dw3->pad, t_dw3->pad, t_dw3->fpg, ACT_NONE, w_dw3->out_shift);
-    fv_run_dwconv((uintptr_t)temp, w_dw7->w_addr, w_dw7->b_addr, (uintptr_t)nxt,
+    fv_run_dwconv((uintptr_t)mixed_buf, w_dw7->w_addr, w_dw7->b_addr, (uintptr_t)temp,
                   C, H, W, t_dw7->k, t_dw7->k, t_dw7->stride, t_dw7->stride,
                   t_dw7->pad, t_dw7->pad, t_dw7->fpg, ACT_NONE, w_dw7->out_shift);
-    SWAP();
-    fv_run_pwconv((uintptr_t)cur, w_pw1->w_addr, w_pw1->b_addr, (uintptr_t)nxt,
+    fv_run_pwconv((uintptr_t)temp, w_pw1->w_addr, w_pw1->b_addr, (uintptr_t)nxt,
                   C, H, W, C_expand, ACT_NONE, w_pw1->out_shift);
-    SWAP();
-    fv_run_gelu((uintptr_t)cur, (uintptr_t)cur, C_expand, H, W);
-    fv_run_pwconv((uintptr_t)cur, w_pw2->w_addr, w_pw2->b_addr, (uintptr_t)temp,
+    fv_run_gelu((uintptr_t)nxt, (uintptr_t)nxt, C_expand, H, W);
+    fv_run_pwconv((uintptr_t)nxt, w_pw2->w_addr, w_pw2->b_addr, (uintptr_t)temp,
                   C_expand, H, W, C, ACT_NONE, w_pw2->out_shift);
-    fv_run_add((uintptr_t)nxt, (uintptr_t)temp, (uintptr_t)cur, C, H, W);
+    if (base_idx == 3) {
+        FILE *f1 = fopen("/tmp/s1b0_mixed_preadd.bin", "wb");
+        fwrite(mixed_buf, 1, (size_t)C*H*W, f1); fclose(f1);
+        FILE *f2 = fopen("/tmp/s1b0_temp_preadd.bin", "wb");
+        fwrite(temp, 1, (size_t)C*H*W, f2); fclose(f2);
+    }
+    fv_run_add((uintptr_t)mixed_buf, (uintptr_t)temp, (uintptr_t)cur, C, H, W);
+    if (base_idx == 3) {
+        FILE *f3 = fopen("/tmp/s1b0_cur_postadd.bin", "wb");
+        fwrite(cur, 1, (size_t)C*H*W, f3); fclose(f3);
+    }
     *p_cur = cur; *p_nxt = nxt;
 }
 
@@ -151,6 +160,7 @@ int main(int argc, char *argv[]) {
     int8_t *ping = (int8_t *)phys_to_virt(FV_FEAT_PING_BASE);
     int8_t *pong = (int8_t *)phys_to_virt(FV_FEAT_PONG_BASE);
     int8_t *temp = (int8_t *)phys_to_virt(FV_FEAT_TEMP_BASE);
+    int8_t *mixed = (int8_t *)phys_to_virt(FV_FEAT_MIXED_BASE);
 
     static int8_t test_input[3 * 128 * 128];
     FILE *fin = fopen(in_path, "rb");
@@ -180,8 +190,13 @@ int main(int argc, char *argv[]) {
     dump_tensor(cur, FV_TOPO[2].cout, FV_TOPO[2].h_in, FV_TOPO[2].w_in, "stem");
 
     /* Stage1 */
-    repmixer_block(&cur, &nxt, temp, lw, 3);
-    repmixer_block(&cur, &nxt, temp, lw, 7);
+    fprintf(stderr, "[TEST3] about to call isolated fv_run_add(temp,temp,nxt,...)\n");
+    fv_run_add((uintptr_t)temp, (uintptr_t)temp, (uintptr_t)nxt, 48, 32, 32);
+    fprintf(stderr, "[TEST3] isolated add call returned\n");
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 3);
+    dump_tensor(mixed, 48, 32, 32, "DEBUG_s1b0_mixed");
+    dump_tensor(cur, 48, 32, 32, "DEBUG_s1b0_out");
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 7);
     dump_tensor(cur, 48, 32, 32, "stage1");
 
     /* Trans1 */
@@ -197,8 +212,8 @@ int main(int argc, char *argv[]) {
                   ACT_NONE, lw[12].out_shift); SWAP();
 
     /* Stage2 */
-    repmixer_block(&cur, &nxt, temp, lw, 13);
-    repmixer_block(&cur, &nxt, temp, lw, 17);
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 13);
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 17);
     dump_tensor(cur, 96, 16, 16, "stage2");
 
     /* Trans2 */
@@ -214,10 +229,10 @@ int main(int argc, char *argv[]) {
                   ACT_NONE, lw[22].out_shift); SWAP();
 
     /* Stage3 */
-    repmixer_block(&cur, &nxt, temp, lw, 23);
-    repmixer_block(&cur, &nxt, temp, lw, 27);
-    repmixer_block(&cur, &nxt, temp, lw, 31);
-    repmixer_block(&cur, &nxt, temp, lw, 35);
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 23);
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 27);
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 31);
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 35);
     dump_tensor(cur, 192, 8, 8, "stage3");
 
     /* Trans3 */
@@ -233,8 +248,8 @@ int main(int argc, char *argv[]) {
                   ACT_NONE, lw[40].out_shift); SWAP();
 
     /* Stage4 */
-    repmixer_block(&cur, &nxt, temp, lw, 41);
-    repmixer_block(&cur, &nxt, temp, lw, 45);
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 41);
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 45);
     dump_tensor(cur, 384, 4, 4, "stage4");
 
     /* FinalDW */

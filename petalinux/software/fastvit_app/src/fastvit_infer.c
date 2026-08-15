@@ -105,9 +105,28 @@ static char _ts_label[128];
  * ONNX graph confirms all 10 RepMixer blocks have an identical 4-conv
  * layout (token_mixer dw3, mlp.conv dw7, mlp.fc1 pw, mlp.fc2 pw), so this
  * function always dispatches all 4 -- there is no longer a code path that
- * can skip one. */
+ * can skip one.
+ *
+ * Dataflow fix (2026-08-15, found while building calibration tooling):
+ * DW3 (token_mixer) fans out to TWO consumers in the real ONNX graph --
+ * DW7 (starts the ConvFFN branch) AND the residual Add directly:
+ *   mixed = token_mixer(x)                        // DW3 alone
+ *   out   = mixed + layer_scale * convffn(mixed)   // convffn = dw7->fc1->act->fc2
+ * The previous implementation (and the original pre-Phase-0.8 code, same
+ * structure) only threaded DW3's output into DW7 and never preserved it,
+ * so the Add used DW7(mixed) instead of mixed itself -- wrong residual
+ * operand, present in all 10 blocks, predating this session. `mixed_buf`
+ * is a dedicated buffer (FV_FEAT_MIXED_BASE) that holds DW3's output
+ * untouched across the whole DW7->PW1->GELU->PW2 chain so the final Add
+ * has the real operand. This also means cur/nxt never need to swap
+ * identity inside this function anymore -- the block's result is written
+ * straight back into the same `cur` buffer it started with (verified by
+ * retracing SWAP parity end-to-end for the whole pipeline, not assumed:
+ * this function nets 0 buffer swaps now vs. 2 before, both even, so
+ * overall top-level ping/pong parity out to FinalDW is unchanged either
+ * way -- see ZHR-8 2026-08-15). */
 static void repmixer_block(
-    int8_t **p_cur, int8_t **p_nxt, int8_t *temp,
+    int8_t **p_cur, int8_t **p_nxt, int8_t *temp, int8_t *mixed_buf,
     const LayerWeight *lw, int base_idx, const char *name)
 {
     int8_t *cur = *p_cur, *nxt = *p_nxt;
@@ -121,26 +140,24 @@ static void repmixer_block(
     int C = t_dw3->cin, H = t_dw3->h_in, W = t_dw3->w_in;
     int C_expand = t_pw1->cout;
 
-    TSTEP_FMT("  [%s] DW3 C=%d %dx%d", name, C, H, W);
-    fv_run_dwconv((uintptr_t)cur, w_dw3->w_addr, w_dw3->b_addr, (uintptr_t)temp,
+    TSTEP_FMT("  [%s] DW3(token_mixer) C=%d %dx%d", name, C, H, W);
+    fv_run_dwconv((uintptr_t)cur, w_dw3->w_addr, w_dw3->b_addr, (uintptr_t)mixed_buf,
                   C, H, W, t_dw3->k, t_dw3->k, t_dw3->stride, t_dw3->stride,
                   t_dw3->pad, t_dw3->pad, t_dw3->fpg, ACT_NONE, w_dw3->out_shift);
-    TSTEP_FMT("  [%s] DW7 C=%d %dx%d", name, C, H, W);
-    fv_run_dwconv((uintptr_t)temp, w_dw7->w_addr, w_dw7->b_addr, (uintptr_t)nxt,
+    TSTEP_FMT("  [%s] DW7(mlp.conv) C=%d %dx%d", name, C, H, W);
+    fv_run_dwconv((uintptr_t)mixed_buf, w_dw7->w_addr, w_dw7->b_addr, (uintptr_t)temp,
                   C, H, W, t_dw7->k, t_dw7->k, t_dw7->stride, t_dw7->stride,
                   t_dw7->pad, t_dw7->pad, t_dw7->fpg, ACT_NONE, w_dw7->out_shift);
-    SWAP();
-    TSTEP_FMT("  [%s] PW1 %d->%d %dx%d", name, C, C_expand, H, W);
-    fv_run_pwconv((uintptr_t)cur, w_pw1->w_addr, w_pw1->b_addr, (uintptr_t)nxt,
+    TSTEP_FMT("  [%s] PW1(fc1) %d->%d %dx%d", name, C, C_expand, H, W);
+    fv_run_pwconv((uintptr_t)temp, w_pw1->w_addr, w_pw1->b_addr, (uintptr_t)nxt,
                   C, H, W, C_expand, ACT_NONE, w_pw1->out_shift);
-    SWAP();
     TSTEP_FMT("  [%s] GELU %d elem", name, C_expand * H * W);
-    fv_run_gelu((uintptr_t)cur, (uintptr_t)cur, C_expand, H, W);
-    TSTEP_FMT("  [%s] PW2 %d->%d %dx%d", name, C_expand, C, H, W);
-    fv_run_pwconv((uintptr_t)cur, w_pw2->w_addr, w_pw2->b_addr, (uintptr_t)temp,
+    fv_run_gelu((uintptr_t)nxt, (uintptr_t)nxt, C_expand, H, W);
+    TSTEP_FMT("  [%s] PW2(fc2) %d->%d %dx%d", name, C_expand, C, H, W);
+    fv_run_pwconv((uintptr_t)nxt, w_pw2->w_addr, w_pw2->b_addr, (uintptr_t)temp,
                   C_expand, H, W, C, ACT_NONE, w_pw2->out_shift);
-    TSTEP_FMT("  [%s] Add C=%d %dx%d", name, C, H, W);
-    fv_run_add((uintptr_t)nxt, (uintptr_t)temp, (uintptr_t)cur, C, H, W);
+    TSTEP_FMT("  [%s] Add(residual=mixed) C=%d %dx%d", name, C, H, W);
+    fv_run_add((uintptr_t)mixed_buf, (uintptr_t)temp, (uintptr_t)cur, C, H, W);
     TSTEP_FMT("  [%s] done", name);
     *p_cur = cur; *p_nxt = nxt;
 }
@@ -158,9 +175,10 @@ int fastvit_t8_infer(
     init_sigmoid_lut();
     _ts_init = 0;
 
-    int8_t *cur  = ping;
-    int8_t *nxt  = pong;
-    int8_t *temp = (int8_t *)FV_FEAT_TEMP_BASE;
+    int8_t *cur   = ping;
+    int8_t *nxt   = pong;
+    int8_t *temp  = (int8_t *)FV_FEAT_TEMP_BASE;
+    int8_t *mixed = (int8_t *)FV_FEAT_MIXED_BASE;
 
     TSTEP("start");
     memcpy(cur, input, 3 * 128 * 128);
@@ -188,9 +206,9 @@ int fastvit_t8_infer(
      * hardcoded (1,1), so every stage's spatial size below is 2x smaller
      * per dimension than the old (buggy) trace labels claimed) ────── */
     TSTEP("Stage1 blk0 RepMixer C=48 32x32");
-    repmixer_block(&cur, &nxt, temp, lw, 3, "S1B0");
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 3, "S1B0");
     TSTEP("Stage1 blk1 RepMixer C=48 32x32");
-    repmixer_block(&cur, &nxt, temp, lw, 7, "S1B1");
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 7, "S1B1");
 
     /* ─── TRANSITION 1: FPGA fpg=2 (48→96, 32→16, K=7) ── */
     TSTEP("Trans1 FPGA DW7 fpg=2 48->96 32->16");
@@ -208,9 +226,9 @@ int fastvit_t8_infer(
 
     /* ─── STAGE 2 (C=96, 16×16) ────────────────────────── */
     TSTEP("Stage2 blk0 RepMixer C=96 16x16");
-    repmixer_block(&cur, &nxt, temp, lw, 13, "S2B0");  /* PW1 pruned 288->240 (weights_t8_pruned) */
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 13, "S2B0");  /* PW1 pruned 288->240 (weights_t8_pruned) */
     TSTEP("Stage2 blk1 RepMixer C=96 16x16");
-    repmixer_block(&cur, &nxt, temp, lw, 17, "S2B1");
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 17, "S2B1");
 
     /* ─── TRANSITION 2: FPGA fpg=2 (96→192, 16→8, K=7) ─ */
     TSTEP("Trans2 FPGA DW7 fpg=2 96->192 16->8");
@@ -228,13 +246,13 @@ int fastvit_t8_infer(
 
     /* ─── STAGE 3 (C=192, 8×8, 4 blocks) ─────────────── */
     TSTEP("Stage3 blk0 RepMixer C=192 8x8");
-    repmixer_block(&cur, &nxt, temp, lw, 23, "S3B0");
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 23, "S3B0");
     TSTEP("Stage3 blk1 RepMixer C=192 8x8");
-    repmixer_block(&cur, &nxt, temp, lw, 27, "S3B1");  /* PW1 pruned 576->480 (weights_t8_pruned) */
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 27, "S3B1");  /* PW1 pruned 576->480 (weights_t8_pruned) */
     TSTEP("Stage3 blk2 RepMixer C=192 8x8");
-    repmixer_block(&cur, &nxt, temp, lw, 31, "S3B2");
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 31, "S3B2");
     TSTEP("Stage3 blk3 RepMixer C=192 8x8");
-    repmixer_block(&cur, &nxt, temp, lw, 35, "S3B3");
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 35, "S3B3");
 
     /* ─── TRANSITION 3: FPGA fpg=2 (192→384, 8→4, K=7) ─ */
     TSTEP("Trans3 FPGA DW7 fpg=2 192->384 8->4");
@@ -252,9 +270,9 @@ int fastvit_t8_infer(
 
     /* ─── STAGE 4 (C=384, 4×4, 2 blocks) ───────────────── */
     TSTEP("Stage4 blk0 RepMixer C=384 4x4");
-    repmixer_block(&cur, &nxt, temp, lw, 41, "S4B0");
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 41, "S4B0");
     TSTEP("Stage4 blk1 RepMixer C=384 4x4");
-    repmixer_block(&cur, &nxt, temp, lw, 45, "S4B1");  /* PW1 pruned 1152->960 (weights_t8_pruned) */
+    repmixer_block(&cur, &nxt, temp, mixed, lw, 45, "S4B1");  /* PW1 pruned 1152->960 (weights_t8_pruned) */
 
     /* ─── FINAL DW: FPGA fpg=2 (384→768, K=3, real stride=(1,1) --
      * Phase 0.7 step 10 bug 2 fixed: Stage4 is already the final spatial
