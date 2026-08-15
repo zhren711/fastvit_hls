@@ -39,6 +39,31 @@ Phase plan:
   failed catastrophically (ZHR-13), this must be redone from the training side.
 - **Phase D**: re-attempt 200MHz on the new architecture, timing conclusions evaluated fresh.
 
+## Hardware constraint: Zynq HP port is not cache-coherent (confirmed 2026-08-14/15, ZHR-8 Phase 0.7)
+
+The ARM core and the FPGA IP share DRAM buffers (ping/pong feature buffers, weights) over the
+Zynq-7000 HP AXI port, which is **not cache-coherent**. Any time the ARM writes a buffer the IP will
+read (e.g. the initial test-image `memcpy`), the ARM must `fv_cache_flush()` it first; any time the
+ARM reads a buffer the IP just wrote (e.g. `se_block()` reading FinalDW's output), the ARM must
+`fv_cache_invalidate()` it first. Skip either and the ARM silently reads/writes its own stale cache
+line instead of what's actually in DRAM — the IP itself can be computing correctly the entire time
+(confirmed for FinalDW, ZHR-8 step 6) while the ARM-visible result is wrong, and the wrongness looks
+exactly like a normal, in-range numeric error, not a crash — nothing about it announces itself.
+
+**This is a permanent architectural constraint, not an artifact of the current op_code-dispatch
+architecture — Phase A does not fix it automatically.** A layer-controller + unified MAC array still
+needs the ARM to feed the initial input and read the final output through the same non-coherent HP
+port. Any new datapath design (Phase A onward) must budget explicit flush/invalidate at every
+ARM↔DRAM handoff point from the start, not bolt it on after the fact.
+
+Current fix (as of commit 2cd8374): pushed into `fastvit_driver.c`'s `fv_run_conv/dwconv/pwconv/
+add/gelu` facade functions directly (flush inputs before dispatch, invalidate outputs after
+`fv_wait_done()`), so every caller gets correct cache management automatically instead of relying on
+scattered per-call-site fixes. See ZHR-8's Phase 0.7 steps 5-9 for the full root-cause chain,
+including a 2-variable-confound false conclusion at step 5 that got corrected at step 6 — worth
+reading before assuming a "cache-safe" test proves anything about the non-cache-safe path it's
+supposedly standing in for.
+
 ## Hard stop list (do not do these unless a session explicitly says the phase has changed)
 
 - No more 200MHz P&R on the **old** architecture (op_code+shared-m_axi) — exhausted across dozens of
@@ -75,20 +100,26 @@ Phase plan:
   without being told to. Any new binary/bitstream gets a small isolated test before a full-network
   run (ZHR-10: a change that was "HLS/Vivado all-green" hung the real board).
 
-## Known open issues as of 2026-08-13
+## Known open issues as of 2026-08-15
 
-- **Accuracy**: end-to-end cosine similarity (board vs ONNX float32 reference) measured at ~0.47,
-  far below this project's own ≥0.99 target (DEPLOY_PLAN.md §5.3). The deployed bitstream's numeric
-  output is measurably wrong, not just a theoretical risk. Most likely cause: a real, confirmed
-  sigmoid LUT indexing bug in `fastvit_infer.c`'s `se_block()` (`(uint8_t)ex[co]` should be
-  `(uint8_t)(ex[co]+128)`) — not yet fixed or re-tested. See Linear ZHR-8 and ZHR-63 for full
-  writeup, and `tools/run_accuracy_harness.py` / `tools/compare_accuracy_results.py` to reproduce.
-- **FinalDW zero-output**: under a specific degenerate synthetic input (arithmetic ramp), the
-  `FinalDW` layer's output collapses to a hard zero — but this was NOT reproduced across 5
-  progressively-more-realistic isolated hardware tests (including real addresses/weights/bias/shift
-  at full scale), and does NOT occur with realistic image-like inputs (84% non-zero output). Likely
-  an input-pattern-specific edge case, not a general hardware correctness bug — unconfirmed, see
-  ZHR-8 for the full investigation and handoff notes.
+- **Accuracy (Phase 0.7, ZHR-8, 9 rounds deep, budgeted 2 days / now on day 3 — final round in
+  progress)**: end-to-end cosine similarity (board vs ONNX float32 reference) is currently 0.0519,
+  down from an earlier-measured 0.4788 — but that earlier number is now known to be invalid, not a
+  better baseline: it was measured while the ARM was reading a stale cache line instead of FinalDW's
+  real output (see the cache-coherence constraint above), so 0.0519 is this project's first
+  cache-correct accuracy measurement, not a regression from a trustworthy one. The sigmoid LUT
+  indexing bug in `se_block()` (`(uint8_t)ex[co]` should be `(uint8_t)(ex[co]+128)`) is real and
+  fixed (commit ab8cff4) but confirmed NOT the main driver of the gap. Root cause of the remaining
+  gap is NOT yet localized to a specific layer or mechanism — do not assume it's an SE-block
+  quantization issue (layer 50/51 `out_shift`) without first checking whether the ONNX
+  reference-point itself is correctly aligned to what the driver computes (an untouched-since-Phase-0.7-
+  start suspicion: the driver may never call a final GELU that the ONNX graph applies) and running a
+  real hardware-vs-ONNX per-stage cosine breakdown — this project has never done a layer-by-layer
+  hardware-vs-float comparison, only hardware-vs-hardware and aggregate end-to-end numbers. See ZHR-8
+  for the full round-by-round chain and ZHR-63 for the current exit criteria.
+- **FinalDW's own IP computation**: confirmed correct (ZHR-8 step 6, single-variable cache test) —
+  the earlier "collapses to hard zero" symptom (ZHR-8 Phase 0.6) was the same ARM-side stale-cache-read
+  issue above, not a hardware/HLS correctness bug in the IP itself.
 - **git**: this repo had no version control until 2026-08-13. The initial commit is a single
   consolidated snapshot (no prior VCS existed to replay), with annotated tags pointing at real
   preserved historical source (`fastvit_ip_v1.2_backup/`, `dwconv_worker.tile_backup_2530ns.cpp`,
