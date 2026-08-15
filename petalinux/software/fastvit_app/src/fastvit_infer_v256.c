@@ -194,8 +194,30 @@ static void repmixer_block(
     snprintf(_lbl, sizeof(_lbl), "  [%s] PW2 %d->%d %dx%d", name, C_expand, C, H, W); TSTEP(_lbl);
     fv_run_pwconv((uintptr_t)cur, w_pw2->w_addr, w_pw2->b_addr, (uintptr_t)temp,
                   C_expand, H, W, C, ACT_NONE, w_pw2->out_shift);
+    if (base_idx == 3) {
+        FILE *f1 = fopen("/tmp/s1b0_residual_dw7out.bin", "wb");
+        fwrite(nxt, 1, (size_t)C*H*W, f1); fclose(f1);
+        FILE *f2 = fopen("/tmp/s1b0_convffn_pw2out.bin", "wb");
+        fwrite(temp, 1, (size_t)C*H*W, f2); fclose(f2);
+        FILE *f3 = fopen("/tmp/s1b0_cur_preadd.bin", "wb");
+        fwrite(cur, 1, (size_t)C*H*W, f3); fclose(f3);
+    }
     snprintf(_lbl, sizeof(_lbl), "  [%s] Add(residual=DW7out, bug4 NOT fixed) C=%d %dx%d", name, C, H, W); TSTEP(_lbl);
     fv_run_add((uintptr_t)nxt, (uintptr_t)temp, (uintptr_t)cur, C, H, W);
+    if (base_idx == 3) {
+        FILE *f4 = fopen("/tmp/s1b0_cur_postadd.bin", "wb");
+        fwrite(cur, 1, (size_t)C*H*W, f4); fclose(f4);
+        /* diagnostic: is this a missed-invalidate stale-ARM-cache-read
+         * (matches the project's known Zynq HP non-coherence hazard),
+         * not a genuine IP write failure? fv_run_add() already calls
+         * fv_cache_invalidate(out,...) internally -- redundantly call it
+         * AGAIN here with a generous size and re-read. If the value
+         * CHANGES, the first invalidate wasn't effective. */
+        uintptr_t cur_phys = FV_FEAT_PONG_BASE; /* known: cur==pong at S1B0 Add time */
+        fv_cache_invalidate(cur_phys, (size_t)C*H*W);
+        FILE *f5 = fopen("/tmp/s1b0_cur_postadd_reinvalidated.bin", "wb");
+        fwrite(cur, 1, (size_t)C*H*W, f5); fclose(f5);
+    }
     *p_cur = cur; *p_nxt = nxt;
 }
 
