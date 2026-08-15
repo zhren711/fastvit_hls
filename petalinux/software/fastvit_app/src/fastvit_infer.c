@@ -14,6 +14,7 @@
 
 #include "fastvit_driver.h"
 #include "fastvit_infer.h"
+#include "layer_topology.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -96,37 +97,48 @@ static char _ts_label[128];
     TSTEP(_ts_label); \
 } while(0)
 
+/* Phase 0.8 (2026-08-15): parameterized entirely by FV_TOPO[base_idx..+3]
+ * (auto-generated from the real ONNX graph, tools/gen_layer_topology.py) --
+ * no more hand-typed C/H/W/K/stride/pad and no more has_dw3 special case.
+ * Bug 3 (Phase 0.7 step 10: Stage1 block0's token_mixer conv, layer_0003,
+ * was loaded but never dispatched) is fixed structurally here: the real
+ * ONNX graph confirms all 10 RepMixer blocks have an identical 4-conv
+ * layout (token_mixer dw3, mlp.conv dw7, mlp.fc1 pw, mlp.fc2 pw), so this
+ * function always dispatches all 4 -- there is no longer a code path that
+ * can skip one. */
 static void repmixer_block(
-    int8_t **p_cur, int8_t **p_nxt, int8_t *temp, int has_dw3,
-    uintptr_t dw3_w, uintptr_t dw3_b, int shift_dw3,
-    uintptr_t dw7_w, uintptr_t dw7_b, int shift_dw7,
-    uintptr_t pw1_w, uintptr_t pw1_b, int shift_pw1, int C_expand,
-    uintptr_t pw2_w, uintptr_t pw2_b, int shift_pw2,
-    int C, int H, int W, const char *name)
+    int8_t **p_cur, int8_t **p_nxt, int8_t *temp,
+    const LayerWeight *lw, int base_idx, const char *name)
 {
     int8_t *cur = *p_cur, *nxt = *p_nxt;
-    if (has_dw3) {
-        TSTEP_FMT("  [%s] DW3 C=%d %dx%d", name, C, H, W);
-        fv_run_dwconv((uintptr_t)cur,  dw3_w, dw3_b, (uintptr_t)temp,
-                      C, H, W, 3, 3, 1, 1, 1, 1, 1, ACT_NONE, shift_dw3);
-        TSTEP_FMT("  [%s] DW7 C=%d %dx%d", name, C, H, W);
-        fv_run_dwconv((uintptr_t)temp, dw7_w, dw7_b, (uintptr_t)nxt,
-                      C, H, W, 7, 7, 1, 1, 3, 3, 1, ACT_NONE, shift_dw7);
-    } else {
-        TSTEP_FMT("  [%s] DW7-only C=%d %dx%d", name, C, H, W);
-        fv_run_dwconv((uintptr_t)cur, dw7_w, dw7_b, (uintptr_t)nxt,
-                      C, H, W, 7, 7, 1, 1, 3, 3, 1, ACT_NONE, shift_dw7);
-    }
+    const FvLayerTopo *t_dw3 = &FV_TOPO[base_idx + 0];
+    const FvLayerTopo *t_dw7 = &FV_TOPO[base_idx + 1];
+    const FvLayerTopo *t_pw1 = &FV_TOPO[base_idx + 2];
+    const LayerWeight *w_dw3 = &lw[base_idx + 0];
+    const LayerWeight *w_dw7 = &lw[base_idx + 1];
+    const LayerWeight *w_pw1 = &lw[base_idx + 2];
+    const LayerWeight *w_pw2 = &lw[base_idx + 3];
+    int C = t_dw3->cin, H = t_dw3->h_in, W = t_dw3->w_in;
+    int C_expand = t_pw1->cout;
+
+    TSTEP_FMT("  [%s] DW3 C=%d %dx%d", name, C, H, W);
+    fv_run_dwconv((uintptr_t)cur, w_dw3->w_addr, w_dw3->b_addr, (uintptr_t)temp,
+                  C, H, W, t_dw3->k, t_dw3->k, t_dw3->stride, t_dw3->stride,
+                  t_dw3->pad, t_dw3->pad, t_dw3->fpg, ACT_NONE, w_dw3->out_shift);
+    TSTEP_FMT("  [%s] DW7 C=%d %dx%d", name, C, H, W);
+    fv_run_dwconv((uintptr_t)temp, w_dw7->w_addr, w_dw7->b_addr, (uintptr_t)nxt,
+                  C, H, W, t_dw7->k, t_dw7->k, t_dw7->stride, t_dw7->stride,
+                  t_dw7->pad, t_dw7->pad, t_dw7->fpg, ACT_NONE, w_dw7->out_shift);
     SWAP();
     TSTEP_FMT("  [%s] PW1 %d->%d %dx%d", name, C, C_expand, H, W);
-    fv_run_pwconv((uintptr_t)cur, pw1_w, pw1_b, (uintptr_t)nxt,
-                  C, H, W, C_expand, ACT_NONE, shift_pw1);
+    fv_run_pwconv((uintptr_t)cur, w_pw1->w_addr, w_pw1->b_addr, (uintptr_t)nxt,
+                  C, H, W, C_expand, ACT_NONE, w_pw1->out_shift);
     SWAP();
     TSTEP_FMT("  [%s] GELU %d elem", name, C_expand * H * W);
     fv_run_gelu((uintptr_t)cur, (uintptr_t)cur, C_expand, H, W);
     TSTEP_FMT("  [%s] PW2 %d->%d %dx%d", name, C_expand, C, H, W);
-    fv_run_pwconv((uintptr_t)cur, pw2_w, pw2_b, (uintptr_t)temp,
-                  C_expand, H, W, C, ACT_NONE, shift_pw2);
+    fv_run_pwconv((uintptr_t)cur, w_pw2->w_addr, w_pw2->b_addr, (uintptr_t)temp,
+                  C_expand, H, W, C, ACT_NONE, w_pw2->out_shift);
     TSTEP_FMT("  [%s] Add C=%d %dx%d", name, C, H, W);
     fv_run_add((uintptr_t)nxt, (uintptr_t)temp, (uintptr_t)cur, C, H, W);
     TSTEP_FMT("  [%s] done", name);
@@ -156,130 +168,104 @@ int fastvit_t8_infer(
     /* ─── STEM ─────────────────────────────────────────── */
     TSTEP("Stem: Conv3x3 3->48 s=2");
     fv_run_conv((uintptr_t)cur, lw[0].w_addr, lw[0].b_addr, (uintptr_t)nxt,
-                3, 128, 128, 48, 2, 2, 1, 1, ACT_NONE, lw[0].out_shift); SWAP();
-    TSTEP("Stem: DW3x3 48 + GELU");
+                FV_TOPO[0].cin, FV_TOPO[0].h_in, FV_TOPO[0].w_in, FV_TOPO[0].cout,
+                FV_TOPO[0].stride, FV_TOPO[0].stride, FV_TOPO[0].pad, FV_TOPO[0].pad,
+                ACT_NONE, lw[0].out_shift); SWAP();
+    TSTEP("Stem: DW3x3 48 s=2 + GELU");
     fv_run_dwconv((uintptr_t)cur, lw[1].w_addr, lw[1].b_addr, (uintptr_t)nxt,
-                  48, 64, 64, 3, 3, 1, 1, 1, 1, 1, ACT_NONE, lw[1].out_shift); SWAP();
-    fv_run_gelu((uintptr_t)cur, (uintptr_t)cur, 48, 64, 64);
+                  FV_TOPO[1].cin, FV_TOPO[1].h_in, FV_TOPO[1].w_in,
+                  FV_TOPO[1].k, FV_TOPO[1].k, FV_TOPO[1].stride, FV_TOPO[1].stride,
+                  FV_TOPO[1].pad, FV_TOPO[1].pad, FV_TOPO[1].fpg, ACT_NONE, lw[1].out_shift); SWAP();
+    fv_run_gelu((uintptr_t)cur, (uintptr_t)cur, FV_TOPO[1].cout,
+                FV_TOPO[1].h_in / FV_TOPO[1].stride, FV_TOPO[1].w_in / FV_TOPO[1].stride);
     TSTEP("Stem: PW 48->48");
     fv_run_pwconv((uintptr_t)cur, lw[2].w_addr, lw[2].b_addr, (uintptr_t)nxt,
-                  48, 64, 64, 48, ACT_NONE, lw[2].out_shift); SWAP();
-    TSTEP("Stem: DW3x3 48 (no act)");
-    fv_run_dwconv((uintptr_t)cur, lw[3].w_addr, lw[3].b_addr, (uintptr_t)nxt,
-                  48, 64, 64, 3, 3, 1, 1, 1, 1, 1, ACT_NONE, lw[3].out_shift); SWAP();
+                  FV_TOPO[2].cin, FV_TOPO[2].h_in, FV_TOPO[2].w_in, FV_TOPO[2].cout,
+                  ACT_NONE, lw[2].out_shift); SWAP();
 
-    /* ─── STAGE 1 (C=48, 64×64) ───────────────────────── */
-    TSTEP("Stage1 blk0 RepMixer C=48 64x64");
-    repmixer_block(&cur, &nxt, temp, 0,
-        0, 0, 0,
-        lw[4].w_addr,  lw[4].b_addr,  lw[4].out_shift,
-        lw[5].w_addr,  lw[5].b_addr,  lw[5].out_shift, 144,
-        lw[6].w_addr,  lw[6].b_addr,  lw[6].out_shift, 48, 64, 64,
-        "S1B0");
-    TSTEP("Stage1 blk1 RepMixer C=48 64x64");
-    repmixer_block(&cur, &nxt, temp, 1,
-        lw[7].w_addr,  lw[7].b_addr,  lw[7].out_shift,
-        lw[8].w_addr,  lw[8].b_addr,  lw[8].out_shift,
-        lw[9].w_addr,  lw[9].b_addr,  lw[9].out_shift, 144,
-        lw[10].w_addr, lw[10].b_addr, lw[10].out_shift, 48, 64, 64,
-        "S1B1");
+    /* ─── STAGE 1 (C=48, real 32×32 -- Phase 0.7 step 10 bug 1 fixed:
+     * Stem's 2nd conv now runs at its real stride=(2,2) instead of the
+     * hardcoded (1,1), so every stage's spatial size below is 2x smaller
+     * per dimension than the old (buggy) trace labels claimed) ────── */
+    TSTEP("Stage1 blk0 RepMixer C=48 32x32");
+    repmixer_block(&cur, &nxt, temp, lw, 3, "S1B0");
+    TSTEP("Stage1 blk1 RepMixer C=48 32x32");
+    repmixer_block(&cur, &nxt, temp, lw, 7, "S1B1");
 
-    /* ─── TRANSITION 1: FPGA fpg=2 (48→96, 64→32, K=7) ── */
-    TSTEP("Trans1 FPGA DW7 fpg=2 48->96 64->32");
+    /* ─── TRANSITION 1: FPGA fpg=2 (48→96, 32→16, K=7) ── */
+    TSTEP("Trans1 FPGA DW7 fpg=2 48->96 32->16");
     fv_run_dwconv((uintptr_t)cur, lw[11].w_addr, lw[11].b_addr, (uintptr_t)nxt,
-                  48, 64, 64, 7, 7, 2, 2, 3, 3, 2, ACT_NONE, lw[11].out_shift);
+                  FV_TOPO[11].cin, FV_TOPO[11].h_in, FV_TOPO[11].w_in,
+                  FV_TOPO[11].k, FV_TOPO[11].k, FV_TOPO[11].stride, FV_TOPO[11].stride,
+                  FV_TOPO[11].pad, FV_TOPO[11].pad, FV_TOPO[11].fpg, ACT_NONE, lw[11].out_shift);
     SWAP();
-    fv_run_gelu((uintptr_t)cur, (uintptr_t)cur, 96, 32, 32);
+    fv_run_gelu((uintptr_t)cur, (uintptr_t)cur, FV_TOPO[11].cout,
+                FV_TOPO[11].h_in / FV_TOPO[11].stride, FV_TOPO[11].w_in / FV_TOPO[11].stride);
     TSTEP("Trans1 PW 96->96");
     fv_run_pwconv((uintptr_t)cur, lw[12].w_addr, lw[12].b_addr, (uintptr_t)nxt,
-                  96, 32, 32, 96, ACT_NONE, lw[12].out_shift); SWAP();
+                  FV_TOPO[12].cin, FV_TOPO[12].h_in, FV_TOPO[12].w_in, FV_TOPO[12].cout,
+                  ACT_NONE, lw[12].out_shift); SWAP();
 
-    /* ─── STAGE 2 (C=96, 32×32) ────────────────────────── */
-    TSTEP("Stage2 blk0 RepMixer C=96 32x32");
-    repmixer_block(&cur, &nxt, temp, 1,
-        lw[13].w_addr, lw[13].b_addr, lw[13].out_shift,
-        lw[14].w_addr, lw[14].b_addr, lw[14].out_shift,
-        lw[15].w_addr, lw[15].b_addr, lw[15].out_shift, 240,  /* PRUNED 288->240, tools/export_weights_pruned.py "top3" cut */
-        lw[16].w_addr, lw[16].b_addr, lw[16].out_shift, 96, 32, 32,
-        "S2B0");
-    TSTEP("Stage2 blk1 RepMixer C=96 32x32");
-    repmixer_block(&cur, &nxt, temp, 1,
-        lw[17].w_addr, lw[17].b_addr, lw[17].out_shift,
-        lw[18].w_addr, lw[18].b_addr, lw[18].out_shift,
-        lw[19].w_addr, lw[19].b_addr, lw[19].out_shift, 288,
-        lw[20].w_addr, lw[20].b_addr, lw[20].out_shift, 96, 32, 32,
-        "S2B1");
+    /* ─── STAGE 2 (C=96, 16×16) ────────────────────────── */
+    TSTEP("Stage2 blk0 RepMixer C=96 16x16");
+    repmixer_block(&cur, &nxt, temp, lw, 13, "S2B0");  /* PW1 pruned 288->240 (weights_t8_pruned) */
+    TSTEP("Stage2 blk1 RepMixer C=96 16x16");
+    repmixer_block(&cur, &nxt, temp, lw, 17, "S2B1");
 
-    /* ─── TRANSITION 2: FPGA fpg=2 (96→192, 32→16, K=7) ─ */
-    TSTEP("Trans2 FPGA DW7 fpg=2 96->192 32->16");
+    /* ─── TRANSITION 2: FPGA fpg=2 (96→192, 16→8, K=7) ─ */
+    TSTEP("Trans2 FPGA DW7 fpg=2 96->192 16->8");
     fv_run_dwconv((uintptr_t)cur, lw[21].w_addr, lw[21].b_addr, (uintptr_t)nxt,
-                  96, 32, 32, 7, 7, 2, 2, 3, 3, 2, ACT_NONE, lw[21].out_shift);
+                  FV_TOPO[21].cin, FV_TOPO[21].h_in, FV_TOPO[21].w_in,
+                  FV_TOPO[21].k, FV_TOPO[21].k, FV_TOPO[21].stride, FV_TOPO[21].stride,
+                  FV_TOPO[21].pad, FV_TOPO[21].pad, FV_TOPO[21].fpg, ACT_NONE, lw[21].out_shift);
     SWAP();
-    fv_run_gelu((uintptr_t)cur, (uintptr_t)cur, 192, 16, 16);
+    fv_run_gelu((uintptr_t)cur, (uintptr_t)cur, FV_TOPO[21].cout,
+                FV_TOPO[21].h_in / FV_TOPO[21].stride, FV_TOPO[21].w_in / FV_TOPO[21].stride);
     TSTEP("Trans2 PW 192->192");
     fv_run_pwconv((uintptr_t)cur, lw[22].w_addr, lw[22].b_addr, (uintptr_t)nxt,
-                  192, 16, 16, 192, ACT_NONE, lw[22].out_shift); SWAP();
+                  FV_TOPO[22].cin, FV_TOPO[22].h_in, FV_TOPO[22].w_in, FV_TOPO[22].cout,
+                  ACT_NONE, lw[22].out_shift); SWAP();
 
-    /* ─── STAGE 3 (C=192, 16×16, 4 blocks) ─────────────── */
-    TSTEP("Stage3 blk0 RepMixer C=192 16x16");
-    repmixer_block(&cur, &nxt, temp, 1,
-        lw[23].w_addr, lw[23].b_addr, lw[23].out_shift,
-        lw[24].w_addr, lw[24].b_addr, lw[24].out_shift,
-        lw[25].w_addr, lw[25].b_addr, lw[25].out_shift, 576,
-        lw[26].w_addr, lw[26].b_addr, lw[26].out_shift, 192, 16, 16,
-        "S3B0");
-    TSTEP("Stage3 blk1 RepMixer C=192 16x16");
-    repmixer_block(&cur, &nxt, temp, 1,
-        lw[27].w_addr, lw[27].b_addr, lw[27].out_shift,
-        lw[28].w_addr, lw[28].b_addr, lw[28].out_shift,
-        lw[29].w_addr, lw[29].b_addr, lw[29].out_shift, 480,  /* PRUNED 576->480, tools/export_weights_pruned.py "top3" cut */
-        lw[30].w_addr, lw[30].b_addr, lw[30].out_shift, 192, 16, 16,
-        "S3B1");
-    TSTEP("Stage3 blk2 RepMixer C=192 16x16");
-    repmixer_block(&cur, &nxt, temp, 1,
-        lw[31].w_addr, lw[31].b_addr, lw[31].out_shift,
-        lw[32].w_addr, lw[32].b_addr, lw[32].out_shift,
-        lw[33].w_addr, lw[33].b_addr, lw[33].out_shift, 576,
-        lw[34].w_addr, lw[34].b_addr, lw[34].out_shift, 192, 16, 16,
-        "S3B2");
-    TSTEP("Stage3 blk3 RepMixer C=192 16x16");
-    repmixer_block(&cur, &nxt, temp, 1,
-        lw[35].w_addr, lw[35].b_addr, lw[35].out_shift,
-        lw[36].w_addr, lw[36].b_addr, lw[36].out_shift,
-        lw[37].w_addr, lw[37].b_addr, lw[37].out_shift, 576,
-        lw[38].w_addr, lw[38].b_addr, lw[38].out_shift, 192, 16, 16,
-        "S3B3");
+    /* ─── STAGE 3 (C=192, 8×8, 4 blocks) ─────────────── */
+    TSTEP("Stage3 blk0 RepMixer C=192 8x8");
+    repmixer_block(&cur, &nxt, temp, lw, 23, "S3B0");
+    TSTEP("Stage3 blk1 RepMixer C=192 8x8");
+    repmixer_block(&cur, &nxt, temp, lw, 27, "S3B1");  /* PW1 pruned 576->480 (weights_t8_pruned) */
+    TSTEP("Stage3 blk2 RepMixer C=192 8x8");
+    repmixer_block(&cur, &nxt, temp, lw, 31, "S3B2");
+    TSTEP("Stage3 blk3 RepMixer C=192 8x8");
+    repmixer_block(&cur, &nxt, temp, lw, 35, "S3B3");
 
-    /* ─── TRANSITION 3: FPGA fpg=2 (192→384, 16→8, K=7) ─ */
-    TSTEP("Trans3 FPGA DW7 fpg=2 192->384 16->8");
+    /* ─── TRANSITION 3: FPGA fpg=2 (192→384, 8→4, K=7) ─ */
+    TSTEP("Trans3 FPGA DW7 fpg=2 192->384 8->4");
     fv_run_dwconv((uintptr_t)cur, lw[39].w_addr, lw[39].b_addr, (uintptr_t)nxt,
-                  192, 16, 16, 7, 7, 2, 2, 3, 3, 2, ACT_NONE, lw[39].out_shift);
+                  FV_TOPO[39].cin, FV_TOPO[39].h_in, FV_TOPO[39].w_in,
+                  FV_TOPO[39].k, FV_TOPO[39].k, FV_TOPO[39].stride, FV_TOPO[39].stride,
+                  FV_TOPO[39].pad, FV_TOPO[39].pad, FV_TOPO[39].fpg, ACT_NONE, lw[39].out_shift);
     SWAP();
-    fv_run_gelu((uintptr_t)cur, (uintptr_t)cur, 384, 8, 8);
+    fv_run_gelu((uintptr_t)cur, (uintptr_t)cur, FV_TOPO[39].cout,
+                FV_TOPO[39].h_in / FV_TOPO[39].stride, FV_TOPO[39].w_in / FV_TOPO[39].stride);
     TSTEP("Trans3 PW 384->384");
     fv_run_pwconv((uintptr_t)cur, lw[40].w_addr, lw[40].b_addr, (uintptr_t)nxt,
-                  384, 8, 8, 384, ACT_NONE, lw[40].out_shift); SWAP();
+                  FV_TOPO[40].cin, FV_TOPO[40].h_in, FV_TOPO[40].w_in, FV_TOPO[40].cout,
+                  ACT_NONE, lw[40].out_shift); SWAP();
 
-    /* ─── STAGE 4 (C=384, 8×8, 2 blocks) ───────────────── */
-    TSTEP("Stage4 blk0 RepMixer C=384 8x8");
-    repmixer_block(&cur, &nxt, temp, 1,
-        lw[41].w_addr, lw[41].b_addr, lw[41].out_shift,
-        lw[42].w_addr, lw[42].b_addr, lw[42].out_shift,
-        lw[43].w_addr, lw[43].b_addr, lw[43].out_shift, 1152,
-        lw[44].w_addr, lw[44].b_addr, lw[44].out_shift, 384, 8, 8,
-        "S4B0");
-    TSTEP("Stage4 blk1 RepMixer C=384 8x8");
-    repmixer_block(&cur, &nxt, temp, 1,
-        lw[45].w_addr, lw[45].b_addr, lw[45].out_shift,
-        lw[46].w_addr, lw[46].b_addr, lw[46].out_shift,
-        lw[47].w_addr, lw[47].b_addr, lw[47].out_shift, 960,  /* PRUNED 1152->960, tools/export_weights_pruned.py "top3" cut */
-        lw[48].w_addr, lw[48].b_addr, lw[48].out_shift, 384, 8, 8,
-        "S4B1");
+    /* ─── STAGE 4 (C=384, 4×4, 2 blocks) ───────────────── */
+    TSTEP("Stage4 blk0 RepMixer C=384 4x4");
+    repmixer_block(&cur, &nxt, temp, lw, 41, "S4B0");
+    TSTEP("Stage4 blk1 RepMixer C=384 4x4");
+    repmixer_block(&cur, &nxt, temp, lw, 45, "S4B1");  /* PW1 pruned 1152->960 (weights_t8_pruned) */
 
-    /* ─── FINAL DW: FPGA fpg=2 (384→768, K=3, s=2) ──────── */
-    TSTEP("FinalDW FPGA DW3 fpg=2 384->768 8->4");
+    /* ─── FINAL DW: FPGA fpg=2 (384→768, K=3, real stride=(1,1) --
+     * Phase 0.7 step 10 bug 2 fixed: Stage4 is already the final spatial
+     * size (4x4), FinalDW does NOT downsample; the old hardcoded (2,2)
+     * spuriously shrank it to a coincidentally-matching 4x4 only because
+     * bug 1 had inflated every preceding stage 2x too large.) ──────── */
+    TSTEP("FinalDW FPGA DW3 fpg=2 384->768 4x4 s=1");
     fv_run_dwconv((uintptr_t)cur, lw[49].w_addr, lw[49].b_addr, (uintptr_t)nxt,
-                  384, 8, 8, 3, 3, 2, 2, 1, 1, 2, ACT_NONE, lw[49].out_shift);
+                  FV_TOPO[49].cin, FV_TOPO[49].h_in, FV_TOPO[49].w_in,
+                  FV_TOPO[49].k, FV_TOPO[49].k, FV_TOPO[49].stride, FV_TOPO[49].stride,
+                  FV_TOPO[49].pad, FV_TOPO[49].pad, FV_TOPO[49].fpg, ACT_NONE, lw[49].out_shift);
     SWAP();
 
     /* ─── SE block (ARM, 2.8ms) ──────────────────────────── */
