@@ -1,0 +1,1279 @@
+[
+  {
+    "layer_idx": 0,
+    "tag": "layer_0000_conv",
+    "node_idx": 0,
+    "node_name": "/stem/stem.0/reparam_conv/Conv",
+    "op_type": "conv",
+    "cin": 3,
+    "cout": 48,
+    "h_in": 256,
+    "w_in": 256,
+    "k": 3,
+    "stride": 2,
+    "pad": 1,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0000_conv_weight.bin",
+    "bias_file": "layer_0000_conv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 1,
+    "tag": "layer_0001_dwconv",
+    "node_idx": 6,
+    "node_name": "/stem/stem.1/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 48,
+    "cout": 48,
+    "h_in": 128,
+    "w_in": 128,
+    "k": 3,
+    "stride": 2,
+    "pad": 1,
+    "group": 48,
+    "fpg": 1,
+    "weight_file": "layer_0001_dwconv_weight.bin",
+    "bias_file": "layer_0001_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 2,
+    "tag": "layer_0002_pwconv",
+    "node_idx": 12,
+    "node_name": "/stem/stem.2/reparam_conv/Conv",
+    "op_type": "pwconv",
+    "cin": 48,
+    "cout": 48,
+    "h_in": 64,
+    "w_in": 64,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0002_pwconv_weight.bin",
+    "bias_file": "layer_0002_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 3,
+    "tag": "layer_0003_dwconv",
+    "node_idx": 18,
+    "node_name": "/stages.0/blocks/blocks.0/token_mixer/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 48,
+    "cout": 48,
+    "h_in": 64,
+    "w_in": 64,
+    "k": 3,
+    "stride": 1,
+    "pad": 1,
+    "group": 48,
+    "fpg": 1,
+    "weight_file": "layer_0003_dwconv_weight.bin",
+    "bias_file": "layer_0003_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 4
+      },
+      {
+        "kind": "add",
+        "add_node": "/stages.0/blocks/blocks.0/Add"
+      }
+    ]
+  },
+  {
+    "layer_idx": 4,
+    "tag": "layer_0004_dwconv",
+    "node_idx": 19,
+    "node_name": "/stages.0/blocks/blocks.0/mlp/conv/conv/Conv",
+    "op_type": "dwconv",
+    "cin": 48,
+    "cout": 48,
+    "h_in": 64,
+    "w_in": 64,
+    "k": 7,
+    "stride": 1,
+    "pad": 3,
+    "group": 48,
+    "fpg": 1,
+    "weight_file": "layer_0004_dwconv_weight.bin",
+    "bias_file": "layer_0004_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 5
+      }
+    ]
+  },
+  {
+    "layer_idx": 5,
+    "tag": "layer_0005_pwconv",
+    "node_idx": 20,
+    "node_name": "/stages.0/blocks/blocks.0/mlp/fc1/Conv",
+    "op_type": "pwconv",
+    "cin": 48,
+    "cout": 144,
+    "h_in": 64,
+    "w_in": 64,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0005_pwconv_weight.bin",
+    "bias_file": "layer_0005_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 6,
+    "tag": "layer_0006_pwconv",
+    "node_idx": 26,
+    "node_name": "/stages.0/blocks/blocks.0/mlp/fc2/Conv",
+    "op_type": "pwconv",
+    "cin": 144,
+    "cout": 48,
+    "h_in": 64,
+    "w_in": 64,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0006_pwconv_weight.bin",
+    "bias_file": "layer_0006_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "mul",
+        "mul_node": "/stages.0/blocks/blocks.0/layer_scale/Mul"
+      }
+    ]
+  },
+  {
+    "layer_idx": 7,
+    "tag": "layer_0007_dwconv",
+    "node_idx": 29,
+    "node_name": "/stages.0/blocks/blocks.1/token_mixer/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 48,
+    "cout": 48,
+    "h_in": 64,
+    "w_in": 64,
+    "k": 3,
+    "stride": 1,
+    "pad": 1,
+    "group": 48,
+    "fpg": 1,
+    "weight_file": "layer_0007_dwconv_weight.bin",
+    "bias_file": "layer_0007_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 8
+      },
+      {
+        "kind": "add",
+        "add_node": "/stages.0/blocks/blocks.1/Add"
+      }
+    ]
+  },
+  {
+    "layer_idx": 8,
+    "tag": "layer_0008_dwconv",
+    "node_idx": 30,
+    "node_name": "/stages.0/blocks/blocks.1/mlp/conv/conv/Conv",
+    "op_type": "dwconv",
+    "cin": 48,
+    "cout": 48,
+    "h_in": 64,
+    "w_in": 64,
+    "k": 7,
+    "stride": 1,
+    "pad": 3,
+    "group": 48,
+    "fpg": 1,
+    "weight_file": "layer_0008_dwconv_weight.bin",
+    "bias_file": "layer_0008_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 9
+      }
+    ]
+  },
+  {
+    "layer_idx": 9,
+    "tag": "layer_0009_pwconv",
+    "node_idx": 31,
+    "node_name": "/stages.0/blocks/blocks.1/mlp/fc1/Conv",
+    "op_type": "pwconv",
+    "cin": 48,
+    "cout": 144,
+    "h_in": 64,
+    "w_in": 64,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0009_pwconv_weight.bin",
+    "bias_file": "layer_0009_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 10,
+    "tag": "layer_0010_pwconv",
+    "node_idx": 37,
+    "node_name": "/stages.0/blocks/blocks.1/mlp/fc2/Conv",
+    "op_type": "pwconv",
+    "cin": 144,
+    "cout": 48,
+    "h_in": 64,
+    "w_in": 64,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0010_pwconv_weight.bin",
+    "bias_file": "layer_0010_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "mul",
+        "mul_node": "/stages.0/blocks/blocks.1/layer_scale/Mul"
+      }
+    ]
+  },
+  {
+    "layer_idx": 11,
+    "tag": "layer_0011_dwconv",
+    "node_idx": 40,
+    "node_name": "/stages.1/downsample/proj/proj.0/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 48,
+    "cout": 96,
+    "h_in": 64,
+    "w_in": 64,
+    "k": 7,
+    "stride": 2,
+    "pad": 3,
+    "group": 48,
+    "fpg": 2,
+    "weight_file": "layer_0011_dwconv_weight.bin",
+    "bias_file": "layer_0011_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 12
+      }
+    ]
+  },
+  {
+    "layer_idx": 12,
+    "tag": "layer_0012_pwconv",
+    "node_idx": 41,
+    "node_name": "/stages.1/downsample/proj/proj.1/reparam_conv/Conv",
+    "op_type": "pwconv",
+    "cin": 96,
+    "cout": 96,
+    "h_in": 32,
+    "w_in": 32,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0012_pwconv_weight.bin",
+    "bias_file": "layer_0012_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 13,
+    "tag": "layer_0013_dwconv",
+    "node_idx": 47,
+    "node_name": "/stages.1/blocks/blocks.0/token_mixer/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 96,
+    "cout": 96,
+    "h_in": 32,
+    "w_in": 32,
+    "k": 3,
+    "stride": 1,
+    "pad": 1,
+    "group": 96,
+    "fpg": 1,
+    "weight_file": "layer_0013_dwconv_weight.bin",
+    "bias_file": "layer_0013_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 14
+      },
+      {
+        "kind": "add",
+        "add_node": "/stages.1/blocks/blocks.0/Add"
+      }
+    ]
+  },
+  {
+    "layer_idx": 14,
+    "tag": "layer_0014_dwconv",
+    "node_idx": 48,
+    "node_name": "/stages.1/blocks/blocks.0/mlp/conv/conv/Conv",
+    "op_type": "dwconv",
+    "cin": 96,
+    "cout": 96,
+    "h_in": 32,
+    "w_in": 32,
+    "k": 7,
+    "stride": 1,
+    "pad": 3,
+    "group": 96,
+    "fpg": 1,
+    "weight_file": "layer_0014_dwconv_weight.bin",
+    "bias_file": "layer_0014_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 15
+      }
+    ]
+  },
+  {
+    "layer_idx": 15,
+    "tag": "layer_0015_pwconv",
+    "node_idx": 49,
+    "node_name": "/stages.1/blocks/blocks.0/mlp/fc1/Conv",
+    "op_type": "pwconv",
+    "cin": 96,
+    "cout": 240,
+    "h_in": 32,
+    "w_in": 32,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0015_pwconv_weight.bin",
+    "bias_file": "layer_0015_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 16,
+    "tag": "layer_0016_pwconv",
+    "node_idx": 55,
+    "node_name": "/stages.1/blocks/blocks.0/mlp/fc2/Conv",
+    "op_type": "pwconv",
+    "cin": 240,
+    "cout": 96,
+    "h_in": 32,
+    "w_in": 32,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0016_pwconv_weight.bin",
+    "bias_file": "layer_0016_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "mul",
+        "mul_node": "/stages.1/blocks/blocks.0/layer_scale/Mul"
+      }
+    ]
+  },
+  {
+    "layer_idx": 17,
+    "tag": "layer_0017_dwconv",
+    "node_idx": 58,
+    "node_name": "/stages.1/blocks/blocks.1/token_mixer/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 96,
+    "cout": 96,
+    "h_in": 32,
+    "w_in": 32,
+    "k": 3,
+    "stride": 1,
+    "pad": 1,
+    "group": 96,
+    "fpg": 1,
+    "weight_file": "layer_0017_dwconv_weight.bin",
+    "bias_file": "layer_0017_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 18
+      },
+      {
+        "kind": "add",
+        "add_node": "/stages.1/blocks/blocks.1/Add"
+      }
+    ]
+  },
+  {
+    "layer_idx": 18,
+    "tag": "layer_0018_dwconv",
+    "node_idx": 59,
+    "node_name": "/stages.1/blocks/blocks.1/mlp/conv/conv/Conv",
+    "op_type": "dwconv",
+    "cin": 96,
+    "cout": 96,
+    "h_in": 32,
+    "w_in": 32,
+    "k": 7,
+    "stride": 1,
+    "pad": 3,
+    "group": 96,
+    "fpg": 1,
+    "weight_file": "layer_0018_dwconv_weight.bin",
+    "bias_file": "layer_0018_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 19
+      }
+    ]
+  },
+  {
+    "layer_idx": 19,
+    "tag": "layer_0019_pwconv",
+    "node_idx": 60,
+    "node_name": "/stages.1/blocks/blocks.1/mlp/fc1/Conv",
+    "op_type": "pwconv",
+    "cin": 96,
+    "cout": 288,
+    "h_in": 32,
+    "w_in": 32,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0019_pwconv_weight.bin",
+    "bias_file": "layer_0019_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 20,
+    "tag": "layer_0020_pwconv",
+    "node_idx": 66,
+    "node_name": "/stages.1/blocks/blocks.1/mlp/fc2/Conv",
+    "op_type": "pwconv",
+    "cin": 288,
+    "cout": 96,
+    "h_in": 32,
+    "w_in": 32,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0020_pwconv_weight.bin",
+    "bias_file": "layer_0020_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "mul",
+        "mul_node": "/stages.1/blocks/blocks.1/layer_scale/Mul"
+      }
+    ]
+  },
+  {
+    "layer_idx": 21,
+    "tag": "layer_0021_dwconv",
+    "node_idx": 69,
+    "node_name": "/stages.2/downsample/proj/proj.0/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 96,
+    "cout": 192,
+    "h_in": 32,
+    "w_in": 32,
+    "k": 7,
+    "stride": 2,
+    "pad": 3,
+    "group": 96,
+    "fpg": 2,
+    "weight_file": "layer_0021_dwconv_weight.bin",
+    "bias_file": "layer_0021_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 22
+      }
+    ]
+  },
+  {
+    "layer_idx": 22,
+    "tag": "layer_0022_pwconv",
+    "node_idx": 70,
+    "node_name": "/stages.2/downsample/proj/proj.1/reparam_conv/Conv",
+    "op_type": "pwconv",
+    "cin": 192,
+    "cout": 192,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0022_pwconv_weight.bin",
+    "bias_file": "layer_0022_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 23,
+    "tag": "layer_0023_dwconv",
+    "node_idx": 76,
+    "node_name": "/stages.2/blocks/blocks.0/token_mixer/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 192,
+    "cout": 192,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 3,
+    "stride": 1,
+    "pad": 1,
+    "group": 192,
+    "fpg": 1,
+    "weight_file": "layer_0023_dwconv_weight.bin",
+    "bias_file": "layer_0023_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 24
+      },
+      {
+        "kind": "add",
+        "add_node": "/stages.2/blocks/blocks.0/Add"
+      }
+    ]
+  },
+  {
+    "layer_idx": 24,
+    "tag": "layer_0024_dwconv",
+    "node_idx": 77,
+    "node_name": "/stages.2/blocks/blocks.0/mlp/conv/conv/Conv",
+    "op_type": "dwconv",
+    "cin": 192,
+    "cout": 192,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 7,
+    "stride": 1,
+    "pad": 3,
+    "group": 192,
+    "fpg": 1,
+    "weight_file": "layer_0024_dwconv_weight.bin",
+    "bias_file": "layer_0024_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 25
+      }
+    ]
+  },
+  {
+    "layer_idx": 25,
+    "tag": "layer_0025_pwconv",
+    "node_idx": 78,
+    "node_name": "/stages.2/blocks/blocks.0/mlp/fc1/Conv",
+    "op_type": "pwconv",
+    "cin": 192,
+    "cout": 576,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0025_pwconv_weight.bin",
+    "bias_file": "layer_0025_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 26,
+    "tag": "layer_0026_pwconv",
+    "node_idx": 84,
+    "node_name": "/stages.2/blocks/blocks.0/mlp/fc2/Conv",
+    "op_type": "pwconv",
+    "cin": 576,
+    "cout": 192,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0026_pwconv_weight.bin",
+    "bias_file": "layer_0026_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "mul",
+        "mul_node": "/stages.2/blocks/blocks.0/layer_scale/Mul"
+      }
+    ]
+  },
+  {
+    "layer_idx": 27,
+    "tag": "layer_0027_dwconv",
+    "node_idx": 87,
+    "node_name": "/stages.2/blocks/blocks.1/token_mixer/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 192,
+    "cout": 192,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 3,
+    "stride": 1,
+    "pad": 1,
+    "group": 192,
+    "fpg": 1,
+    "weight_file": "layer_0027_dwconv_weight.bin",
+    "bias_file": "layer_0027_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 28
+      },
+      {
+        "kind": "add",
+        "add_node": "/stages.2/blocks/blocks.1/Add"
+      }
+    ]
+  },
+  {
+    "layer_idx": 28,
+    "tag": "layer_0028_dwconv",
+    "node_idx": 88,
+    "node_name": "/stages.2/blocks/blocks.1/mlp/conv/conv/Conv",
+    "op_type": "dwconv",
+    "cin": 192,
+    "cout": 192,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 7,
+    "stride": 1,
+    "pad": 3,
+    "group": 192,
+    "fpg": 1,
+    "weight_file": "layer_0028_dwconv_weight.bin",
+    "bias_file": "layer_0028_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 29
+      }
+    ]
+  },
+  {
+    "layer_idx": 29,
+    "tag": "layer_0029_pwconv",
+    "node_idx": 89,
+    "node_name": "/stages.2/blocks/blocks.1/mlp/fc1/Conv",
+    "op_type": "pwconv",
+    "cin": 192,
+    "cout": 480,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0029_pwconv_weight.bin",
+    "bias_file": "layer_0029_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 30,
+    "tag": "layer_0030_pwconv",
+    "node_idx": 95,
+    "node_name": "/stages.2/blocks/blocks.1/mlp/fc2/Conv",
+    "op_type": "pwconv",
+    "cin": 480,
+    "cout": 192,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0030_pwconv_weight.bin",
+    "bias_file": "layer_0030_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "mul",
+        "mul_node": "/stages.2/blocks/blocks.1/layer_scale/Mul"
+      }
+    ]
+  },
+  {
+    "layer_idx": 31,
+    "tag": "layer_0031_dwconv",
+    "node_idx": 98,
+    "node_name": "/stages.2/blocks/blocks.2/token_mixer/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 192,
+    "cout": 192,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 3,
+    "stride": 1,
+    "pad": 1,
+    "group": 192,
+    "fpg": 1,
+    "weight_file": "layer_0031_dwconv_weight.bin",
+    "bias_file": "layer_0031_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 32
+      },
+      {
+        "kind": "add",
+        "add_node": "/stages.2/blocks/blocks.2/Add"
+      }
+    ]
+  },
+  {
+    "layer_idx": 32,
+    "tag": "layer_0032_dwconv",
+    "node_idx": 99,
+    "node_name": "/stages.2/blocks/blocks.2/mlp/conv/conv/Conv",
+    "op_type": "dwconv",
+    "cin": 192,
+    "cout": 192,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 7,
+    "stride": 1,
+    "pad": 3,
+    "group": 192,
+    "fpg": 1,
+    "weight_file": "layer_0032_dwconv_weight.bin",
+    "bias_file": "layer_0032_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 33
+      }
+    ]
+  },
+  {
+    "layer_idx": 33,
+    "tag": "layer_0033_pwconv",
+    "node_idx": 100,
+    "node_name": "/stages.2/blocks/blocks.2/mlp/fc1/Conv",
+    "op_type": "pwconv",
+    "cin": 192,
+    "cout": 576,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0033_pwconv_weight.bin",
+    "bias_file": "layer_0033_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 34,
+    "tag": "layer_0034_pwconv",
+    "node_idx": 106,
+    "node_name": "/stages.2/blocks/blocks.2/mlp/fc2/Conv",
+    "op_type": "pwconv",
+    "cin": 576,
+    "cout": 192,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0034_pwconv_weight.bin",
+    "bias_file": "layer_0034_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "mul",
+        "mul_node": "/stages.2/blocks/blocks.2/layer_scale/Mul"
+      }
+    ]
+  },
+  {
+    "layer_idx": 35,
+    "tag": "layer_0035_dwconv",
+    "node_idx": 109,
+    "node_name": "/stages.2/blocks/blocks.3/token_mixer/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 192,
+    "cout": 192,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 3,
+    "stride": 1,
+    "pad": 1,
+    "group": 192,
+    "fpg": 1,
+    "weight_file": "layer_0035_dwconv_weight.bin",
+    "bias_file": "layer_0035_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 36
+      },
+      {
+        "kind": "add",
+        "add_node": "/stages.2/blocks/blocks.3/Add"
+      }
+    ]
+  },
+  {
+    "layer_idx": 36,
+    "tag": "layer_0036_dwconv",
+    "node_idx": 110,
+    "node_name": "/stages.2/blocks/blocks.3/mlp/conv/conv/Conv",
+    "op_type": "dwconv",
+    "cin": 192,
+    "cout": 192,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 7,
+    "stride": 1,
+    "pad": 3,
+    "group": 192,
+    "fpg": 1,
+    "weight_file": "layer_0036_dwconv_weight.bin",
+    "bias_file": "layer_0036_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 37
+      }
+    ]
+  },
+  {
+    "layer_idx": 37,
+    "tag": "layer_0037_pwconv",
+    "node_idx": 111,
+    "node_name": "/stages.2/blocks/blocks.3/mlp/fc1/Conv",
+    "op_type": "pwconv",
+    "cin": 192,
+    "cout": 576,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0037_pwconv_weight.bin",
+    "bias_file": "layer_0037_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 38,
+    "tag": "layer_0038_pwconv",
+    "node_idx": 117,
+    "node_name": "/stages.2/blocks/blocks.3/mlp/fc2/Conv",
+    "op_type": "pwconv",
+    "cin": 576,
+    "cout": 192,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0038_pwconv_weight.bin",
+    "bias_file": "layer_0038_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "mul",
+        "mul_node": "/stages.2/blocks/blocks.3/layer_scale/Mul"
+      }
+    ]
+  },
+  {
+    "layer_idx": 39,
+    "tag": "layer_0039_dwconv",
+    "node_idx": 120,
+    "node_name": "/stages.3/downsample/proj/proj.0/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 192,
+    "cout": 384,
+    "h_in": 16,
+    "w_in": 16,
+    "k": 7,
+    "stride": 2,
+    "pad": 3,
+    "group": 192,
+    "fpg": 2,
+    "weight_file": "layer_0039_dwconv_weight.bin",
+    "bias_file": "layer_0039_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 40
+      }
+    ]
+  },
+  {
+    "layer_idx": 40,
+    "tag": "layer_0040_pwconv",
+    "node_idx": 121,
+    "node_name": "/stages.3/downsample/proj/proj.1/reparam_conv/Conv",
+    "op_type": "pwconv",
+    "cin": 384,
+    "cout": 384,
+    "h_in": 8,
+    "w_in": 8,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0040_pwconv_weight.bin",
+    "bias_file": "layer_0040_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 41,
+    "tag": "layer_0041_dwconv",
+    "node_idx": 127,
+    "node_name": "/stages.3/blocks/blocks.0/token_mixer/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 384,
+    "cout": 384,
+    "h_in": 8,
+    "w_in": 8,
+    "k": 3,
+    "stride": 1,
+    "pad": 1,
+    "group": 384,
+    "fpg": 1,
+    "weight_file": "layer_0041_dwconv_weight.bin",
+    "bias_file": "layer_0041_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 42
+      },
+      {
+        "kind": "add",
+        "add_node": "/stages.3/blocks/blocks.0/Add"
+      }
+    ]
+  },
+  {
+    "layer_idx": 42,
+    "tag": "layer_0042_dwconv",
+    "node_idx": 128,
+    "node_name": "/stages.3/blocks/blocks.0/mlp/conv/conv/Conv",
+    "op_type": "dwconv",
+    "cin": 384,
+    "cout": 384,
+    "h_in": 8,
+    "w_in": 8,
+    "k": 7,
+    "stride": 1,
+    "pad": 3,
+    "group": 384,
+    "fpg": 1,
+    "weight_file": "layer_0042_dwconv_weight.bin",
+    "bias_file": "layer_0042_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 43
+      }
+    ]
+  },
+  {
+    "layer_idx": 43,
+    "tag": "layer_0043_pwconv",
+    "node_idx": 129,
+    "node_name": "/stages.3/blocks/blocks.0/mlp/fc1/Conv",
+    "op_type": "pwconv",
+    "cin": 384,
+    "cout": 1152,
+    "h_in": 8,
+    "w_in": 8,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0043_pwconv_weight.bin",
+    "bias_file": "layer_0043_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 44,
+    "tag": "layer_0044_pwconv",
+    "node_idx": 135,
+    "node_name": "/stages.3/blocks/blocks.0/mlp/fc2/Conv",
+    "op_type": "pwconv",
+    "cin": 1152,
+    "cout": 384,
+    "h_in": 8,
+    "w_in": 8,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0044_pwconv_weight.bin",
+    "bias_file": "layer_0044_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "mul",
+        "mul_node": "/stages.3/blocks/blocks.0/layer_scale/Mul"
+      }
+    ]
+  },
+  {
+    "layer_idx": 45,
+    "tag": "layer_0045_dwconv",
+    "node_idx": 138,
+    "node_name": "/stages.3/blocks/blocks.1/token_mixer/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 384,
+    "cout": 384,
+    "h_in": 8,
+    "w_in": 8,
+    "k": 3,
+    "stride": 1,
+    "pad": 1,
+    "group": 384,
+    "fpg": 1,
+    "weight_file": "layer_0045_dwconv_weight.bin",
+    "bias_file": "layer_0045_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 46
+      },
+      {
+        "kind": "add",
+        "add_node": "/stages.3/blocks/blocks.1/Add"
+      }
+    ]
+  },
+  {
+    "layer_idx": 46,
+    "tag": "layer_0046_dwconv",
+    "node_idx": 139,
+    "node_name": "/stages.3/blocks/blocks.1/mlp/conv/conv/Conv",
+    "op_type": "dwconv",
+    "cin": 384,
+    "cout": 384,
+    "h_in": 8,
+    "w_in": 8,
+    "k": 7,
+    "stride": 1,
+    "pad": 3,
+    "group": 384,
+    "fpg": 1,
+    "weight_file": "layer_0046_dwconv_weight.bin",
+    "bias_file": "layer_0046_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "conv",
+        "layer_idx": 47
+      }
+    ]
+  },
+  {
+    "layer_idx": 47,
+    "tag": "layer_0047_pwconv",
+    "node_idx": 140,
+    "node_name": "/stages.3/blocks/blocks.1/mlp/fc1/Conv",
+    "op_type": "pwconv",
+    "cin": 384,
+    "cout": 960,
+    "h_in": 8,
+    "w_in": 8,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0047_pwconv_weight.bin",
+    "bias_file": "layer_0047_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "gelu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 48,
+    "tag": "layer_0048_pwconv",
+    "node_idx": 146,
+    "node_name": "/stages.3/blocks/blocks.1/mlp/fc2/Conv",
+    "op_type": "pwconv",
+    "cin": 960,
+    "cout": 384,
+    "h_in": 8,
+    "w_in": 8,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0048_pwconv_weight.bin",
+    "bias_file": "layer_0048_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "mul",
+        "mul_node": "/stages.3/blocks/blocks.1/layer_scale/Mul"
+      }
+    ]
+  },
+  {
+    "layer_idx": 49,
+    "tag": "layer_0049_dwconv",
+    "node_idx": 149,
+    "node_name": "/final_conv/reparam_conv/Conv",
+    "op_type": "dwconv",
+    "cin": 384,
+    "cout": 768,
+    "h_in": 8,
+    "w_in": 8,
+    "k": 3,
+    "stride": 1,
+    "pad": 1,
+    "group": 384,
+    "fpg": 2,
+    "weight_file": "layer_0049_dwconv_weight.bin",
+    "bias_file": "layer_0049_dwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "se_reduce"
+      },
+      {
+        "kind": "mul",
+        "mul_node": "/final_conv/se/Mul"
+      }
+    ]
+  },
+  {
+    "layer_idx": 50,
+    "tag": "layer_0050_pwconv",
+    "node_idx": 151,
+    "node_name": "/final_conv/se/fc1/Conv",
+    "op_type": "pwconv",
+    "cin": 768,
+    "cout": 48,
+    "h_in": 1,
+    "w_in": 1,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0050_pwconv_weight.bin",
+    "bias_file": "layer_0050_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "other",
+        "node_name": "/final_conv/se/act/Relu",
+        "op_type": "Relu"
+      }
+    ]
+  },
+  {
+    "layer_idx": 51,
+    "tag": "layer_0051_pwconv",
+    "node_idx": 153,
+    "node_name": "/final_conv/se/fc2/Conv",
+    "op_type": "pwconv",
+    "cin": 48,
+    "cout": 768,
+    "h_in": 1,
+    "w_in": 1,
+    "k": 1,
+    "stride": 1,
+    "pad": 0,
+    "group": 1,
+    "fpg": 1,
+    "weight_file": "layer_0051_pwconv_weight.bin",
+    "bias_file": "layer_0051_pwconv_bias.bin",
+    "consumers": [
+      {
+        "kind": "other",
+        "node_name": "/final_conv/se/gate/Sigmoid",
+        "op_type": "Sigmoid"
+      }
+    ]
+  }
+]
