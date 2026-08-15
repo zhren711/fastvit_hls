@@ -48,6 +48,7 @@
 #include <sys/mman.h>
 #include <time.h>
 #include <math.h>
+#include <stdlib.h>
 
 #define FV_DDR_BASE       0x10000000UL
 #define FV_FEAT_PING_BASE 0x12100000UL
@@ -217,6 +218,62 @@ static void repmixer_block(
         fv_cache_invalidate(cur_phys, (size_t)C*H*W);
         FILE *f5 = fopen("/tmp/s1b0_cur_postadd_reinvalidated.bin", "wb");
         fwrite(cur, 1, (size_t)C*H*W, f5); fclose(f5);
+
+        /* Test 1 (ZHR-8, 2026-08-15 round): prior checks only ever looked
+         * at the OUTPUT (cur). Never checked whether either INPUT (nxt=in_a,
+         * temp=in_b) got modified by the Add call. If fv_run_add's register-
+         * packing order doesn't match what the OP_ADD dispatch case expects
+         * (e.g. IP reads what it thinks is an input but is really primed to
+         * write there instead), the smoking gun would be an INPUT changing
+         * while the declared output (cur) stays byte-identical to preadd. */
+        uintptr_t nxt_phys  = FV_FEAT_PING_BASE;  /* nxt == ping at S1B0 Add time */
+        uintptr_t temp_phys = FV_FEAT_TEMP_BASE;
+        fv_cache_invalidate(nxt_phys,  (size_t)C*H*W);
+        fv_cache_invalidate(temp_phys, (size_t)C*H*W);
+        FILE *f6 = fopen("/tmp/s1b0_nxt_postadd.bin", "wb");
+        fwrite(nxt, 1, (size_t)C*H*W, f6); fclose(f6);
+        FILE *f7 = fopen("/tmp/s1b0_temp_postadd.bin", "wb");
+        fwrite(temp, 1, (size_t)C*H*W, f7); fclose(f7);
+
+        /* Test 2 (ZHR-8, 2026-08-15 round): full-region DDR scan. Poison a
+         * window spanning ping/mixed/pong/temp/the-old-failed-0x12700000-
+         * attempt with 0x5A (=90 signed; 90+90 saturates to 127 under
+         * add_worker's own clip math -- a landed write is self-evident as
+         * a run of 127s, not just "not 0x5A"). This re-runs DW3..PW2..Add
+         * from scratch on top of a freshly poisoned window so the Add's
+         * real operands (nxt/temp) are poisoned same as everything else --
+         * we only care whether ANY byte in the window changes, not whether
+         * this run's numeric result is meaningful. */
+        {
+            uintptr_t t2_base = 0x12000000UL;
+            size_t    t2_size = 0x00800000UL; /* 8MB: 0x12000000-0x12800000 */
+            int8_t   *t2 = (int8_t *)phys_to_virt(t2_base);
+            memset(t2, 0x5A, t2_size);
+            fv_cache_flush(t2_base, t2_size);
+
+            fv_run_add((uintptr_t)nxt, (uintptr_t)temp, (uintptr_t)cur, C, H, W);
+
+            fv_cache_invalidate(t2_base, t2_size);
+            long first_diff = -1, last_diff = -1, n_diff = 0;
+            for (size_t i = 0; i < t2_size; i++) {
+                if ((uint8_t)t2[i] != 0x5A) {
+                    if (first_diff < 0) first_diff = (long)i;
+                    last_diff = (long)i;
+                    n_diff++;
+                }
+            }
+            fprintf(stderr,
+                "[Test2] scanned 0x%zx bytes from phys 0x%lx: n_diff=%ld "
+                "first_off=0x%lx(phys 0x%lx) last_off=0x%lx(phys 0x%lx) "
+                "first_byte=%d last_byte=%d\n",
+                t2_size, (unsigned long)t2_base, n_diff,
+                first_diff, first_diff >= 0 ? (unsigned long)t2_base + first_diff : 0,
+                last_diff,  last_diff  >= 0 ? (unsigned long)t2_base + last_diff  : 0,
+                first_diff >= 0 ? (int)(int8_t)t2[first_diff] : 0,
+                last_diff  >= 0 ? (int)(int8_t)t2[last_diff]  : 0);
+            fflush(stderr);
+        }
+        exit(0);
     }
     *p_cur = cur; *p_nxt = nxt;
 }
