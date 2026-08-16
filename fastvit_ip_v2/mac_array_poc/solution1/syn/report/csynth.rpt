@@ -1,0 +1,227 @@
+
+
+================================================================
+== Synthesis Summary Report of 'mac_array_top'
+================================================================
++ General Information: 
+    * Date:           Sun Aug 16 06:07:36 2026
+    * Version:        2024.2 (Build 5238294 on Nov  8 2024)
+    * Project:        mac_array_poc
+    * Solution:       solution1 (Vivado IP Flow Target)
+    * Product family: zynq
+    * Target device:  xc7z020-clg400-1
+    
+
++ Performance & Resource Estimates: 
+    
+    PS: '+' for module; 'o' for loop; '*' for dataflow
+    +-------------------------------------------------+------+------+---------+--------+----------+---------+------+----------+------+---------+-----------+-----------+-----+
+    |                     Modules                     | Issue|      | Latency | Latency| Iteration|         | Trip |          |      |         |           |           |     |
+    |                     & Loops                     | Type | Slack| (cycles)|  (ns)  |  Latency | Interval| Count| Pipelined| BRAM |   DSP   |     FF    |    LUT    | URAM|
+    +-------------------------------------------------+------+------+---------+--------+----------+---------+------+----------+------+---------+-----------+-----------+-----+
+    |+ mac_array_top                                  |     -|  0.33|        -|       -|         -|        -|     -|        no|     -|   6 (2%)|  4188 (3%)|  5067 (9%)|    -|
+    | o VITIS_LOOP_128_1                              |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|        -|          -|          -|    -|
+    |  + run_pwconv                                   |     -|  0.33|        -|       -|         -|        -|     -|        no|     -|  2 (~0%)|  762 (~0%)|  1388 (2%)|    -|
+    |   o VITIS_LOOP_89_1                             |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|        -|          -|          -|    -|
+    |    o VITIS_LOOP_91_2                            |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|        -|          -|          -|    -|
+    |     o VITIS_LOOP_93_3                           |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|        -|          -|          -|    -|
+    |      o VITIS_LOOP_96_4                          |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|        -|          -|          -|    -|
+    |       o VITIS_LOOP_98_5                         |     -|  7.30|        -|       -|         1|        -|     -|        no|     -|        -|          -|          -|    -|
+    |  + run_dwconv                                   |     -|  0.39|        -|       -|         -|        -|     -|        no|     -|   4 (1%)|  1657 (1%)|  2024 (3%)|    -|
+    |   o VITIS_LOOP_47_1                             |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|        -|          -|          -|    -|
+    |    o VITIS_LOOP_49_2                            |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|        -|          -|          -|    -|
+    |     o VITIS_LOOP_51_3                           |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|        -|          -|          -|    -|
+    |      o VITIS_LOOP_54_4                          |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|        -|          -|          -|    -|
+    |       o VITIS_LOOP_56_5                         |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|        -|          -|          -|    -|
+    |        o VITIS_LOOP_58_6                        |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|        -|          -|          -|    -|
+    |         o VITIS_LOOP_62_7                       |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|        -|          -|          -|    -|
+    |          + run_dwconv_Pipeline_VITIS_LOOP_65_8  |     -|  0.57|        -|       -|         -|        -|     -|        no|     -|  1 (~0%)|  266 (~0%)|  312 (~0%)|    -|
+    |           o VITIS_LOOP_65_8                     |     -|  7.30|        -|       -|         4|        1|     -|       yes|     -|        -|          -|          -|    -|
+    +-------------------------------------------------+------+------+---------+--------+----------+---------+------+----------+------+---------+-----------+-----------+-----+
+
+
+================================================================
+== HW Interfaces
+================================================================
+* Other Ports
++-------------+---------+-----------+----------+
+| Port        | Mode    | Direction | Bitwidth |
++-------------+---------+-----------+----------+
+| b_base      | ap_none | in        | 32       |
+| desc        | ap_none | in        | 448      |
+| in_base     | ap_none | in        | 8        |
+| n_layers    | ap_none | in        | 32       |
+| out_base    | ap_vld  | out       | 8        |
+| out_written | ap_vld  | out       | 32       |
+| w_base      | ap_none | in        | 8        |
++-------------+---------+-----------+----------+
+
+* TOP LEVEL CONTROL
++-----------+------------+-----------------------------------+
+| Interface | Type       | Ports                             |
++-----------+------------+-----------------------------------+
+| ap_clk    | clock      | ap_clk                            |
+| ap_rst    | reset      | ap_rst                            |
+| ap_ctrl   | ap_ctrl_hs | ap_done ap_idle ap_ready ap_start |
++-----------+------------+-----------------------------------+
+
+
+================================================================
+== SW I/O Information
+================================================================
+* Top Function Arguments
++-------------+-----------+---------------------+
+| Argument    | Direction | Datatype            |
++-------------+-----------+---------------------+
+| desc        | in        | LayerDescV2 const * |
+| n_layers    | in        | int                 |
+| in_base     | in        | ap_int<8> const *   |
+| w_base      | in        | ap_int<8> const *   |
+| b_base      | in        | ap_int<32> const *  |
+| out_base    | out       | ap_int<8>*          |
+| out_written | out       | int*                |
++-------------+-----------+---------------------+
+
+* SW-to-HW Mapping
++-------------+--------------------+---------+
+| Argument    | HW Interface       | HW Type |
++-------------+--------------------+---------+
+| desc        | desc               | port    |
+| n_layers    | n_layers           | port    |
+| in_base     | in_base            | port    |
+| w_base      | w_base             | port    |
+| b_base      | b_base             | port    |
+| out_base    | out_base           | port    |
+| out_base    | out_base_ap_vld    | port    |
+| out_written | out_written        | port    |
+| out_written | out_written_ap_vld | port    |
++-------------+--------------------+---------+
+
+
+================================================================
+== Bind Op Report
+================================================================
++-----------------------------------------+-----+--------+---------------+--------+-----------+---------+
+| Name                                    | DSP | Pragma | Variable      | Op     | Impl      | Latency |
++-----------------------------------------+-----+--------+---------------+--------+-----------+---------+
+| + mac_array_top                         | 6   |        |               |        |           |         |
+|   icmp_ln128_fu_523_p2                  |     |        | icmp_ln128    | setgt  | auto      | 0       |
+|   sdiv_32ns_32ns_32_36_seq_1_U38        |     |        | div_i         | sdiv   | auto_seq  | 35      |
+|   sdiv_32ns_32ns_32_36_seq_1_U39        |     |        | div8_i        | sdiv   | auto_seq  | 35      |
+|   cmp_i_fu_284_p2                       |     |        | cmp_i         | seteq  | auto      | 0       |
+|   empty_32_fu_310_p3                    |     |        | empty_32      | select | auto_sel  | 0       |
+|   sub12_i_fu_331_p2                     |     |        | sub12_i       | add    | fabric    | 0       |
+|   p_neg15_fu_344_p2                     |     |        | p_neg15       | sub    | fabric    | 0       |
+|   p_neg_t17_fu_363_p2                   |     |        | p_neg_t17     | sub    | fabric    | 0       |
+|   p_n_row_tiles_fu_383_p3               |     |        | p_n_row_tiles | select | auto_sel  | 0       |
+|   sub16_i_fu_391_p2                     |     |        | sub16_i       | add    | fabric    | 0       |
+|   p_neg9_fu_404_p2                      |     |        | p_neg9        | sub    | fabric    | 0       |
+|   p_neg_t11_fu_423_p2                   |     |        | p_neg_t11     | sub    | fabric    | 0       |
+|   p_n_col_tiles_fu_443_p3               |     |        | p_n_col_tiles | select | auto_sel  | 0       |
+|   sub19_i_fu_451_p2                     |     |        | sub19_i       | add    | fabric    | 0       |
+|   p_neg_fu_464_p2                       |     |        | p_neg         | sub    | fabric    | 0       |
+|   p_neg_t_fu_483_p2                     |     |        | p_neg_t       | sub    | fabric    | 0       |
+|   p_n_ch_tiles_fu_503_p3                |     |        | p_n_ch_tiles  | select | auto_sel  | 0       |
+|   icmp_ln128_1_fu_590_p2                |     |        | icmp_ln128_1  | setlt  | auto      | 0       |
+|   add_ln128_fu_595_p2                   |     |        | add_ln128     | add    | fabric    | 0       |
+|  + run_pwconv                           | 2   |        |               |        |           |         |
+|    sub_fu_348_p2                        |     |        | sub           | add    | fabric    | 0       |
+|    sub8_fu_354_p2                       |     |        | sub8          | add    | fabric    | 0       |
+|    sub19_fu_360_p2                      |     |        | sub19         | add    | fabric    | 0       |
+|    sub_i_i_fu_288_p2                    |     |        | sub_i_i       | sub    | fabric    | 0       |
+|    empty_fu_247_p2                      |     |        | empty         | setgt  | auto      | 0       |
+|    empty_25_fu_253_p3                   |     |        | empty_25      | select | auto_sel  | 0       |
+|    mul_8s_8s_16_1_1_U2                  |     |        | mul_ln104     | mul    | auto      | 0       |
+|    mul_16s_31ns_32_2_1_U1               | 2   |        | mul_ln104_1   | mul    | auto      | 1       |
+|    add_ln103_fu_293_p2                  |     |        | add_ln103     | add    | fabric    | 0       |
+|    ashr_ln24_fu_298_p2                  |     |        | ashr_ln24     | ashr   | auto_pipe | 0       |
+|    shl_ln24_fu_303_p2                   |     |        | shl_ln24      | shl    | auto_pipe | 0       |
+|    select_ln24_fu_309_p3                |     |        | select_ln24   | select | auto_sel  | 0       |
+|    icmp_ln25_fu_324_p2                  |     |        | icmp_ln25     | setgt  | auto      | 0       |
+|    select_ln25_fu_330_p3                |     |        | select_ln25   | select | auto_sel  | 0       |
+|    icmp_ln26_fu_338_p2                  |     |        | icmp_ln26     | setlt  | auto      | 0       |
+|    select_ln110_fu_366_p3               |     |        | select_ln110  | select | auto_sel  | 0       |
+|    cmp3651_fu_372_p2                    |     |        | cmp3651       | setgt  | auto      | 0       |
+|    icmp_ln89_fu_385_p2                  |     |        | icmp_ln89     | setlt  | auto      | 0       |
+|    add_ln89_fu_390_p2                   |     |        | add_ln89      | add    | fabric    | 0       |
+|    icmp_ln90_fu_396_p2                  |     |        | icmp_ln90     | seteq  | auto      | 0       |
+|    c_sz_fu_401_p3                       |     |        | c_sz          | select | auto_sel  | 0       |
+|    icmp_ln91_fu_412_p2                  |     |        | icmp_ln91     | setlt  | auto      | 0       |
+|    add_ln91_fu_417_p2                   |     |        | add_ln91      | add    | fabric    | 0       |
+|    icmp_ln92_fu_423_p2                  |     |        | icmp_ln92     | seteq  | auto      | 0       |
+|    r_sz_fu_428_p3                       |     |        | r_sz          | select | auto_sel  | 0       |
+|    icmp_ln93_fu_443_p2                  |     |        | icmp_ln93     | setlt  | auto      | 0       |
+|    add_ln93_fu_448_p2                   |     |        | add_ln93      | add    | fabric    | 0       |
+|    not_cmp20_fu_454_p2                  |     |        | not_cmp20     | setne  | auto      | 0       |
+|    cmp365_fu_459_p2                     |     |        | cmp365        | or     | auto      | 0       |
+|    icmp_ln96_fu_468_p2                  |     |        | icmp_ln96     | setlt  | auto      | 0       |
+|    add_ln96_fu_473_p2                   |     |        | add_ln96      | add    | fabric    | 0       |
+|    icmp_ln98_fu_483_p2                  |     |        | icmp_ln98     | setlt  | auto      | 0       |
+|    add_ln98_fu_488_p2                   |     |        | add_ln98      | add    | fabric    | 0       |
+|  + run_dwconv                           | 4   |        |               |        |           |         |
+|    sub_fu_384_p2                        |     |        | sub           | add    | fabric    | 0       |
+|    sub8_fu_390_p2                       |     |        | sub8          | add    | fabric    | 0       |
+|    sub19_fu_396_p2                      |     |        | sub19         | add    | fabric    | 0       |
+|    sub_i_i_fu_420_p2                    |     |        | sub_i_i       | sub    | fabric    | 0       |
+|    icmp_ln47_fu_442_p2                  |     |        | icmp_ln47     | setlt  | auto      | 0       |
+|    add_ln47_fu_447_p2                   |     |        | add_ln47      | add    | fabric    | 0       |
+|    icmp_ln48_fu_453_p2                  |     |        | icmp_ln48     | seteq  | auto      | 0       |
+|    c_sz_fu_458_p3                       |     |        | c_sz          | select | auto_sel  | 0       |
+|    icmp_ln49_fu_469_p2                  |     |        | icmp_ln49     | setlt  | auto      | 0       |
+|    add_ln49_fu_474_p2                   |     |        | add_ln49      | add    | fabric    | 0       |
+|    icmp_ln50_fu_480_p2                  |     |        | icmp_ln50     | seteq  | auto      | 0       |
+|    r_sz_fu_485_p3                       |     |        | r_sz          | select | auto_sel  | 0       |
+|    icmp_ln51_fu_512_p2                  |     |        | icmp_ln51     | setlt  | auto      | 0       |
+|    add_ln51_fu_517_p2                   |     |        | add_ln51      | add    | fabric    | 0       |
+|    icmp_ln52_fu_523_p2                  |     |        | icmp_ln52     | seteq  | auto      | 0       |
+|    col_sz_fu_528_p3                     |     |        | col_sz        | select | auto_sel  | 0       |
+|    cmp3613_fu_535_p2                    |     |        | cmp3613       | setgt  | auto      | 0       |
+|    icmp_ln54_fu_557_p2                  |     |        | icmp_ln54     | setlt  | auto      | 0       |
+|    add_ln54_fu_562_p2                   |     |        | add_ln54      | add    | fabric    | 0       |
+|    icmp_ln56_fu_572_p2                  |     |        | icmp_ln56     | setlt  | auto      | 0       |
+|    add_ln56_fu_577_p2                   |     |        | add_ln56      | add    | fabric    | 0       |
+|    empty_fu_583_p2                      |     |        | empty         | add    | fabric    | 0       |
+|    mul_32s_32s_32_2_1_U25               | 3   |        | empty_26      | mul    | auto      | 1       |
+|    grp_fu_319_p2                        |     |        | empty_27      | sub    | fabric    | 0       |
+|    icmp_ln58_fu_596_p2                  |     |        | icmp_ln58     | setlt  | auto      | 0       |
+|    add_ln58_fu_601_p2                   |     |        | add_ln58      | add    | fabric    | 0       |
+|    empty_28_fu_607_p2                   |     |        | empty_28      | add    | fabric    | 0       |
+|    mul_32s_32s_32_2_1_U25               | 3   |        | empty_29      | mul    | auto      | 1       |
+|    grp_fu_319_p2                        |     |        | empty_30      | sub    | fabric    | 0       |
+|    icmp_ln62_fu_616_p2                  |     |        | icmp_ln62     | setlt  | auto      | 0       |
+|    add_ln62_fu_621_p2                   |     |        | add_ln62      | add    | fabric    | 0       |
+|    add_ln63_fu_631_p2                   |     |        | add_ln63      | add    | fabric    | 0       |
+|    icmp_ln64_fu_644_p2                  |     |        | icmp_ln64     | setlt  | auto      | 0       |
+|    xor_ln64_fu_649_p2                   |     |        | xor_ln64      | xor    | auto      | 0       |
+|    or_ln64_fu_655_p2                    |     |        | or_ln64       | or     | auto      | 0       |
+|    ashr_ln24_fu_661_p2                  |     |        | ashr_ln24     | ashr   | auto_pipe | 0       |
+|    shl_ln24_fu_666_p2                   |     |        | shl_ln24      | shl    | auto_pipe | 0       |
+|    select_ln24_fu_671_p3                |     |        | select_ln24   | select | auto_sel  | 0       |
+|    icmp_ln25_fu_692_p2                  |     |        | icmp_ln25     | setgt  | auto      | 0       |
+|    select_ln25_fu_697_p3                |     |        | select_ln25   | select | auto_sel  | 0       |
+|    icmp_ln26_fu_704_p2                  |     |        | icmp_ln26     | setlt  | auto      | 0       |
+|    select_ln74_fu_714_p3                |     |        | select_ln74   | select | auto_sel  | 0       |
+|   + run_dwconv_Pipeline_VITIS_LOOP_65_8 | 1   |        |               |        |           |         |
+|     icmp_ln65_fu_134_p2                 |     |        | icmp_ln65     | seteq  | auto      | 0       |
+|     add_ln65_fu_140_p2                  |     |        | add_ln65      | add    | fabric    | 0       |
+|     add_ln66_fu_150_p2                  |     |        | add_ln66      | add    | fabric    | 0       |
+|     icmp_ln67_fu_156_p2                 |     |        | icmp_ln67     | setlt  | auto      | 0       |
+|     xor_ln67_fu_177_p2                  |     |        | xor_ln67      | xor    | auto      | 0       |
+|     or_ln67_fu_182_p2                   |     |        | or_ln67       | or     | auto      | 0       |
+|     mac_muladd_8s_8s_32s_32_4_1_U16     | 1   |        | mul_ln70      | mul    | dsp_slice | 3       |
+|     mac_muladd_8s_8s_32s_32_4_1_U16     | 1   |        | sext_ln70_1   | sext   | dsp_slice | 3       |
+|     mac_muladd_8s_8s_32s_32_4_1_U16     | 1   |        | acc_3         | add    | dsp_slice | 3       |
+|     acc_2_fu_188_p3                     |     |        | acc_2         | select | auto_sel  | 0       |
++-----------------------------------------+-----+--------+---------------+--------+-----------+---------+
+
+
+================================================================
+== Storage Report
+================================================================
+  No bind storage info in design
+
+================================================================
+== Pragma Report
+================================================================
+  No pragmas found
+
