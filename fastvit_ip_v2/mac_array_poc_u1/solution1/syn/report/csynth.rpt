@@ -1,0 +1,739 @@
+
+
+================================================================
+== Synthesis Summary Report of 'mac_array_top'
+================================================================
++ General Information: 
+    * Date:           Sun Aug 16 06:22:17 2026
+    * Version:        2024.2 (Build 5238294 on Nov  8 2024)
+    * Project:        mac_array_poc_u1
+    * Solution:       solution1 (Vivado IP Flow Target)
+    * Product family: zynq
+    * Target device:  xc7z020-clg400-1
+    
+
++ Performance & Resource Estimates: 
+    
+    PS: '+' for module; 'o' for loop; '*' for dataflow
+    +---------------------------------------------------------------------+------+------+---------+--------+----------+---------+------+----------+------+----------+-------------+-------------+-----+
+    |                               Modules                               | Issue|      | Latency | Latency| Iteration|         | Trip |          |      |          |             |             |     |
+    |                               & Loops                               | Type | Slack| (cycles)|  (ns)  |  Latency | Interval| Count| Pipelined| BRAM |    DSP   |      FF     |     LUT     | URAM|
+    +---------------------------------------------------------------------+------+------+---------+--------+----------+---------+------+----------+------+----------+-------------+-------------+-----+
+    |+ mac_array_top                                                      |     -|  0.15|        -|       -|         -|        -|     -|        no|     -|  25 (11%)|  40136 (37%)|  34859 (65%)|    -|
+    | o VITIS_LOOP_175_1                                                  |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|         -|            -|            -|    -|
+    |  + run_pwconv                                                       |     -|  0.15|        -|       -|         -|        -|     -|        no|     -|   13 (5%)|  21576 (20%)|  16804 (31%)|    -|
+    |   o VITIS_LOOP_107_1                                                |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|         -|            -|            -|    -|
+    |    o VITIS_LOOP_109_2                                               |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|         -|            -|            -|    -|
+    |     o VITIS_LOOP_111_3                                              |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|         -|            -|            -|    -|
+    |      + run_pwconv_Pipeline_STAGE_VITIS_LOOP_128_4_VITIS_LOOP_130_5  |     -|  0.71|        -|       -|         -|        -|     -|        no|     -|         -|  16783 (15%)|     729 (1%)|    -|
+    |       o STAGE_VITIS_LOOP_128_4_VITIS_LOOP_130_5                     |     -|  7.30|        -|       -|         3|        1|     -|       yes|     -|         -|            -|            -|    -|
+    |      + run_pwconv_Pipeline_VITIS_LOOP_136_6_VITIS_LOOP_139_7        |     -|  0.15|        -|       -|         -|        -|     -|        no|     -|         -|    2638 (2%)|     612 (1%)|    -|
+    |       o VITIS_LOOP_136_6_VITIS_LOOP_139_7                           |     -|  7.30|        -|       -|         2|        1|     -|       yes|     -|         -|            -|            -|    -|
+    |      o COMPUTE                                                      |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|         -|            -|            -|    -|
+    |       + run_pwconv_Pipeline_VITIS_LOOP_155_8                        |     -|  0.20|        -|       -|         -|        -|     -|        no|     -|   1 (~0%)|    153 (~0%)|    1485 (2%)|    -|
+    |        o VITIS_LOOP_155_8                                           |     -|  7.30|        -|       -|         5|        1|     -|       yes|     -|         -|            -|            -|    -|
+    |  + run_dwconv                                                       |     -|  0.21|        -|       -|         -|        -|     -|        no|     -|   12 (5%)|  17697 (16%)|  17823 (33%)|    -|
+    |   o VITIS_LOOP_45_1                                                 |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|         -|            -|            -|    -|
+    |    o VITIS_LOOP_47_2                                                |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|         -|            -|            -|    -|
+    |     o VITIS_LOOP_49_3                                               |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|         -|            -|            -|    -|
+    |      o STAGE                                                        |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|         -|            -|            -|    -|
+    |       + run_dwconv_Pipeline_VITIS_LOOP_62_4_VITIS_LOOP_63_5         |     -|  0.60|        -|       -|         -|        -|     -|        no|     -|         -|    678 (~0%)|    1108 (2%)|    -|
+    |        o VITIS_LOOP_62_4_VITIS_LOOP_63_5                            |     -|  7.30|        -|       -|         2|        1|     -|       yes|     -|         -|            -|            -|    -|
+    |       + run_dwconv_Pipeline_VITIS_LOOP_65_6_VITIS_LOOP_67_7         |     -|  0.21|        -|       -|         -|        -|     -|        no|     -|         -|    7387 (6%)|   9373 (17%)|    -|
+    |        o VITIS_LOOP_65_6_VITIS_LOOP_67_7                            |     -|  7.30|        -|       -|         4|        1|     -|       yes|     -|         -|            -|            -|    -|
+    |      o COMPUTE                                                      |     -|  7.30|        -|       -|         -|        -|     -|        no|     -|         -|            -|            -|    -|
+    |       + run_dwconv_Pipeline_VITIS_LOOP_89_8_VITIS_LOOP_90_9         |     -|  1.49|        -|       -|         -|        -|     -|        no|     -|   1 (~0%)|    351 (~0%)|   5494 (10%)|    -|
+    |        o VITIS_LOOP_89_8_VITIS_LOOP_90_9                            |     -|  7.30|        -|       -|         7|        1|     -|       yes|     -|         -|            -|            -|    -|
+    +---------------------------------------------------------------------+------+------+---------+--------+----------+---------+------+----------+------+----------+-------------+-------------+-----+
+
+
+================================================================
+== HW Interfaces
+================================================================
+* Other Ports
++-------------+---------+-----------+----------+
+| Port        | Mode    | Direction | Bitwidth |
++-------------+---------+-----------+----------+
+| b_base      | ap_none | in        | 32       |
+| desc        | ap_none | in        | 704      |
+| in_base     | ap_none | in        | 8        |
+| n_layers    | ap_none | in        | 32       |
+| out_base    | ap_vld  | out       | 8        |
+| out_written | ap_vld  | out       | 32       |
+| w_base      | ap_none | in        | 8        |
++-------------+---------+-----------+----------+
+
+* TOP LEVEL CONTROL
++-----------+------------+-----------------------------------+
+| Interface | Type       | Ports                             |
++-----------+------------+-----------------------------------+
+| ap_clk    | clock      | ap_clk                            |
+| ap_rst    | reset      | ap_rst                            |
+| ap_ctrl   | ap_ctrl_hs | ap_done ap_idle ap_ready ap_start |
++-----------+------------+-----------------------------------+
+
+
+================================================================
+== SW I/O Information
+================================================================
+* Top Function Arguments
++-------------+-----------+---------------------+
+| Argument    | Direction | Datatype            |
++-------------+-----------+---------------------+
+| desc        | in        | LayerDescV2 const * |
+| n_layers    | in        | int                 |
+| in_base     | in        | ap_int<8> const *   |
+| w_base      | in        | ap_int<8> const *   |
+| b_base      | in        | ap_int<32> const *  |
+| out_base    | out       | ap_int<8>*          |
+| out_written | out       | int*                |
++-------------+-----------+---------------------+
+
+* SW-to-HW Mapping
++-------------+--------------------+---------+
+| Argument    | HW Interface       | HW Type |
++-------------+--------------------+---------+
+| desc        | desc               | port    |
+| n_layers    | n_layers           | port    |
+| in_base     | in_base            | port    |
+| w_base      | w_base             | port    |
+| b_base      | b_base             | port    |
+| out_base    | out_base           | port    |
+| out_base    | out_base_ap_vld    | port    |
+| out_written | out_written        | port    |
+| out_written | out_written_ap_vld | port    |
++-------------+--------------------+---------+
+
+
+================================================================
+== Bind Op Report
+================================================================
++-----------------------------------------------------------------+-----+--------+----------------+-----------+--------------------------+---------+
+| Name                                                            | DSP | Pragma | Variable       | Op        | Impl                     | Latency |
++-----------------------------------------------------------------+-----+--------+----------------+-----------+--------------------------+---------+
+| + mac_array_top                                                 | 25  |        |                |           |                          |         |
+|   icmp_ln175_fu_122_p2                                          |     |        | icmp_ln175     | setgt     | auto                     | 0       |
+|   cmp1_fu_132_p2                                                |     |        | cmp1           | seteq     | auto                     | 0       |
+|   icmp_ln175_1_fu_150_p2                                        |     |        | icmp_ln175_1   | setlt     | auto                     | 0       |
+|   add_ln175_fu_155_p2                                           |     |        | add_ln175      | add       | fabric                   | 0       |
+|  + run_pwconv                                                   | 13  |        |                |           |                          |         |
+|    sub_fu_12130_p2                                              |     |        | sub            | add       | fabric                   | 0       |
+|    sub8_fu_12156_p2                                             |     |        | sub8           | add       | fabric                   | 0       |
+|    sub19_fu_12182_p2                                            |     |        | sub19          | add       | fabric                   | 0       |
+|    sub_i_i_fu_12216_p2                                          |     |        | sub_i_i        | sub       | fabric                   | 0       |
+|    empty_fu_12222_p2                                            |     |        | empty          | setgt     | auto                     | 0       |
+|    smax19_fu_12228_p3                                           |     |        | smax19         | select    | auto_sel                 | 0       |
+|    icmp_ln107_fu_12256_p2                                       |     |        | icmp_ln107     | setlt     | auto                     | 0       |
+|    add_ln107_fu_12261_p2                                        |     |        | add_ln107      | add       | fabric                   | 0       |
+|    icmp_ln108_fu_12267_p2                                       |     |        | icmp_ln108     | seteq     | auto                     | 0       |
+|    c_sz_fu_12272_p3                                             |     |        | c_sz           | select    | auto_sel                 | 0       |
+|    empty_23_fu_12283_p2                                         |     |        | empty_23       | setgt     | auto                     | 0       |
+|    smax4139_fu_12289_p3                                         |     |        | smax4139       | select    | auto_sel                 | 0       |
+|    mul_31ns_31ns_62_2_1_U2628                                   | 4   |        | mul_ln107      | mul       | auto                     | 1       |
+|    icmp_ln109_fu_12305_p2                                       |     |        | icmp_ln109     | setlt     | auto                     | 0       |
+|    add_ln109_fu_12310_p2                                        |     |        | add_ln109      | add       | fabric                   | 0       |
+|    icmp_ln110_fu_12316_p2                                       |     |        | icmp_ln110     | seteq     | auto                     | 0       |
+|    r_sz_fu_12321_p3                                             |     |        | r_sz           | select    | auto_sel                 | 0       |
+|    empty_24_fu_12332_p2                                         |     |        | empty_24       | setgt     | auto                     | 0       |
+|    smax_fu_12338_p3                                             |     |        | smax           | select    | auto_sel                 | 0       |
+|    icmp_ln111_fu_12358_p2                                       |     |        | icmp_ln111     | setlt     | auto                     | 0       |
+|    add_ln111_fu_12363_p2                                        |     |        | add_ln111      | add       | fabric                   | 0       |
+|    icmp_ln112_fu_12369_p2                                       |     |        | icmp_ln112     | seteq     | auto                     | 0       |
+|    col_sz_fu_12374_p3                                           |     |        | col_sz         | select    | auto_sel                 | 0       |
+|    empty_25_fu_12385_p2                                         |     |        | empty_25       | setgt     | auto                     | 0       |
+|    smax17_fu_12391_p3                                           |     |        | smax17         | select    | auto_sel                 | 0       |
+|    mul_31ns_31ns_62_2_1_U2628                                   | 4   |        | mul_ln111      | mul       | auto                     | 1       |
+|    mul_31ns_62ns_93_5_1_U2629                                   | 8   |        | mul_ln111_1    | mul       | auto                     | 4       |
+|    icmp_ln143_fu_19343_p2                                       |     |        | icmp_ln143     | seteq     | auto                     | 0       |
+|    idx_1_fu_19349_p2                                            |     |        | idx_1          | add       | fabric                   | 0       |
+|    icmp_ln148_fu_19391_p2                                       |     |        | icmp_ln148     | setlt     | auto                     | 0       |
+|    xor_ln148_fu_19396_p2                                        |     |        | xor_ln148      | xor       | auto                     | 0       |
+|    icmp_ln148_1_fu_19402_p2                                     |     |        | icmp_ln148_1   | setlt     | auto                     | 0       |
+|    xor_ln148_1_fu_19407_p2                                      |     |        | xor_ln148_1    | xor       | auto                     | 0       |
+|    icmp_ln148_2_fu_19413_p2                                     |     |        | icmp_ln148_2   | setlt     | auto                     | 0       |
+|    xor_ln148_2_fu_19418_p2                                      |     |        | xor_ln148_2    | xor       | auto                     | 0       |
+|    or_ln148_fu_19424_p2                                         |     |        | or_ln148       | or        | auto                     | 0       |
+|    or_ln148_1_fu_19430_p2                                       |     |        | or_ln148_1     | or        | auto                     | 0       |
+|    sparsemux_17_3_32_1_1_U2630                                  |     |        | acc            | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2631                                   |     |        | tmp            | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2632                                   |     |        | tmp_1          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2633                                   |     |        | tmp_2          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2634                                   |     |        | tmp_3          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2635                                   |     |        | tmp_4          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2636                                   |     |        | tmp_5          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2637                                   |     |        | tmp_6          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2638                                   |     |        | tmp_7          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2639                                   |     |        | tmp_8          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2640                                   |     |        | tmp_9          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2641                                   |     |        | tmp_s          | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2642                                   |     |        | tmp_10         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2643                                   |     |        | tmp_11         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2644                                   |     |        | tmp_12         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2645                                   |     |        | tmp_13         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2646                                   |     |        | tmp_14         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2647                                   |     |        | tmp_15         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2648                                   |     |        | tmp_16         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2649                                   |     |        | tmp_17         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2650                                   |     |        | tmp_18         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2651                                   |     |        | tmp_19         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2652                                   |     |        | tmp_20         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2653                                   |     |        | tmp_21         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2654                                   |     |        | tmp_22         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2655                                   |     |        | tmp_23         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2656                                   |     |        | tmp_24         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2657                                   |     |        | tmp_25         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2658                                   |     |        | tmp_26         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2659                                   |     |        | tmp_27         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2660                                   |     |        | tmp_28         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2661                                   |     |        | tmp_29         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2662                                   |     |        | tmp_30         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2663                                   |     |        | tmp_31         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2664                                   |     |        | tmp_32         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2665                                   |     |        | tmp_33         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2666                                   |     |        | tmp_34         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2667                                   |     |        | tmp_35         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2668                                   |     |        | tmp_36         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2669                                   |     |        | tmp_37         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2670                                   |     |        | tmp_38         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2671                                   |     |        | tmp_39         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2672                                   |     |        | tmp_40         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2673                                   |     |        | tmp_41         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2674                                   |     |        | tmp_42         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2675                                   |     |        | tmp_43         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2676                                   |     |        | tmp_44         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2677                                   |     |        | tmp_45         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2678                                   |     |        | tmp_46         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2679                                   |     |        | tmp_47         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2680                                   |     |        | tmp_48         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2681                                   |     |        | tmp_49         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2682                                   |     |        | tmp_50         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2683                                   |     |        | tmp_51         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2684                                   |     |        | tmp_52         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2685                                   |     |        | tmp_53         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2686                                   |     |        | tmp_54         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2687                                   |     |        | tmp_55         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2688                                   |     |        | tmp_56         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2689                                   |     |        | tmp_57         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2690                                   |     |        | tmp_58         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2691                                   |     |        | tmp_59         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2692                                   |     |        | tmp_60         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2693                                   |     |        | tmp_61         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2694                                   |     |        | tmp_62         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2695                                   |     |        | tmp_63         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2696                                   |     |        | tmp_64         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2697                                   |     |        | tmp_65         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2698                                   |     |        | tmp_66         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2699                                   |     |        | tmp_67         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2700                                   |     |        | tmp_68         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2701                                   |     |        | tmp_69         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2702                                   |     |        | tmp_70         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2703                                   |     |        | tmp_71         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2704                                   |     |        | tmp_72         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2705                                   |     |        | tmp_73         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2706                                   |     |        | tmp_74         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2707                                   |     |        | tmp_75         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2708                                   |     |        | tmp_76         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2709                                   |     |        | tmp_77         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2710                                   |     |        | tmp_78         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2711                                   |     |        | tmp_79         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2712                                   |     |        | tmp_80         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2713                                   |     |        | tmp_81         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2714                                   |     |        | tmp_82         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2715                                   |     |        | tmp_83         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2716                                   |     |        | tmp_84         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2717                                   |     |        | tmp_85         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2718                                   |     |        | tmp_86         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2719                                   |     |        | tmp_87         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2720                                   |     |        | tmp_88         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2721                                   |     |        | tmp_89         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2722                                   |     |        | tmp_90         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2723                                   |     |        | tmp_91         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2724                                   |     |        | tmp_92         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2725                                   |     |        | tmp_93         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2726                                   |     |        | tmp_94         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2727                                   |     |        | tmp_95         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2728                                   |     |        | tmp_96         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2729                                   |     |        | tmp_97         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2730                                   |     |        | tmp_98         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2731                                   |     |        | tmp_99         | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2732                                   |     |        | tmp_100        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2733                                   |     |        | tmp_101        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2734                                   |     |        | tmp_102        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2735                                   |     |        | tmp_103        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2736                                   |     |        | tmp_104        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2737                                   |     |        | tmp_105        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2738                                   |     |        | tmp_106        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2739                                   |     |        | tmp_107        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2740                                   |     |        | tmp_108        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2741                                   |     |        | tmp_109        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2742                                   |     |        | tmp_110        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2743                                   |     |        | tmp_111        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2744                                   |     |        | tmp_112        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2745                                   |     |        | tmp_113        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2746                                   |     |        | tmp_114        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2747                                   |     |        | tmp_115        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2748                                   |     |        | tmp_116        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2749                                   |     |        | tmp_117        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2750                                   |     |        | tmp_118        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2751                                   |     |        | tmp_119        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2752                                   |     |        | tmp_120        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2753                                   |     |        | tmp_121        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2754                                   |     |        | tmp_122        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2755                                   |     |        | tmp_123        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2756                                   |     |        | tmp_124        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2757                                   |     |        | tmp_125        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2758                                   |     |        | tmp_126        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2759                                   |     |        | tmp_127        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2760                                   |     |        | tmp_128        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2761                                   |     |        | tmp_129        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2762                                   |     |        | tmp_130        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2763                                   |     |        | tmp_131        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2764                                   |     |        | tmp_132        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2765                                   |     |        | tmp_133        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2766                                   |     |        | tmp_134        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2767                                   |     |        | tmp_135        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2768                                   |     |        | tmp_136        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2769                                   |     |        | tmp_137        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2770                                   |     |        | tmp_138        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2771                                   |     |        | tmp_139        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2772                                   |     |        | tmp_140        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2773                                   |     |        | tmp_141        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2774                                   |     |        | tmp_142        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2775                                   |     |        | tmp_143        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2776                                   |     |        | tmp_144        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2777                                   |     |        | tmp_145        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2778                                   |     |        | tmp_146        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2779                                   |     |        | tmp_147        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2780                                   |     |        | tmp_148        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2781                                   |     |        | tmp_149        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2782                                   |     |        | tmp_150        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2783                                   |     |        | tmp_151        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2784                                   |     |        | tmp_152        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2785                                   |     |        | tmp_153        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2786                                   |     |        | tmp_154        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2787                                   |     |        | tmp_155        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2788                                   |     |        | tmp_156        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2789                                   |     |        | tmp_157        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2790                                   |     |        | tmp_158        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2791                                   |     |        | tmp_159        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2792                                   |     |        | tmp_160        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2793                                   |     |        | tmp_161        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2794                                   |     |        | tmp_162        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2795                                   |     |        | tmp_163        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2796                                   |     |        | tmp_164        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2797                                   |     |        | tmp_165        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2798                                   |     |        | tmp_166        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2799                                   |     |        | tmp_167        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2800                                   |     |        | tmp_168        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2801                                   |     |        | tmp_169        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2802                                   |     |        | tmp_170        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2803                                   |     |        | tmp_171        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2804                                   |     |        | tmp_172        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2805                                   |     |        | tmp_173        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2806                                   |     |        | tmp_174        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2807                                   |     |        | tmp_175        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2808                                   |     |        | tmp_176        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2809                                   |     |        | tmp_177        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2810                                   |     |        | tmp_178        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2811                                   |     |        | tmp_179        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2812                                   |     |        | tmp_180        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2813                                   |     |        | tmp_181        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2814                                   |     |        | tmp_182        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2815                                   |     |        | tmp_183        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2816                                   |     |        | tmp_184        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2817                                   |     |        | tmp_185        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2818                                   |     |        | tmp_186        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2819                                   |     |        | tmp_187        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2820                                   |     |        | tmp_188        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2821                                   |     |        | tmp_189        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2822                                   |     |        | tmp_190        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2823                                   |     |        | tmp_191        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2824                                   |     |        | tmp_192        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2825                                   |     |        | tmp_193        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2826                                   |     |        | tmp_194        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2827                                   |     |        | tmp_195        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2828                                   |     |        | tmp_196        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2829                                   |     |        | tmp_197        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2830                                   |     |        | tmp_198        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2831                                   |     |        | tmp_199        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2832                                   |     |        | tmp_200        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2833                                   |     |        | tmp_201        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2834                                   |     |        | tmp_202        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2835                                   |     |        | tmp_203        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2836                                   |     |        | tmp_204        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2837                                   |     |        | tmp_205        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2838                                   |     |        | tmp_206        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2839                                   |     |        | tmp_207        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2840                                   |     |        | tmp_208        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2841                                   |     |        | tmp_209        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2842                                   |     |        | tmp_210        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2843                                   |     |        | tmp_211        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2844                                   |     |        | tmp_212        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2845                                   |     |        | tmp_213        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2846                                   |     |        | tmp_214        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2847                                   |     |        | tmp_215        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2848                                   |     |        | tmp_216        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2849                                   |     |        | tmp_217        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2850                                   |     |        | tmp_218        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2851                                   |     |        | tmp_219        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2852                                   |     |        | tmp_220        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2853                                   |     |        | tmp_221        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2854                                   |     |        | tmp_222        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2855                                   |     |        | tmp_223        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2856                                   |     |        | tmp_224        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2857                                   |     |        | tmp_225        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2858                                   |     |        | tmp_226        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2859                                   |     |        | tmp_227        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2860                                   |     |        | tmp_228        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2861                                   |     |        | tmp_229        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2862                                   |     |        | tmp_230        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2863                                   |     |        | tmp_231        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2864                                   |     |        | tmp_232        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2865                                   |     |        | tmp_233        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2866                                   |     |        | tmp_234        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2867                                   |     |        | tmp_235        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2868                                   |     |        | tmp_236        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2869                                   |     |        | tmp_237        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2870                                   |     |        | tmp_238        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2871                                   |     |        | tmp_239        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2872                                   |     |        | tmp_240        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2873                                   |     |        | tmp_241        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2874                                   |     |        | tmp_242        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2875                                   |     |        | tmp_243        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2876                                   |     |        | tmp_244        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2877                                   |     |        | tmp_245        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2878                                   |     |        | tmp_246        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2879                                   |     |        | tmp_247        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2880                                   |     |        | tmp_248        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2881                                   |     |        | tmp_249        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2882                                   |     |        | tmp_250        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2883                                   |     |        | tmp_251        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2884                                   |     |        | tmp_252        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2885                                   |     |        | tmp_253        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2886                                   |     |        | tmp_254        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2887                                   |     |        | tmp_255        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2888                                   |     |        | tmp_256        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2889                                   |     |        | tmp_257        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2890                                   |     |        | tmp_258        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2891                                   |     |        | tmp_259        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2892                                   |     |        | tmp_260        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2893                                   |     |        | tmp_261        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2894                                   |     |        | tmp_262        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2895                                   |     |        | tmp_263        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2896                                   |     |        | tmp_264        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2897                                   |     |        | tmp_265        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2898                                   |     |        | tmp_266        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2899                                   |     |        | tmp_267        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2900                                   |     |        | tmp_268        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2901                                   |     |        | tmp_269        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2902                                   |     |        | tmp_270        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2903                                   |     |        | tmp_271        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2904                                   |     |        | tmp_272        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2905                                   |     |        | tmp_273        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2906                                   |     |        | tmp_274        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2907                                   |     |        | tmp_275        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2908                                   |     |        | tmp_276        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2909                                   |     |        | tmp_277        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2910                                   |     |        | tmp_278        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2911                                   |     |        | tmp_279        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2912                                   |     |        | tmp_280        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2913                                   |     |        | tmp_281        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2914                                   |     |        | tmp_282        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2915                                   |     |        | tmp_283        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2916                                   |     |        | tmp_284        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2917                                   |     |        | tmp_285        | sparsemux | compactencoding_dontcare | 0       |
+|    sparsemux_17_3_8_1_1_U2918                                   |     |        | tmp_286        | sparsemux | compactencoding_dontcare | 0       |
+|    ashr_ln24_fu_28943_p2                                        |     |        | ashr_ln24      | ashr      | auto_pipe                | 0       |
+|    shl_ln24_fu_28948_p2                                         |     |        | shl_ln24       | shl       | auto_pipe                | 0       |
+|    select_ln24_fu_28953_p3                                      |     |        | select_ln24    | select    | auto_sel                 | 0       |
+|    icmp_ln25_fu_28970_p2                                        |     |        | icmp_ln25      | setgt     | auto                     | 0       |
+|    select_ln25_fu_28975_p3                                      |     |        | select_ln25    | select    | auto_sel                 | 0       |
+|    icmp_ln26_fu_28982_p2                                        |     |        | icmp_ln26      | setlt     | auto                     | 0       |
+|    out_base                                                     |     |        | select_ln159   | select    | auto_sel                 | 0       |
+|   + run_pwconv_Pipeline_STAGE_VITIS_LOOP_128_4_VITIS_LOOP_130_5 | 0   |        |                |           |                          |         |
+|     icmp_ln130_fu_26855_p2                                      |     |        | icmp_ln130     | setlt     | auto                     | 0       |
+|     icmp_ln120_fu_26834_p2                                      |     |        | icmp_ln120     | seteq     | auto                     | 0       |
+|     add_ln120_fu_26839_p2                                       |     |        | add_ln120      | add       | fabric                   | 0       |
+|     icmp_ln128_fu_26863_p2                                      |     |        | icmp_ln128     | seteq     | auto                     | 0       |
+|     select_ln120_fu_26944_p3                                    |     |        | select_ln120   | select    | auto_sel                 | 0       |
+|     select_ln120_1_fu_26868_p3                                  |     |        | select_ln120_1 | select    | auto_sel                 | 0       |
+|     select_ln120_2_fu_26876_p3                                  |     |        | select_ln120_2 | select    | auto_sel                 | 0       |
+|     add_ln127_fu_26883_p2                                       |     |        | add_ln127      | add       | fabric                   | 0       |
+|     select_ln120_3_fu_26889_p3                                  |     |        | select_ln120_3 | select    | auto_sel                 | 0       |
+|     add_ln128_fu_26951_p2                                       |     |        | add_ln128      | add       | fabric                   | 0       |
+|     select_ln128_fu_26897_p3                                    |     |        | select_ln128   | select    | auto_sel                 | 0       |
+|     select_ln128_1_fu_26957_p3                                  |     |        | select_ln128_1 | select    | auto_sel                 | 0       |
+|     add_ln130_fu_35160_p2                                       |     |        | add_ln130      | add       | fabric                   | 0       |
+|     add_ln128_1_fu_26913_p2                                     |     |        | add_ln128_1    | add       | fabric                   | 0       |
+|     select_ln128_2_fu_26919_p3                                  |     |        | select_ln128_2 | select    | auto_sel                 | 0       |
+|   + run_pwconv_Pipeline_VITIS_LOOP_136_6_VITIS_LOOP_139_7       | 0   |        |                |           |                          |         |
+|     icmp_ln139_fu_3661_p2                                       |     |        | icmp_ln139     | setlt     | auto                     | 0       |
+|     icmp_ln122_fu_3638_p2                                       |     |        | icmp_ln122     | seteq     | auto                     | 0       |
+|     add_ln122_fu_3643_p2                                        |     |        | add_ln122      | add       | fabric                   | 0       |
+|     select_ln122_fu_3717_p3                                     |     |        | select_ln122   | select    | auto_sel                 | 0       |
+|     select_ln122_1_fu_3725_p3                                   |     |        | select_ln122_1 | select    | auto_sel                 | 0       |
+|     select_ln122_2_fu_3733_p3                                   |     |        | select_ln122_2 | select    | auto_sel                 | 0       |
+|     select_ln122_3_fu_3741_p3                                   |     |        | select_ln122_3 | select    | auto_sel                 | 0       |
+|     select_ln122_4_fu_3749_p3                                   |     |        | select_ln122_4 | select    | auto_sel                 | 0       |
+|     select_ln122_5_fu_3757_p3                                   |     |        | select_ln122_5 | select    | auto_sel                 | 0       |
+|     select_ln122_6_fu_3765_p3                                   |     |        | select_ln122_6 | select    | auto_sel                 | 0       |
+|     select_ln122_7_fu_3773_p3                                   |     |        | select_ln122_7 | select    | auto_sel                 | 0       |
+|     select_ln122_8_fu_3781_p3                                   |     |        | select_ln122_8 | select    | auto_sel                 | 0       |
+|     add_ln136_fu_3789_p2                                        |     |        | add_ln136      | add       | fabric                   | 0       |
+|     select_ln122_9_fu_3795_p3                                   |     |        | select_ln122_9 | select    | auto_sel                 | 0       |
+|     first_iter_2_fu_3803_p2                                     |     |        | first_iter_2   | seteq     | auto                     | 0       |
+|     add_ln139_fu_5153_p2                                        |     |        | add_ln139      | add       | fabric                   | 0       |
+|   + run_pwconv_Pipeline_VITIS_LOOP_155_8                        | 1   |        |                |           |                          |         |
+|     icmp_ln155_fu_2474_p2                                       |     |        | icmp_ln155     | setlt     | auto                     | 0       |
+|     add_ln155_fu_2480_p2                                        |     |        | add_ln155      | add       | fabric                   | 0       |
+|     sparsemux_65_5_8_1_1_U2322                                  |     |        | tmp_s          | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_65_5_8_1_1_U2323                                  |     |        | tmp_1          | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_65_5_8_1_1_U2324                                  |     |        | tmp_2          | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_65_5_8_1_1_U2325                                  |     |        | tmp_3          | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_65_5_8_1_1_U2326                                  |     |        | tmp_4          | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_65_5_8_1_1_U2327                                  |     |        | tmp_5          | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_65_5_8_1_1_U2328                                  |     |        | tmp_6          | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_65_5_8_1_1_U2329                                  |     |        | tmp_7          | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_65_5_8_1_1_U2330                                  |     |        | tmp_9          | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_17_3_8_1_1_U2331                                  |     |        | tmp_10         | sparsemux | compactencoding_dontcare | 0       |
+|     mac_muladd_8s_8s_32s_32_4_1_U2332                           | 1   |        | mul_ln156      | mul       | dsp_slice                | 3       |
+|     mac_muladd_8s_8s_32s_32_4_1_U2332                           | 1   |        | sext_ln156_2   | sext      | dsp_slice                | 3       |
+|     mac_muladd_8s_8s_32s_32_4_1_U2332                           | 1   |        | acc_2          | add       | dsp_slice                | 3       |
+|  + run_dwconv                                                   | 12  |        |                |           |                          |         |
+|    sub_fu_19186_p2                                              |     |        | sub            | add       | fabric                   | 0       |
+|    sub10_fu_19191_p2                                            |     |        | sub10          | add       | fabric                   | 0       |
+|    sub21_fu_19196_p2                                            |     |        | sub21          | add       | fabric                   | 0       |
+|    sub_i_i_fu_19201_p2                                          |     |        | sub_i_i        | sub       | fabric                   | 0       |
+|    empty_fu_19139_p2                                            |     |        | empty          | setgt     | auto                     | 0       |
+|    smax_fu_19145_p3                                             |     |        | smax           | select    | auto_sel                 | 0       |
+|    mul_31ns_32ns_63_2_1_U5687                                   | 4   |        | mul_ln37       | mul       | auto                     | 1       |
+|    empty_26_fu_19158_p2                                         |     |        | empty_26       | setgt     | auto                     | 0       |
+|    smax2_fu_19163_p3                                            |     |        | smax2          | select    | auto_sel                 | 0       |
+|    mul_31ns_32ns_63_2_1_U5688                                   | 4   |        | mul_ln37_1     | mul       | auto                     | 1       |
+|    icmp_ln45_fu_19213_p2                                        |     |        | icmp_ln45      | setlt     | auto                     | 0       |
+|    add_ln45_fu_19218_p2                                         |     |        | add_ln45       | add       | fabric                   | 0       |
+|    icmp_ln46_fu_19224_p2                                        |     |        | icmp_ln46      | seteq     | auto                     | 0       |
+|    c_sz_fu_19229_p3                                             |     |        | c_sz           | select    | auto_sel                 | 0       |
+|    icmp_ln47_fu_19241_p2                                        |     |        | icmp_ln47      | setlt     | auto                     | 0       |
+|    rt_1_fu_19246_p2                                             |     |        | rt_1           | add       | fabric                   | 0       |
+|    icmp_ln48_fu_19252_p2                                        |     |        | icmp_ln48      | seteq     | auto                     | 0       |
+|    r_sz_fu_19257_p3                                             |     |        | r_sz           | select    | auto_sel                 | 0       |
+|    mul_31ns_32s_32_2_1_U5689                                    | 3   |        | mul65          | mul       | auto                     | 1       |
+|    grp_fu_18952_p2                                              |     |        | sub66          | sub       | fabric                   | 0       |
+|    icmp_ln49_fu_19273_p2                                        |     |        | icmp_ln49      | setlt     | auto                     | 0       |
+|    colt_1_fu_19278_p2                                           |     |        | colt_1         | add       | fabric                   | 0       |
+|    icmp_ln50_fu_19284_p2                                        |     |        | icmp_ln50      | seteq     | auto                     | 0       |
+|    col_sz_fu_19289_p3                                           |     |        | col_sz         | select    | auto_sel                 | 0       |
+|    mul_31ns_32s_32_2_1_U5689                                    | 3   |        | mul73          | mul       | auto                     | 1       |
+|    grp_fu_18952_p2                                              |     |        | sub74          | sub       | fabric                   | 0       |
+|    icmp_ln59_fu_19300_p2                                        |     |        | icmp_ln59      | setlt     | auto                     | 0       |
+|    add_ln59_fu_19305_p2                                         |     |        | add_ln59       | add       | fabric                   | 0       |
+|    icmp_ln77_fu_21931_p2                                        |     |        | icmp_ln77      | seteq     | auto                     | 0       |
+|    idx_2_fu_21937_p2                                            |     |        | idx_2          | add       | fabric                   | 0       |
+|    icmp_ln82_fu_21987_p2                                        |     |        | icmp_ln82      | setlt     | auto                     | 0       |
+|    xor_ln82_fu_21992_p2                                         |     |        | xor_ln82       | xor       | auto                     | 0       |
+|    icmp_ln82_1_fu_21998_p2                                      |     |        | icmp_ln82_1    | setlt     | auto                     | 0       |
+|    xor_ln82_1_fu_22003_p2                                       |     |        | xor_ln82_1     | xor       | auto                     | 0       |
+|    icmp_ln82_2_fu_22009_p2                                      |     |        | icmp_ln82_2    | setlt     | auto                     | 0       |
+|    xor_ln82_2_fu_22014_p2                                       |     |        | xor_ln82_2     | xor       | auto                     | 0       |
+|    or_ln82_fu_22020_p2                                          |     |        | or_ln82        | or        | auto                     | 0       |
+|    or_ln82_1_fu_22026_p2                                        |     |        | or_ln82_1      | or        | auto                     | 0       |
+|    sparsemux_17_3_32_1_1_U5690                                  |     |        | acc            | sparsemux | compactencoding_dontcare | 0       |
+|    mul_3ns_4s_4_1_1_U5691                                       |     |        | mul_ln89       | mul       | auto                     | 0       |
+|    mul_3ns_4s_4_1_1_U5692                                       |     |        | mul_ln89_1     | mul       | auto                     | 0       |
+|    ashr_ln24_fu_22085_p2                                        |     |        | ashr_ln24      | ashr      | auto_pipe                | 0       |
+|    shl_ln24_fu_22090_p2                                         |     |        | shl_ln24       | shl       | auto_pipe                | 0       |
+|    select_ln24_fu_22095_p3                                      |     |        | select_ln24    | select    | auto_sel                 | 0       |
+|    icmp_ln25_fu_22112_p2                                        |     |        | icmp_ln25      | setgt     | auto                     | 0       |
+|    select_ln25_fu_22117_p3                                      |     |        | select_ln25    | select    | auto_sel                 | 0       |
+|    icmp_ln26_fu_22124_p2                                        |     |        | icmp_ln26      | setlt     | auto                     | 0       |
+|    out_base                                                     |     |        | select_ln94    | select    | auto_sel                 | 0       |
+|   + run_dwconv_Pipeline_VITIS_LOOP_62_4_VITIS_LOOP_63_5         | 0   |        |                |           |                          |         |
+|     icmp_ln63_fu_2007_p2                                        |     |        | icmp_ln63      | seteq     | auto                     | 0       |
+|     icmp_ln53_fu_1984_p2                                        |     |        | icmp_ln53      | seteq     | auto                     | 0       |
+|     add_ln53_fu_1989_p2                                         |     |        | add_ln53       | add       | fabric                   | 0       |
+|     select_ln53_fu_2015_p3                                      |     |        | select_ln53    | select    | auto_sel                 | 0       |
+|     add_ln62_fu_2023_p2                                         |     |        | add_ln62       | add       | fabric                   | 0       |
+|     select_ln53_1_fu_2029_p3                                    |     |        | select_ln53_1  | select    | auto_sel                 | 0       |
+|     add_ln63_fu_2329_p2                                         |     |        | add_ln63       | add       | fabric                   | 0       |
+|   + run_dwconv_Pipeline_VITIS_LOOP_65_6_VITIS_LOOP_67_7         | 0   |        |                |           |                          |         |
+|     icmp_ln67_fu_20998_p2                                       |     |        | icmp_ln67      | seteq     | auto                     | 0       |
+|     icmp_ln65_fu_20975_p2                                       |     |        | icmp_ln65      | seteq     | auto                     | 0       |
+|     add_ln65_fu_20980_p2                                        |     |        | add_ln65       | add       | fabric                   | 0       |
+|     select_ln65_fu_21006_p3                                     |     |        | select_ln65    | select    | auto_sel                 | 0       |
+|     select_ln65_1_fu_21051_p3                                   |     |        | select_ln65_1  | select    | auto_sel                 | 0       |
+|     add_ln65_1_fu_21014_p2                                      |     |        | add_ln65_1     | add       | fabric                   | 0       |
+|     select_ln65_2_fu_21020_p3                                   |     |        | select_ln65_2  | select    | auto_sel                 | 0       |
+|     ih_fu_21061_p2                                              |     |        | ih             | add       | fabric                   | 0       |
+|     rev30_fu_21074_p2                                           |     |        | rev30          | xor       | auto                     | 0       |
+|     cmp77_fu_21080_p2                                           |     |        | cmp77          | setlt     | auto                     | 0       |
+|     iw_fu_21089_p2                                              |     |        | iw             | add       | fabric                   | 0       |
+|     xor_ln70_fu_21102_p2                                        |     |        | xor_ln70       | xor       | auto                     | 0       |
+|     icmp_ln70_fu_21108_p2                                       |     |        | icmp_ln70      | setlt     | auto                     | 0       |
+|     and_ln70_fu_21113_p2                                        |     |        | and_ln70       | and       | auto                     | 0       |
+|     and_ln70_2_fu_21119_p2                                      |     |        | and_ln70_2     | and       | auto                     | 0       |
+|     and_ln70_1_fu_21125_p2                                      |     |        | and_ln70_1     | and       | auto                     | 0       |
+|     v_fu_21131_p3                                               |     |        | v              | select    | auto_sel                 | 0       |
+|     add_ln67_fu_21032_p2                                        |     |        | add_ln67       | add       | fabric                   | 0       |
+|     pc_3_fu_21138_p2                                            |     |        | pc_3           | add       | fabric                   | 0       |
+|   + run_dwconv_Pipeline_VITIS_LOOP_89_8_VITIS_LOOP_90_9         | 1   |        |                |           |                          |         |
+|     icmp_ln90_fu_7179_p2                                        |     |        | icmp_ln90      | seteq     | auto                     | 0       |
+|     icmp_ln89_fu_7156_p2                                        |     |        | icmp_ln89      | seteq     | auto                     | 0       |
+|     add_ln89_fu_7161_p2                                         |     |        | add_ln89       | add       | fabric                   | 0       |
+|     select_ln89_fu_7187_p3                                      |     |        | select_ln89    | select    | auto_sel                 | 0       |
+|     add_ln89_1_fu_7195_p2                                       |     |        | add_ln89_1     | add       | fabric                   | 0       |
+|     select_ln89_1_fu_7201_p3                                    |     |        | select_ln89_1  | select    | auto_sel                 | 0       |
+|     empty_fu_7217_p2                                            |     |        | empty          | add       | fabric                   | 0       |
+|     add_ln91_fu_7230_p2                                         |     |        | add_ln91       | add       | fabric                   | 0       |
+|     sparsemux_21_4_8_1_1_U4683                                  |     |        | tmp            | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4684                                  |     |        | tmp_s          | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4685                                  |     |        | tmp_287        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4686                                  |     |        | tmp_288        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4687                                  |     |        | tmp_289        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4688                                  |     |        | tmp_290        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4689                                  |     |        | tmp_291        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4690                                  |     |        | tmp_292        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4691                                  |     |        | tmp_293        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4692                                  |     |        | tmp_294        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4693                                  |     |        | tmp_295        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4694                                  |     |        | tmp_296        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4695                                  |     |        | tmp_297        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4696                                  |     |        | tmp_298        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4697                                  |     |        | tmp_299        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4698                                  |     |        | tmp_300        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4699                                  |     |        | tmp_301        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4700                                  |     |        | tmp_302        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4701                                  |     |        | tmp_303        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4702                                  |     |        | tmp_304        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4703                                  |     |        | tmp_305        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4704                                  |     |        | tmp_306        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4705                                  |     |        | tmp_307        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4706                                  |     |        | tmp_308        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4707                                  |     |        | tmp_309        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4708                                  |     |        | tmp_310        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4709                                  |     |        | tmp_311        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4710                                  |     |        | tmp_312        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4711                                  |     |        | tmp_313        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4712                                  |     |        | tmp_314        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4713                                  |     |        | tmp_315        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4714                                  |     |        | tmp_316        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4715                                  |     |        | tmp_317        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4716                                  |     |        | tmp_318        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4717                                  |     |        | tmp_319        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4718                                  |     |        | tmp_320        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4719                                  |     |        | tmp_321        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4720                                  |     |        | tmp_322        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4721                                  |     |        | tmp_323        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4722                                  |     |        | tmp_324        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4723                                  |     |        | tmp_325        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4724                                  |     |        | tmp_326        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4725                                  |     |        | tmp_327        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4726                                  |     |        | tmp_328        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4727                                  |     |        | tmp_329        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4728                                  |     |        | tmp_330        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4729                                  |     |        | tmp_331        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4730                                  |     |        | tmp_332        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4731                                  |     |        | tmp_333        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4732                                  |     |        | tmp_334        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4733                                  |     |        | tmp_335        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4734                                  |     |        | tmp_336        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4735                                  |     |        | tmp_337        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4736                                  |     |        | tmp_338        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4737                                  |     |        | tmp_339        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4738                                  |     |        | tmp_340        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4739                                  |     |        | tmp_341        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4740                                  |     |        | tmp_342        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4741                                  |     |        | tmp_343        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4742                                  |     |        | tmp_344        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4743                                  |     |        | tmp_345        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4744                                  |     |        | tmp_346        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4745                                  |     |        | tmp_347        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4746                                  |     |        | tmp_348        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4747                                  |     |        | tmp_349        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4748                                  |     |        | tmp_350        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4749                                  |     |        | tmp_351        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4750                                  |     |        | tmp_352        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4751                                  |     |        | tmp_353        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4752                                  |     |        | tmp_354        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4753                                  |     |        | tmp_355        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4754                                  |     |        | tmp_356        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4755                                  |     |        | tmp_357        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4756                                  |     |        | tmp_358        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4757                                  |     |        | tmp_359        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4758                                  |     |        | tmp_360        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4759                                  |     |        | tmp_361        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4760                                  |     |        | tmp_362        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4761                                  |     |        | tmp_363        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4762                                  |     |        | tmp_364        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4763                                  |     |        | tmp_365        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4764                                  |     |        | tmp_366        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4765                                  |     |        | tmp_367        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4766                                  |     |        | tmp_368        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4767                                  |     |        | tmp_369        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4768                                  |     |        | tmp_370        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4769                                  |     |        | tmp_371        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_21_4_8_1_1_U4770                                  |     |        | tmp_372        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_17_3_8_1_1_U4804                                  |     |        | tmp_373        | sparsemux | compactencoding_dontcare | 0       |
+|     sparsemux_7_2_8_1_1_U4771                                   |     |        | tmp_374        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4772                                   |     |        | tmp_375        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4773                                   |     |        | tmp_376        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4774                                   |     |        | tmp_377        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4775                                   |     |        | tmp_378        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4776                                   |     |        | tmp_379        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4777                                   |     |        | tmp_380        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4778                                   |     |        | tmp_381        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4779                                   |     |        | tmp_382        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4780                                   |     |        | tmp_383        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4781                                   |     |        | tmp_384        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4782                                   |     |        | tmp_385        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4783                                   |     |        | tmp_386        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4784                                   |     |        | tmp_387        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4785                                   |     |        | tmp_388        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4786                                   |     |        | tmp_389        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4787                                   |     |        | tmp_390        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4788                                   |     |        | tmp_391        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4789                                   |     |        | tmp_392        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4790                                   |     |        | tmp_393        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4791                                   |     |        | tmp_394        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4792                                   |     |        | tmp_395        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4793                                   |     |        | tmp_396        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4794                                   |     |        | tmp_397        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4795                                   |     |        | tmp_398        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4796                                   |     |        | tmp_399        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4797                                   |     |        | tmp_400        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4798                                   |     |        | tmp_401        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4799                                   |     |        | tmp_402        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4800                                   |     |        | tmp_403        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4801                                   |     |        | tmp_404        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_7_2_8_1_1_U4802                                   |     |        | tmp_405        | sparsemux | onehotencoding_realdef   | 0       |
+|     sparsemux_17_3_8_1_1_U4803                                  |     |        | tmp_406        | sparsemux | compactencoding_dontcare | 0       |
+|     mac_muladd_8s_8s_32s_32_4_1_U4805                           | 1   |        | mul_ln91       | mul       | dsp_slice                | 3       |
+|     mac_muladd_8s_8s_32s_32_4_1_U4805                           | 1   |        | sext_ln91_2    | sext      | dsp_slice                | 3       |
+|     mac_muladd_8s_8s_32s_32_4_1_U4805                           | 1   |        | acc_5          | add       | dsp_slice                | 3       |
+|     add_ln90_fu_7235_p2                                         |     |        | add_ln90       | add       | fabric                   | 0       |
++-----------------------------------------------------------------+-----+--------+----------------+-----------+--------------------------+---------+
+
+
+================================================================
+== Storage Report
+================================================================
+  No bind storage info in design
+
+================================================================
+== Pragma Report
+================================================================
+* Valid Pragma Syntax
++-----------------+-------------------------------+----------------------------------------+
+| Type            | Options                       | Location                               |
++-----------------+-------------------------------+----------------------------------------+
+| array_partition | variable=patch complete dim=0 | mac_array.cpp:55 in run_dwconv, patch  |
+| array_partition | variable=wtile complete dim=0 | mac_array.cpp:56 in run_dwconv, wtile  |
+| array_partition | variable=btile complete dim=0 | mac_array.cpp:57 in run_dwconv, btile  |
+| unroll          | factor=1                      | mac_array.cpp:78 in run_dwconv         |
+| array_partition | variable=patch complete dim=0 | mac_array.cpp:123 in run_pwconv, patch |
+| array_partition | variable=wtile complete dim=0 | mac_array.cpp:124 in run_pwconv, wtile |
+| array_partition | variable=btile complete dim=0 | mac_array.cpp:125 in run_pwconv, btile |
+| unroll          | factor=1                      | mac_array.cpp:144 in run_pwconv        |
++-----------------+-------------------------------+----------------------------------------+
+
+

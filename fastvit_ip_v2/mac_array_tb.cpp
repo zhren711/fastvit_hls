@@ -126,6 +126,39 @@ int main()
                            /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/7,
                            /*in_off*/8000, /*w_off*/180, /*b_off*/20, /*out_off*/16000 };
 
+    /* Host-side step (round 3): fill in the tile-count fields a real
+     * descriptor generator would compute offline, once, before the
+     * hardware ever runs -- mac_array_top no longer computes any of this
+     * itself (see mac_array.h). */
+    for (int i = 0; i < 2; i++) {
+        MacArrayParams p = derive_mac_array_params(desc[i]);
+        desc[i].h_out = p.h_out;         desc[i].w_out = p.w_out;
+        desc[i].n_row_tiles = p.n_row_tiles;   desc[i].n_col_tiles = p.n_col_tiles;
+        desc[i].n_ch_tiles = p.n_ch_tiles;
+        desc[i].last_row_tile = p.last_row_tile; desc[i].last_col_tile = p.last_col_tile;
+        desc[i].last_ch_tile = p.last_ch_tile;
+    }
+
+    /* dump the host-precomputed descriptor fields for the independent
+     * Python cross-check (tools/verify_mac_array_mapping.py) -- this now
+     * checks "did the host compute the descriptor correctly", the same
+     * contract as before, just no longer re-deriving anything hardware-side. */
+    {
+        FILE *f = fopen("mac_array_params_dump.txt", "w");
+        for (int i = 0; i < 2; i++) {
+            fprintf(f, "layer=%d op_type=%d cin=%d cout=%d h_in=%d w_in=%d k=%d stride=%d pad=%d "
+                        "h_out=%d w_out=%d n_row_tiles=%d n_col_tiles=%d n_ch_tiles=%d "
+                        "last_row_tile=%d last_col_tile=%d last_ch_tile=%d\n",
+                    i, desc[i].op_type, desc[i].cin, desc[i].cout, desc[i].h_in, desc[i].w_in,
+                    desc[i].k, desc[i].stride, desc[i].pad,
+                    desc[i].h_out, desc[i].w_out, desc[i].n_row_tiles, desc[i].n_col_tiles, desc[i].n_ch_tiles,
+                    desc[i].last_row_tile, desc[i].last_col_tile, desc[i].last_ch_tile);
+        }
+        fclose(f);
+        printf("[Setup] mac_array_params_dump.txt written for tools/verify_mac_array_mapping.py "
+               "(MAC_UNROLL_FACTOR=%d)\n", MAC_UNROLL_FACTOR);
+    }
+
     const int FEAT_TOTAL = 16000 + 13 * 20 * 20;  /* A(8000) + B(8000) + C(5200) = 21200 */
     const int W_TOTAL = 20 * 3 * 3 + 13 * 20;      /* dw weight(180) + pw weight(260) = 440 */
     const int B_TOTAL = 20 + 13;                   /* dw bias(20) + pw bias(13) = 33 */
@@ -177,21 +210,6 @@ int main()
            weights_untouched ? "PASS" : "FAIL");
     printf("[Phase1] out_written flags set for both layers: %s\n",
            both_written ? "PASS" : "FAIL");
-
-    /* dump derived params for the independent Python cross-check */
-    FILE *f = fopen("mac_array_params_dump.txt", "w");
-    for (int i = 0; i < 2; i++) {
-        MacArrayParams p = derive_mac_array_params(desc[i]);
-        fprintf(f, "layer=%d op_type=%d cin=%d cout=%d h_in=%d w_in=%d k=%d stride=%d pad=%d "
-                    "h_out=%d w_out=%d n_row_tiles=%d n_col_tiles=%d n_ch_tiles=%d "
-                    "last_row_tile=%d last_col_tile=%d last_ch_tile=%d\n",
-                i, desc[i].op_type, desc[i].cin, desc[i].cout, desc[i].h_in, desc[i].w_in,
-                desc[i].k, desc[i].stride, desc[i].pad,
-                p.h_out, p.w_out, p.n_row_tiles, p.n_col_tiles, p.n_ch_tiles,
-                p.last_row_tile, p.last_col_tile, p.last_ch_tile);
-    }
-    fclose(f);
-    printf("[Phase1] mac_array_params_dump.txt written for tools/verify_mac_array_mapping.py\n");
 
     /* ================= PHASE 2: fault injection ================= */
     /* Re-run clean, then simulate "IP reported done, DRAM never touched"

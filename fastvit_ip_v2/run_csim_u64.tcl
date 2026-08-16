@@ -1,0 +1,26 @@
+#================================================================
+# run_csim_u64.tcl -- Phase A round 4: correctness check of the
+# restructured (shared-control, cyclic-partition) mac_array.cpp at
+# MAC_UNROLL_FACTOR=64, before trusting its csynth resource numbers.
+#================================================================
+
+set proj_name  "mac_array_poc_r4_csim"
+set top_func   "mac_array_top"
+set part       "xc7z020clg400-1"
+set clk_period "10"
+
+open_project -reset $proj_name
+set_top $top_func
+
+add_files mac_array.cpp -cflags "-std=c++14 -DMAC_UNROLL_FACTOR=64"
+add_files -tb mac_array_tb.cpp -cflags "-std=c++14 -DMAC_UNROLL_FACTOR=64"
+
+open_solution "solution1" -flow_target vivado
+set_part $part
+create_clock -period $clk_period -name default
+
+puts ">>> Running C Simulation (round 4 restructure correctness check)..."
+csim_design
+
+puts ">>> Done."
+exit
