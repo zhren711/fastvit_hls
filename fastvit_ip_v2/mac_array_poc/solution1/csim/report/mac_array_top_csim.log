@@ -1,0 +1,17 @@
+INFO: [SIM 2] *************** CSIM start ***************
+INFO: [SIM 4] CSIM will launch CLANG as the compiler.
+   Compiling ../../../../mac_array_tb.cpp in debug mode
+   Compiling ../../../../mac_array.cpp in debug mode
+   Generating csim.exe
+[Phase1] correctness: PASS (0/21200 mismatches)
+[Phase1] weight/bias buffers untouched by the op: PASS
+[Phase1] out_written flags set for both layers: PASS
+[Phase1] mac_array_params_dump.txt written for tools/verify_mac_array_mapping.py
+
+[Phase2] fault-injected layer 1: out_written[1] still reports done: true (as intended) (this is the defect-5 symptom: IP claims success)
+[Phase2] self-verification (output-vs-golden compare) independently caught the silently-dropped write: PASS -- CAUGHT (5193/21200 mismatches in the corrupted layer)
+
+[Summary] Phase1 (correctness + no collateral writes): PASS
+[Summary] Phase2 (self-verification catches a silently-dropped write): PASS
+INFO: [SIM 1] CSim done with 0 errors.
+INFO: [SIM 3] *************** CSIM finish ***************
