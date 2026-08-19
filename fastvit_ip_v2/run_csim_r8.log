@@ -1,0 +1,86 @@
+
+****** Vitis HLS - High-Level Synthesis from C, C++ and OpenCL v2024.2 (64-bit)
+  **** SW Build 5238294 on Nov  8 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Wed Aug 19 16:47:36 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source E:/Xilinx/Vitis/2024.2/scripts/vitis_hls/hls.tcl -notrace
+INFO: [HLS 200-10] For user 'zhren' on host 'desktop-gblh5mp' (Windows NT_amd64 version 10.0) on Wed Aug 19 16:47:37 -0400 2026
+INFO: [HLS 200-10] In directory 'E:/codes/microzed/fastvit_hls/fastvit_ip_v2'
+WARNING: [HLS 200-2053] The vitis_hls executable is deprecated. Consider using vitis-run --mode hls --tcl
+Sourcing Tcl script 'run_csim_r8.tcl'
+INFO: [HLS 200-1510] Running: open_project -reset mac_array_poc_r8_csim 
+INFO: [HLS 200-10] Creating and opening project 'E:/codes/microzed/fastvit_hls/fastvit_ip_v2/mac_array_poc_r8_csim'.
+INFO: [HLS 200-1510] Running: set_top mac_array_top 
+INFO: [HLS 200-1510] Running: add_files mac_array.cpp -cflags -std=c++14 
+INFO: [HLS 200-10] Adding design file 'mac_array.cpp' to the project
+INFO: [HLS 200-1510] Running: add_files -tb mac_array_tb.cpp -cflags -std=c++14 
+INFO: [HLS 200-10] Adding test bench file 'mac_array_tb.cpp' to the project
+INFO: [HLS 200-1510] Running: open_solution solution1 -flow_target vivado 
+INFO: [HLS 200-10] Creating and opening solution 'E:/codes/microzed/fastvit_hls/fastvit_ip_v2/mac_array_poc_r8_csim/solution1'.
+INFO: [HLS 200-1505] Using flow_target 'vivado'
+Resolution: For help on HLS 200-1505 see docs.xilinx.com/access/sources/dita/topic?Doc_Version=2024.2%20English&url=ug1448-hls-guidance&resourceid=200-1505.html
+INFO: [HLS 200-1510] Running: set_part xc7z020clg400-1 
+INFO: [HLS 200-1611] Setting target device to 'xc7z020-clg400-1'
+INFO: [HLS 200-1510] Running: create_clock -period 10 -name default 
+INFO: [SYN 201-201] Setting up clock 'default' with a period of 10ns.
+>>> Running C Simulation (round 8 PW staging-zero-fill correctness check)...
+INFO: [HLS 200-1510] Running: csim_design 
+INFO: [SIM 211-2] *************** CSIM start ***************
+INFO: [SIM 211-4] CSIM will launch CLANG as the compiler.
+INFO: [HLS 200-2036] Building debug C Simulation binaries
+   Compiling ../../../../mac_array_tb.cpp in debug mode
+   Compiling ../../../../mac_array.cpp in debug mode
+   Generating csim.exe
+In file included from ../../../../mac_array_tb.cpp:32:
+In file included from ../../../../mac_array.h:63:
+In file included from E:/Xilinx/Vitis/2024.2/include/ap_int.h:10:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_common.h:658:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_private.h:68:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_half.h:26:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/hls_half_fpo.h:19:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_fpo.h:140:
+In file included from E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:150:
+E:/Xilinx/Vitis/2024.2/include/gmp.h:58:9: warning: '__GMP_LIBGMP_DLL' macro redefined [-Wmacro-redefined]
+#define __GMP_LIBGMP_DLL  0
+        ^
+E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:142:9: note: previous definition is here
+#define __GMP_LIBGMP_DLL 1
+        ^
+1 warning generated.
+In file included from ../../../../mac_array.cpp:1:
+In file included from ../../../../mac_array.h:63:
+In file included from E:/Xilinx/Vitis/2024.2/include/ap_int.h:10:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_common.h:658:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/ap_private.h:68:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_half.h:26:
+In file included from E:/Xilinx/Vitis/2024.2/include/etc/hls_half_fpo.h:19:
+In file included from E:/Xilinx/Vitis/2024.2/include/hls_fpo.h:140:
+In file included from E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:150:
+E:/Xilinx/Vitis/2024.2/include/gmp.h:58:9: warning: '__GMP_LIBGMP_DLL' macro redefined [-Wmacro-redefined]
+#define __GMP_LIBGMP_DLL  0
+        ^
+E:/Xilinx/Vitis/2024.2/include/floating_point_v7_1_bitacc_cmodel.h:142:9: note: previous definition is here
+#define __GMP_LIBGMP_DLL 1
+        ^
+1 warning generated.
+[Setup] mac_array_params_dump.txt written for tools/verify_mac_array_mapping.py
+[Phase0] stride=2 DW (h_in=w_in=17,cin=9 -> h_out=w_out=9): PASS (0/3330 mismatches)
+[Phase1] correctness: PASS (0/21200 mismatches)
+[Phase1] weight/bias buffers untouched by the op: PASS
+[Phase1] out_written flags set for both layers: PASS
+
+[Phase2] fault-injected layer 1: out_written[1] still reports done: true (as intended) (this is the defect-5 symptom: IP claims success)
+[Phase2] self-verification (output-vs-golden compare) independently caught the silently-dropped write: PASS -- CAUGHT (5193/21200 mismatches in the corrupted layer)
+
+[Summary] Phase0 (stride=2 DW correctness): PASS
+[Summary] Phase1 (correctness + no collateral writes): PASS
+[Summary] Phase2 (self-verification catches a silently-dropped write): PASS
+INFO: [SIM 211-1] CSim done with 0 errors.
+INFO: [SIM 211-3] *************** CSIM finish ***************
+INFO: [HLS 200-2161] Finished Command csim_design Elapsed time: 00:00:01; Allocated memory: 0.805 MB.
+>>> Done.
+INFO: [HLS 200-112] Total CPU user time: 1 seconds. Total CPU system time: 0 seconds. Total elapsed time: 2.891 seconds; peak allocated memory: 151.102 MB.

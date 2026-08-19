@@ -1,0 +1,174 @@
+
+
+================================================================
+== Vitis HLS Report for 'run_pwconv_Pipeline_WSTAGE'
+================================================================
+* Date:           Wed Aug 19 16:51:31 2026
+
+* Version:        2024.2 (Build 5238294 on Nov  8 2024)
+* Project:        mac_array_poc_r8
+* Solution:       solution1 (Vivado IP Flow Target)
+* Product family: zynq
+* Target device:  xc7z020-clg400-1
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+----------+----------+------------+
+    |  Clock |  Target  | Estimated| Uncertainty|
+    +--------+----------+----------+------------+
+    |ap_clk  |  10.00 ns|  5.001 ns|     2.70 ns|
+    +--------+----------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+    |  Latency (cycles) |  Latency (absolute) |  Interval |                    Pipeline                    |
+    |   min   |   max   |    min   |    max   | min | max |                      Type                      |
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+    |       34|       34|  0.340 us|  0.340 us|   33|   33|  loop auto-rewind stp (delay=0 clock cycles(s))|
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+
+    + Detail: 
+        * Instance: 
+        N/A
+
+        * Loop: 
+        +----------+---------+---------+----------+-----------+-----------+------+----------+
+        |          |  Latency (cycles) | Iteration|  Initiation Interval  | Trip |          |
+        | Loop Name|   min   |   max   |  Latency |  achieved |   target  | Count| Pipelined|
+        +----------+---------+---------+----------+-----------+-----------+------+----------+
+        |- WSTAGE  |       32|       32|         2|          1|          1|    32|       yes|
+        +----------+---------+---------+----------+-----------+-----------+------+----------+
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++-----------------+---------+-----+--------+-------+-----+
+|       Name      | BRAM_18K| DSP |   FF   |  LUT  | URAM|
++-----------------+---------+-----+--------+-------+-----+
+|DSP              |        -|    -|       -|      -|    -|
+|Expression       |        -|    -|       0|     77|    -|
+|FIFO             |        -|    -|       -|      -|    -|
+|Instance         |        -|    -|       -|      -|    -|
+|Memory           |        -|    -|       -|      -|    -|
+|Multiplexer      |        -|    -|       0|     36|    -|
+|Register         |        -|    -|      15|      -|    -|
++-----------------+---------+-----+--------+-------+-----+
+|Total            |        0|    0|      15|    113|    0|
++-----------------+---------+-----+--------+-------+-----+
+|Available        |      280|  220|  106400|  53200|    0|
++-----------------+---------+-----+--------+-------+-----+
+|Utilization (%)  |        0|    0|      ~0|     ~0|    0|
++-----------------+---------+-----+--------+-------+-----+
+
++ Detail: 
+    * Instance: 
+    N/A
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +------------------------+----------+----+---+----+------------+------------+
+    |      Variable Name     | Operation| DSP| FF| LUT| Bitwidth P0| Bitwidth P1|
+    +------------------------+----------+----+---+----+------------+------------+
+    |add_ln207_fu_206_p2     |         +|   0|  0|  14|           6|           1|
+    |icmp_ln207_fu_200_p2    |      icmp|   0|  0|  14|           6|           7|
+    |icmp_ln208_fu_230_p2    |      icmp|   0|  0|  39|          32|          32|
+    |select_ln208_fu_252_p3  |    select|   0|  0|   8|           1|           8|
+    |ap_enable_pp0           |       xor|   0|  0|   2|           1|           2|
+    +------------------------+----------+----+---+----+------------+------------+
+    |Total                   |          |   0|  0|  77|          46|          50|
+    +------------------------+----------+----+---+----+------------+------------+
+
+    * Multiplexer: 
+    +-------------------------+----+-----------+-----+-----------+
+    |           Name          | LUT| Input Size| Bits| Total Bits|
+    +-------------------------+----+-----------+-----+-----------+
+    |ap_done_int              |   9|          2|    1|          2|
+    |ap_enable_reg_pp0_iter1  |   9|          2|    1|          2|
+    |ap_sig_allocacmp_ci_1    |   9|          2|    6|         12|
+    |ci_fu_72                 |   9|          2|    6|         12|
+    +-------------------------+----+-----------+-----+-----------+
+    |Total                    |  36|          8|   14|         28|
+    +-------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +-------------------------+---+----+-----+-----------+
+    |           Name          | FF| LUT| Bits| Const Bits|
+    +-------------------------+---+----+-----+-----------+
+    |ap_CS_fsm                |  1|   0|    1|          0|
+    |ap_done_reg              |  1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter1  |  1|   0|    1|          0|
+    |ci_fu_72                 |  6|   0|    6|          0|
+    |icmp_ln208_reg_290       |  1|   0|    1|          0|
+    |lshr_ln1_reg_285         |  2|   0|    2|          0|
+    |trunc_ln207_reg_281      |  3|   0|    3|          0|
+    +-------------------------+---+----+-----+-----------+
+    |Total                    | 15|   0|   15|          0|
+    +-------------------------+---+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++------------------+-----+-----+------------+----------------------------+--------------+
+|     RTL Ports    | Dir | Bits|  Protocol  |        Source Object       |    C Type    |
++------------------+-----+-----+------------+----------------------------+--------------+
+|ap_clk            |   in|    1|  ap_ctrl_hs|  run_pwconv_Pipeline_WSTAGE|  return value|
+|ap_rst            |   in|    1|  ap_ctrl_hs|  run_pwconv_Pipeline_WSTAGE|  return value|
+|ap_start          |   in|    1|  ap_ctrl_hs|  run_pwconv_Pipeline_WSTAGE|  return value|
+|ap_done           |  out|    1|  ap_ctrl_hs|  run_pwconv_Pipeline_WSTAGE|  return value|
+|ap_idle           |  out|    1|  ap_ctrl_hs|  run_pwconv_Pipeline_WSTAGE|  return value|
+|ap_ready          |  out|    1|  ap_ctrl_hs|  run_pwconv_Pipeline_WSTAGE|  return value|
+|wtile_7_address0  |  out|    2|   ap_memory|                     wtile_7|         array|
+|wtile_7_ce0       |  out|    1|   ap_memory|                     wtile_7|         array|
+|wtile_7_we0       |  out|    1|   ap_memory|                     wtile_7|         array|
+|wtile_7_d0        |  out|    8|   ap_memory|                     wtile_7|         array|
+|wtile_6_address0  |  out|    2|   ap_memory|                     wtile_6|         array|
+|wtile_6_ce0       |  out|    1|   ap_memory|                     wtile_6|         array|
+|wtile_6_we0       |  out|    1|   ap_memory|                     wtile_6|         array|
+|wtile_6_d0        |  out|    8|   ap_memory|                     wtile_6|         array|
+|wtile_5_address0  |  out|    2|   ap_memory|                     wtile_5|         array|
+|wtile_5_ce0       |  out|    1|   ap_memory|                     wtile_5|         array|
+|wtile_5_we0       |  out|    1|   ap_memory|                     wtile_5|         array|
+|wtile_5_d0        |  out|    8|   ap_memory|                     wtile_5|         array|
+|wtile_4_address0  |  out|    2|   ap_memory|                     wtile_4|         array|
+|wtile_4_ce0       |  out|    1|   ap_memory|                     wtile_4|         array|
+|wtile_4_we0       |  out|    1|   ap_memory|                     wtile_4|         array|
+|wtile_4_d0        |  out|    8|   ap_memory|                     wtile_4|         array|
+|wtile_3_address0  |  out|    2|   ap_memory|                     wtile_3|         array|
+|wtile_3_ce0       |  out|    1|   ap_memory|                     wtile_3|         array|
+|wtile_3_we0       |  out|    1|   ap_memory|                     wtile_3|         array|
+|wtile_3_d0        |  out|    8|   ap_memory|                     wtile_3|         array|
+|wtile_2_address0  |  out|    2|   ap_memory|                     wtile_2|         array|
+|wtile_2_ce0       |  out|    1|   ap_memory|                     wtile_2|         array|
+|wtile_2_we0       |  out|    1|   ap_memory|                     wtile_2|         array|
+|wtile_2_d0        |  out|    8|   ap_memory|                     wtile_2|         array|
+|wtile_1_address0  |  out|    2|   ap_memory|                     wtile_1|         array|
+|wtile_1_ce0       |  out|    1|   ap_memory|                     wtile_1|         array|
+|wtile_1_we0       |  out|    1|   ap_memory|                     wtile_1|         array|
+|wtile_1_d0        |  out|    8|   ap_memory|                     wtile_1|         array|
+|wtile_address0    |  out|    2|   ap_memory|                       wtile|         array|
+|wtile_ce0         |  out|    1|   ap_memory|                       wtile|         array|
+|wtile_we0         |  out|    1|   ap_memory|                       wtile|         array|
+|wtile_d0          |  out|    8|   ap_memory|                       wtile|         array|
+|Cin               |   in|   32|     ap_none|                         Cin|        scalar|
+|w_base_read       |   in|    8|     ap_none|                 w_base_read|        scalar|
++------------------+-----+-----+------------+----------------------------+--------------+
+

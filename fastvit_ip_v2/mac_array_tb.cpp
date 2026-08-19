@@ -301,9 +301,143 @@ int main()
     bool phase1_ok = correctness_pass && weights_untouched && both_written;
     bool phase2_ok = fault_was_reported_done && selfcheck_caught_it;
 
+    /* ================= PHASE 3: PW -> DW transition (round 9) =================
+     * Every prior csim only ever exercised DW->PW ordering (desc[0]=DW,
+     * desc[1]=PW above) -- irrelevant when the two ops were separate
+     * functions with their own private acc[], but round 9 merged both onto
+     * ONE shared mac_reduce_step() call site, so the untested direction
+     * (PW dispatched first, DW second, same call to mac_array_top) is now
+     * a real risk: does anything from PW's last REDUCE/WRITEOUT leak into
+     * DW's first TAP iteration through the shared function or its gather
+     * temporaries. Independent buffers, own golden check, same style as
+     * Phase 0. */
+    bool phase3_ok = false;
+    {
+        LayerDescV2 desc3[2];
+        desc3[0] = LayerDescV2{ LDESC_OP_PWCONV, /*cin*/16, /*cout*/10, /*h_in*/12, /*w_in*/12,
+                                 /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/6,
+                                 /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/2304 };
+        desc3[1] = LayerDescV2{ LDESC_OP_DWCONV, /*cin*/11, /*cout*/11, /*h_in*/15, /*w_in*/15,
+                                 /*k*/3, /*stride*/1, /*pad*/1, /*fpg*/1, /*out_shift*/6,
+                                 /*in_off*/3744, /*w_off*/160, /*b_off*/10, /*out_off*/6219 };
+        for (int i = 0; i < 2; i++) {
+            MacArrayParams p = derive_mac_array_params(desc3[i]);
+            desc3[i].h_out = p.h_out; desc3[i].w_out = p.w_out;
+            desc3[i].n_row_tiles = p.n_row_tiles; desc3[i].n_col_tiles = p.n_col_tiles; desc3[i].n_ch_tiles = p.n_ch_tiles;
+            desc3[i].last_row_tile = p.last_row_tile; desc3[i].last_col_tile = p.last_col_tile; desc3[i].last_ch_tile = p.last_ch_tile;
+        }
+
+        const int F3_TOTAL = 8694;  /* P_in(2304)+P_out(1440)+D_in(2475)+D_out(2475) */
+        const int W3_TOTAL = 160 + 99;
+        const int B3_TOTAL = 10 + 11;
+
+        std::vector<int8_t>  f3_gold(F3_TOTAL, 0);
+        std::vector<int8_t>  w3_gold(W3_TOTAL, 0);
+        std::vector<int32_t> b3_gold(B3_TOTAL, 0);
+        Lcg rng3(0xFACE0FF);
+        for (int i = 0; i < 2304; i++)             f3_gold[desc3[0].in_off + i] = rng3.next_i8();
+        for (int i = 0; i < 2475; i++)             f3_gold[desc3[1].in_off + i] = rng3.next_i8();
+        for (int i = 0; i < W3_TOTAL; i++)         w3_gold[i] = rng3.next_i8();
+        for (int i = 0; i < B3_TOTAL; i++)         b3_gold[i] = (int32_t)rng3.next_i8() * 4;
+
+        int h3p, w3p, h3d, w3d;
+        golden_out_dims(desc3[0], h3p, w3p);
+        golden_out_dims(desc3[1], h3d, w3d);
+        std::vector<int8_t> f3_expected = f3_gold;
+        golden_pwconv(desc3[0], h3p, w3p, f3_expected, w3_gold, b3_gold, f3_expected);
+        golden_dwconv(desc3[1], h3d, w3d, f3_expected, w3_gold, b3_gold, f3_expected);
+
+        std::vector<act_t> f3(F3_TOTAL, act_t(0));
+        std::vector<wt_t>  w3buf(W3_TOTAL, wt_t(0));
+        std::vector<acc_t> b3buf(B3_TOTAL, acc_t(0));
+        for (int i = 0; i < F3_TOTAL; i++) f3[i] = act_t(f3_gold[i]);
+        for (int i = 0; i < W3_TOTAL; i++) w3buf[i] = wt_t(w3_gold[i]);
+        for (int i = 0; i < B3_TOTAL; i++) b3buf[i] = acc_t(b3_gold[i]);
+
+        int w3ritten[2] = {0, 0};
+        mac_array_top(desc3, 2, f3.data(), w3buf.data(), b3buf.data(), f3.data(), w3ritten);
+
+        int mismatches_p3 = 0;
+        for (int i = 0; i < F3_TOTAL; i++)
+            if ((int8_t)f3[i] != f3_expected[i]) mismatches_p3++;
+        phase3_ok = (mismatches_p3 == 0);
+        printf("[Phase3] PW->DW transition (round 9 shared-array direction not covered by Phase1): "
+               "%s (%d/%d mismatches)\n", phase3_ok ? "PASS" : "FAIL", mismatches_p3, F3_TOTAL);
+    }
+
+    /* ================= PHASE 4: DW -> PW(Cin=32) -> PW(Cin=8) (round 9) =================
+     * Two consecutive PW calls with SHRINKING Cin (32 -> 8, both exact
+     * multiples of MAC_PD so this isolates tile-count/loop-bound handling
+     * across back-to-back same-op calls on the shared array from round 8's
+     * zero-fill remainder handling, which Phase1/Phase3 already cover with
+     * non-multiple Cin). Catches e.g. a stale n_ch_tiles/cib range from the
+     * Cin=32 call leaking into the Cin=8 call now that both route through
+     * the same mac_reduce_step call site. */
+    bool phase4_ok = false;
+    {
+        LayerDescV2 desc4[3];
+        desc4[0] = LayerDescV2{ LDESC_OP_DWCONV, /*cin*/9, /*cout*/9, /*h_in*/17, /*w_in*/17,
+                                 /*k*/3, /*stride*/2, /*pad*/1, /*fpg*/1, /*out_shift*/6,
+                                 /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/2601 };
+        desc4[1] = LayerDescV2{ LDESC_OP_PWCONV, /*cin*/32, /*cout*/6, /*h_in*/10, /*w_in*/10,
+                                 /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/6,
+                                 /*in_off*/3330, /*w_off*/81, /*b_off*/9, /*out_off*/6530 };
+        desc4[2] = LayerDescV2{ LDESC_OP_PWCONV, /*cin*/8, /*cout*/5, /*h_in*/9, /*w_in*/9,
+                                 /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/6,
+                                 /*in_off*/7130, /*w_off*/273, /*b_off*/15, /*out_off*/7778 };
+        for (int i = 0; i < 3; i++) {
+            MacArrayParams p = derive_mac_array_params(desc4[i]);
+            desc4[i].h_out = p.h_out; desc4[i].w_out = p.w_out;
+            desc4[i].n_row_tiles = p.n_row_tiles; desc4[i].n_col_tiles = p.n_col_tiles; desc4[i].n_ch_tiles = p.n_ch_tiles;
+            desc4[i].last_row_tile = p.last_row_tile; desc4[i].last_col_tile = p.last_col_tile; desc4[i].last_ch_tile = p.last_ch_tile;
+        }
+
+        const int F4_TOTAL = 8183;  /* D_in(2601)+D_out(729)+P32_in(3200)+P32_out(600)+P8_in(648)+P8_out(405) */
+        const int W4_TOTAL = 81 + 192 + 40;
+        const int B4_TOTAL = 9 + 6 + 5;
+
+        std::vector<int8_t>  f4_gold(F4_TOTAL, 0);
+        std::vector<int8_t>  w4_gold(W4_TOTAL, 0);
+        std::vector<int32_t> b4_gold(B4_TOTAL, 0);
+        Lcg rng4(0xDEADFA11);
+        for (int i = 0; i < 2601; i++)      f4_gold[desc4[0].in_off + i] = rng4.next_i8();
+        for (int i = 0; i < 3200; i++)      f4_gold[desc4[1].in_off + i] = rng4.next_i8();
+        for (int i = 0; i < 648; i++)       f4_gold[desc4[2].in_off + i] = rng4.next_i8();
+        for (int i = 0; i < W4_TOTAL; i++)  w4_gold[i] = rng4.next_i8();
+        for (int i = 0; i < B4_TOTAL; i++)  b4_gold[i] = (int32_t)rng4.next_i8() * 4;
+
+        int h4d, w4d, h4p32, w4p32, h4p8, w4p8;
+        golden_out_dims(desc4[0], h4d, w4d);
+        golden_out_dims(desc4[1], h4p32, w4p32);
+        golden_out_dims(desc4[2], h4p8, w4p8);
+        std::vector<int8_t> f4_expected = f4_gold;
+        golden_dwconv(desc4[0], h4d, w4d, f4_expected, w4_gold, b4_gold, f4_expected);
+        golden_pwconv(desc4[1], h4p32, w4p32, f4_expected, w4_gold, b4_gold, f4_expected);
+        golden_pwconv(desc4[2], h4p8, w4p8, f4_expected, w4_gold, b4_gold, f4_expected);
+
+        std::vector<act_t> f4(F4_TOTAL, act_t(0));
+        std::vector<wt_t>  w4buf(W4_TOTAL, wt_t(0));
+        std::vector<acc_t> b4buf(B4_TOTAL, acc_t(0));
+        for (int i = 0; i < F4_TOTAL; i++) f4[i] = act_t(f4_gold[i]);
+        for (int i = 0; i < W4_TOTAL; i++) w4buf[i] = wt_t(w4_gold[i]);
+        for (int i = 0; i < B4_TOTAL; i++) b4buf[i] = acc_t(b4_gold[i]);
+
+        int w4ritten[3] = {0, 0, 0};
+        mac_array_top(desc4, 3, f4.data(), w4buf.data(), b4buf.data(), f4.data(), w4ritten);
+
+        int mismatches_p4 = 0;
+        for (int i = 0; i < F4_TOTAL; i++)
+            if ((int8_t)f4[i] != f4_expected[i]) mismatches_p4++;
+        phase4_ok = (mismatches_p4 == 0);
+        printf("[Phase4] DW(stride=2)->PW(Cin=32)->PW(Cin=8) mixed sequence: "
+               "%s (%d/%d mismatches)\n", phase4_ok ? "PASS" : "FAIL", mismatches_p4, F4_TOTAL);
+    }
+
     printf("\n[Summary] Phase0 (stride=2 DW correctness): %s\n", phase0_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase1 (correctness + no collateral writes): %s\n", phase1_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase2 (self-verification catches a silently-dropped write): %s\n", phase2_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase3 (PW->DW transition on the shared array): %s\n", phase3_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase4 (DW->PW->PW mixed sequence, shrinking Cin): %s\n", phase4_ok ? "PASS" : "FAIL");
 
-    return (phase0_ok && phase1_ok && phase2_ok) ? 0 : 1;
+    return (phase0_ok && phase1_ok && phase2_ok && phase3_ok && phase4_ok) ? 0 : 1;
 }

@@ -1,0 +1,166 @@
+
+
+================================================================
+== Vitis HLS Report for 'run_pwconv_Pipeline_WSTAGE'
+================================================================
+* Date:           Wed Aug 19 16:41:35 2026
+
+* Version:        2024.2 (Build 5238294 on Nov  8 2024)
+* Project:        mac_array_poc_r7
+* Solution:       solution1 (Vivado IP Flow Target)
+* Product family: zynq
+* Target device:  xc7z020-clg400-1
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+----------+----------+------------+
+    |  Clock |  Target  | Estimated| Uncertainty|
+    +--------+----------+----------+------------+
+    |ap_clk  |  10.00 ns|  6.462 ns|     2.70 ns|
+    +--------+----------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+    |  Latency (cycles) |  Latency (absolute) |  Interval |                    Pipeline                    |
+    |   min   |   max   |    min   |    max   | min | max |                      Type                      |
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+    |        ?|        ?|         ?|         ?|    0|    0|  loop auto-rewind stp (delay=0 clock cycles(s))|
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+
+    + Detail: 
+        * Instance: 
+        N/A
+
+        * Loop: 
+        +----------+---------+---------+----------+-----------+-----------+------+----------+
+        |          |  Latency (cycles) | Iteration|  Initiation Interval  | Trip |          |
+        | Loop Name|   min   |   max   |  Latency |  achieved |   target  | Count| Pipelined|
+        +----------+---------+---------+----------+-----------+-----------+------+----------+
+        |- WSTAGE  |        ?|        ?|         1|          1|          1|     ?|       yes|
+        +----------+---------+---------+----------+-----------+-----------+------+----------+
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++-----------------+---------+-----+--------+-------+-----+
+|       Name      | BRAM_18K| DSP |   FF   |  LUT  | URAM|
++-----------------+---------+-----+--------+-------+-----+
+|DSP              |        -|    -|       -|      -|    -|
+|Expression       |        -|    -|       0|     77|    -|
+|FIFO             |        -|    -|       -|      -|    -|
+|Instance         |        -|    -|       -|      -|    -|
+|Memory           |        -|    -|       -|      -|    -|
+|Multiplexer      |        -|    -|       0|     27|    -|
+|Register         |        -|    -|      33|      -|    -|
++-----------------+---------+-----+--------+-------+-----+
+|Total            |        0|    0|      33|    104|    0|
++-----------------+---------+-----+--------+-------+-----+
+|Available        |      280|  220|  106400|  53200|    0|
++-----------------+---------+-----+--------+-------+-----+
+|Utilization (%)  |        0|    0|      ~0|     ~0|    0|
++-----------------+---------+-----+--------+-------+-----+
+
++ Detail: 
+    * Instance: 
+    N/A
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +----------------------+----------+----+---+----+------------+------------+
+    |     Variable Name    | Operation| DSP| FF| LUT| Bitwidth P0| Bitwidth P1|
+    +----------------------+----------+----+---+----+------------+------------+
+    |add_ln195_fu_210_p2   |         +|   0|  0|  38|          31|           1|
+    |icmp_ln195_fu_204_p2  |      icmp|   0|  0|  39|          32|          32|
+    +----------------------+----------+----+---+----+------------+------------+
+    |Total                 |          |   0|  0|  77|          63|          33|
+    +----------------------+----------+----+---+----+------------+------------+
+
+    * Multiplexer: 
+    +-----------------------+----+-----------+-----+-----------+
+    |          Name         | LUT| Input Size| Bits| Total Bits|
+    +-----------------------+----+-----------+-----+-----------+
+    |ap_done_int            |   9|          2|    1|          2|
+    |ap_sig_allocacmp_ci_1  |   9|          2|   31|         62|
+    |ci_fu_64               |   9|          2|   31|         62|
+    +-----------------------+----+-----------+-----+-----------+
+    |Total                  |  27|          6|   63|        126|
+    +-----------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +-------------+----+----+-----+-----------+
+    |     Name    | FF | LUT| Bits| Const Bits|
+    +-------------+----+----+-----+-----------+
+    |ap_CS_fsm    |   1|   0|    1|          0|
+    |ap_done_reg  |   1|   0|    1|          0|
+    |ci_fu_64     |  31|   0|   31|          0|
+    +-------------+----+----+-----+-----------+
+    |Total        |  33|   0|   33|          0|
+    +-------------+----+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++------------------+-----+-----+------------+----------------------------+--------------+
+|     RTL Ports    | Dir | Bits|  Protocol  |        Source Object       |    C Type    |
++------------------+-----+-----+------------+----------------------------+--------------+
+|ap_clk            |   in|    1|  ap_ctrl_hs|  run_pwconv_Pipeline_WSTAGE|  return value|
+|ap_rst            |   in|    1|  ap_ctrl_hs|  run_pwconv_Pipeline_WSTAGE|  return value|
+|ap_start          |   in|    1|  ap_ctrl_hs|  run_pwconv_Pipeline_WSTAGE|  return value|
+|ap_done           |  out|    1|  ap_ctrl_hs|  run_pwconv_Pipeline_WSTAGE|  return value|
+|ap_idle           |  out|    1|  ap_ctrl_hs|  run_pwconv_Pipeline_WSTAGE|  return value|
+|ap_ready          |  out|    1|  ap_ctrl_hs|  run_pwconv_Pipeline_WSTAGE|  return value|
+|Cin               |   in|   32|     ap_none|                         Cin|        scalar|
+|w_base_read       |   in|    8|     ap_none|                 w_base_read|        scalar|
+|wtile_7_address0  |  out|    2|   ap_memory|                     wtile_7|         array|
+|wtile_7_ce0       |  out|    1|   ap_memory|                     wtile_7|         array|
+|wtile_7_we0       |  out|    1|   ap_memory|                     wtile_7|         array|
+|wtile_7_d0        |  out|    8|   ap_memory|                     wtile_7|         array|
+|wtile_6_address0  |  out|    2|   ap_memory|                     wtile_6|         array|
+|wtile_6_ce0       |  out|    1|   ap_memory|                     wtile_6|         array|
+|wtile_6_we0       |  out|    1|   ap_memory|                     wtile_6|         array|
+|wtile_6_d0        |  out|    8|   ap_memory|                     wtile_6|         array|
+|wtile_5_address0  |  out|    2|   ap_memory|                     wtile_5|         array|
+|wtile_5_ce0       |  out|    1|   ap_memory|                     wtile_5|         array|
+|wtile_5_we0       |  out|    1|   ap_memory|                     wtile_5|         array|
+|wtile_5_d0        |  out|    8|   ap_memory|                     wtile_5|         array|
+|wtile_4_address0  |  out|    2|   ap_memory|                     wtile_4|         array|
+|wtile_4_ce0       |  out|    1|   ap_memory|                     wtile_4|         array|
+|wtile_4_we0       |  out|    1|   ap_memory|                     wtile_4|         array|
+|wtile_4_d0        |  out|    8|   ap_memory|                     wtile_4|         array|
+|wtile_3_address0  |  out|    2|   ap_memory|                     wtile_3|         array|
+|wtile_3_ce0       |  out|    1|   ap_memory|                     wtile_3|         array|
+|wtile_3_we0       |  out|    1|   ap_memory|                     wtile_3|         array|
+|wtile_3_d0        |  out|    8|   ap_memory|                     wtile_3|         array|
+|wtile_2_address0  |  out|    2|   ap_memory|                     wtile_2|         array|
+|wtile_2_ce0       |  out|    1|   ap_memory|                     wtile_2|         array|
+|wtile_2_we0       |  out|    1|   ap_memory|                     wtile_2|         array|
+|wtile_2_d0        |  out|    8|   ap_memory|                     wtile_2|         array|
+|wtile_1_address0  |  out|    2|   ap_memory|                     wtile_1|         array|
+|wtile_1_ce0       |  out|    1|   ap_memory|                     wtile_1|         array|
+|wtile_1_we0       |  out|    1|   ap_memory|                     wtile_1|         array|
+|wtile_1_d0        |  out|    8|   ap_memory|                     wtile_1|         array|
+|wtile_address0    |  out|    2|   ap_memory|                       wtile|         array|
+|wtile_ce0         |  out|    1|   ap_memory|                       wtile|         array|
+|wtile_we0         |  out|    1|   ap_memory|                       wtile|         array|
+|wtile_d0          |  out|    8|   ap_memory|                       wtile|         array|
++------------------+-----+-----+------------+----------------------------+--------------+
+
