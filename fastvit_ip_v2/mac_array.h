@@ -2,97 +2,100 @@
 #define __MAC_ARRAY_H__
 
 /*============================================================
- * mac_array.h -- Phase A layer-controller + 8x8x8 time-multiplexed
- * MAC array, minimal DW+PW PoC (ZHR-63/ZHR-91).
+ * mac_array.h -- Phase A layer-controller + 8x8x8 MAC array, minimal
+ * DW+PW PoC (ZHR-63/ZHR-91).
  *
- * Replaces the op_code-dispatch + 5-fixed-function-worker architecture
- * (fastvit_ip/) with a single unified compute grid a layer controller
- * feeds from a DRAM-resident layer descriptor table, one layer at a
- * time. This file intentionally does NOT reuse fastvit_ip/dwconv_worker.cpp
- * or pwconv_worker.cpp's compute bodies -- the whole point of Phase A is a
- * different execution model (tiled MAC array vs. per-op fixed-function
- * pipelines), so copying their loop structure would just reproduce the
- * thing being replaced under a new name.
+ * Round 5 (2026-08-16): full structural rewrite after code review found
+ * three independent root causes invalidating every round 3/4 resource
+ * number (round 4's "ARRAY_PARTITION complete is the main cause" verdict
+ * is formally withdrawn):
  *
- * Round 1 (2026-08-16, csim): proved a layer controller driving this array
- * can correctly execute DW->PW from descriptor data, and the two ZHR-91
- * row 6 hard requirements (self-verified writeback via fault injection,
- * independent descriptor-to-parameter mapping verification) both work.
+ *   Bug 1 -- PIPELINE II=1 never actually engaged. The reduction loops
+ *   (DW's kh/kw, PW's ci) had RUNTIME bounds (K, Cin -- LayerDescV2
+ *   fields), so Vitis HLS could not flatten them into the OUTER loop and
+ *   silently dropped the pipeline directive ("Cannot unroll loop ...
+ *   variable trip count", "Unable to satisfy pipeline directive for loop
+ *   'OUTER'" -- both present in round 4's own csynth log). Every "lane"
+ *   really did get its own independent FSM, but because of variable trip
+ *   counts, not code style.
  *
- * Round 2 (2026-08-16, csynth, no pragmas): found the un-annotated PoC
- * synthesizes to ONE physical MAC unit shared across the whole tensor --
- * not a real 8x8x8 array -- so its DSP/LUT numbers didn't answer the
- * actual geometry question. Also found derive_mac_array_params() was
- * being synthesized INTO the hardware (two 32-bit runtime dividers, since
- * stride/pad/k are descriptor fields, not compile-time constants).
+ *   Bug 2 -- confirmed via csynth instance counts, NOT the multipliers:
+ *   mac_muladd instance count matched the unroll factor exactly (real
+ *   MACs were fine). The LUT was per-lane control/address-generation/
+ *   muxing (Expression+Multiplexer+Instance buckets, e.g. 72 separate
+ *   72x281-LUT patch-address generators at factor=64, one ap_NS_fsm mux
+ *   alone at 2693 LUT).
  *
- * Round 3 (this round): two changes in response --
- *   1. Tile-count fields (h_out/w_out/n_*_tiles/last_*_tile) are now part
- *      of LayerDescV2 itself, computed HOST-SIDE by derive_mac_array_params()
- *      (called from mac_array_tb.cpp, standing in for the real descriptor
- *      generator) before mac_array_top ever runs -- "generator decides,
- *      hardware executes" (ZHR-91's own framing for how bugs 1-4 were
- *      structurally eliminated). This removes BOTH dividers from the
- *      synthesized design, not just makes them cheaper -- they're no
- *      longer reachable from mac_array_top's call graph at all.
- *   2. MAC_UNROLL_FACTOR (compile-time, -D flag) controls how many of the
- *      512 per-tile (channel x row x col) MAC computations run in
- *      parallel per cycle, swept over {1, 64, 128, 512} across separate
- *      csynth runs (fastvit_ip_v2/run_sweep.tcl) to trace how resources
- *      grow with parallelism degree, instead of trusting any single point.
+ *   Bug 3 (the one that actually mattered) -- MAC_PD tiled the WRONG
+ *   dimension. It tiled the output-parallel axis (PW: Cout) and left the
+ *   true reduction axis (PW: Cin; DW: K*K taps) serial *inside* each
+ *   lane. That makes "512 lanes" mean 512 independent full reductions
+ *   (DW 512*9=4608 MACs, PW 512*32=16384 MACs) instead of the paper's
+ *   literal 512 physical MAC units reused over time:
+ *     PW: pd=8 tiles Cin (the reduction axis), pr*pc=64 is the output
+ *         spatial tile computed in parallel -- 512 MACs/cycle producing
+ *         64 partial sums, iterated Cin/8 times per output channel,
+ *         Cout output channels processed one at a time.
+ *     DW: pd=8 tiles the channel axis (real parallel axis, no cross-
+ *         channel reduction), pr*pc=64 is spatial -- 512 lanes, one
+ *         kernel tap per cycle, K*K cycles.
+ *   Every round 3/4 sweep point measured a machine ~32x bigger than the
+ *   one the paper's 8x8x8=512 actually describes.
+ *
+ *   Real correctness bug found alongside (not yet exercised by csim):
+ *   PATCH_R_MAX/PATCH_C_MAX assumed stride=1 ("stride=1 assumed" comment,
+ *   literally in round 3's code). Stem and all three Transitions in the
+ *   real network use stride=2 DW convs; at K=3/stride=2 the true
+ *   receptive field is 17x17=289, not the 10x10=100 the old bound
+ *   allocated -- an actual out-of-bounds write that csim's stride=1-only
+ *   test case never touched. Fixed here via MAX_STRIDE.
+ *
+ * This round's rewrite: every UNROLLed loop bound is now a compile-time
+ * constant (MAC_PD/MAC_PR/MAC_PC/MAX_K); the only loops with
+ * descriptor-derived (runtime) bounds are PIPELINE'd loops, which don't
+ * need a compile-time trip count the way UNROLL does. Address arithmetic
+ * is confined to staging/write-out loops, never inside the pipelined MAC
+ * region. No more MAC_UNROLL_FACTOR sweep -- the design is now fixed at
+ * the paper's literal 512-physical-MAC geometry; testing a "smaller"
+ * point would no longer mean the same thing it did in round 3.
  *============================================================*/
 
 #include "ap_int.h"
 #include <cstdint>
 
-/* ACT_BITS lets a single point be re-measured at W8A4 (paper's target)
- * instead of this PoC's default W8A8, via -DACT_BITS=4 -- see
- * run_sweep_w8a4.tcl. Weight width (wt_t) is untouched: this only tests
- * the activation-side width, matching "W8A4" naming (8-bit weight,
- * 4-bit activation). Resource-estimate-only change (2026-08-16): clip_shift's
- * clamp constants are NOT adjusted for the narrower range, since this
- * variant is not meant to be functionally validated, only synthesized for
- * a resource comparison against the W8A8 sweep. */
-#ifndef ACT_BITS
-#define ACT_BITS 8
-#endif
-typedef ap_int<ACT_BITS> act_t;   /* activation, matches fastvit_ip's act_t at ACT_BITS=8 */
-typedef ap_int<8>        wt_t;    /* weight, always 8-bit (W8) */
-typedef ap_int<32>       acc_t;   /* accumulator / bias */
+typedef ap_int<8>   act_t;   /* activation, matches fastvit_ip's act_t */
+typedef ap_int<8>   wt_t;    /* weight */
+typedef ap_int<32>  acc_t;   /* accumulator / bias */
 
-/* pr x pc x pd = 8x8x8 time-multiplexed MAC array (ZHR-63 Phase A array
- * geometry, confirmed 2026-08-16 -- kept at 8x8x8, not shrunk to match
- * Stage4/FinalDW's lower utilization there). */
-#define MAC_PR 8   /* output-row tile size   */
-#define MAC_PC 8   /* output-col tile size   */
-#define MAC_PD 8   /* output-channel tile size */
+/* pr x pc x pd = 8x8x8 = 512 physical MACs (ZHR-63 Phase A array geometry,
+ * confirmed 2026-08-16). pd's role differs by op (see the round-5 note
+ * above): DW's real parallel channel axis vs. PW's reduction-tile axis. */
+#define MAC_PR 8   /* output-row tile size (both ops)   */
+#define MAC_PC 8   /* output-col tile size (both ops)   */
+#define MAC_PD 8   /* DW: channel tile. PW: Cin reduction-chunk size. */
 
-/* How many of the MAC_PD*MAC_PR*MAC_PC=512 per-tile MAC computations are
- * unrolled (spatially parallel) per cycle vs. left to the loop's implicit
- * iteration (temporally multiplexed). Swept 1/64/128/512 this round --
- * default 1 (fully time-multiplexed) if not overridden via -DMAC_UNROLL_FACTOR. */
-#ifndef MAC_UNROLL_FACTOR
-#define MAC_UNROLL_FACTOR 1
-#endif
-
-/* Compile-time bounds for the on-chip per-tile staging buffers (receptive
- * field for DW, full-Cin spatial patch for PW) -- sized for this PoC's
- * test problem (K<=3, stride<=1, Cin<=32), NOT for arbitrary real FastViT
- * layer sizes (e.g. Stage3's Cin=192 PW). Extending these bounds to cover
- * the real network is later work, not this round's. */
-#define MAX_K            3
-#define PATCH_R_MAX       ((MAC_PR - 1) * 1 + MAX_K)   /* stride=1 assumed */
-#define PATCH_C_MAX       ((MAC_PC - 1) * 1 + MAX_K)
+/* Compile-time bounds for on-chip staging buffers -- sized for this PoC's
+ * test problem (Cin<=32), NOT arbitrary real FastViT layer sizes (e.g.
+ * Stage3's Cin=192 PW). MAX_STRIDE=2 covers every real DW stride used in
+ * FastViT-T8 (Stem + the 3 Transitions); MAX_K=3 covers every real DW
+ * kernel size used. Both are upper bounds guarded at runtime inside
+ * compile-time-bounded loops, never used as a loop's own runtime bound. */
+#define MAX_K             3
+#define MAX_STRIDE        2
+#define PATCH_R_MAX       ((MAC_PR - 1) * MAX_STRIDE + MAX_K)   /* 17 */
+#define PATCH_C_MAX       ((MAC_PC - 1) * MAX_STRIDE + MAX_K)   /* 17 */
 #define MAX_CIN_PW        32
 
 #define LDESC_OP_DWCONV 0
 #define LDESC_OP_PWCONV 1
 
 /* Layer descriptor -- structurally the same fields as
- * tools/gen_layer_descriptor.py's JSON output (step 2a), plus (as of
- * round 3) the tile-count fields a real descriptor generator would also
- * emit, computed host-side (see derive_mac_array_params() below) so the
- * hardware never has to run division on them. */
+ * tools/gen_layer_descriptor.py's JSON output (step 2a), plus the
+ * host-precomputed tile-count fields (round 3: "generator decides,
+ * hardware executes", removes runtime division from the synthesized
+ * design). n_ch_tiles/last_ch_tile are always computed from Cin (round 5:
+ * DW uses them for its real output-channel tiling -- cin==cout for
+ * depthwise; PW uses them for its Cin reduction-chunk stepping). */
 struct LayerDescV2 {
     int op_type;             /* LDESC_OP_DWCONV | LDESC_OP_PWCONV */
     int cin, cout;
@@ -101,22 +104,17 @@ struct LayerDescV2 {
     int out_shift;
     int in_off, w_off, b_off, out_off;  /* element offsets into in_base/w_base/b_base/out_base */
 
-    /* host-precomputed (round 3) -- NOT computed by mac_array_top. */
+    /* host-precomputed -- NOT computed by mac_array_top. */
     int h_out, w_out;
-    int n_row_tiles, n_col_tiles, n_ch_tiles;        /* ceil(dim / tile_size) */
+    int n_row_tiles, n_col_tiles, n_ch_tiles;        /* ceil(dim / tile_size); n_ch_tiles from Cin always */
     int last_row_tile, last_col_tile, last_ch_tile;  /* remainder tile size (1..8) */
 };
 
-/* Host-side utility (stands in for the real descriptor generator, e.g.
- * tools/gen_layer_descriptor.py) that fills in LayerDescV2's tile-count
- * fields from its shape fields. NOT called from mac_array_top / not part
- * of the synthesized design -- only mac_array_tb.cpp calls this, the same
- * way a real driver would call the Python generator once, offline, not
- * per-inference. tools/verify_mac_array_mapping.py independently
- * re-derives the same arithmetic from scratch and diffs against what this
- * function (via the testbench's dump) actually produced -- ZHR-91 row 6's
- * mapping-verification requirement, now checking "did the host compute
- * the descriptor correctly" rather than "did the hardware".*/
+/* Host-side utility (stands in for the real descriptor generator). NOT
+ * called from mac_array_top / not part of the synthesized design.
+ * tools/verify_mac_array_mapping.py independently re-derives the same
+ * arithmetic from scratch and diffs against what this function (via the
+ * testbench's dump) actually produced. */
 struct MacArrayParams {
     int h_out, w_out;
     int n_row_tiles, n_col_tiles, n_ch_tiles;

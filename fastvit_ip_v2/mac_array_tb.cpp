@@ -155,8 +155,63 @@ int main()
                     desc[i].last_row_tile, desc[i].last_col_tile, desc[i].last_ch_tile);
         }
         fclose(f);
-        printf("[Setup] mac_array_params_dump.txt written for tools/verify_mac_array_mapping.py "
-               "(MAC_UNROLL_FACTOR=%d)\n", MAC_UNROLL_FACTOR);
+        printf("[Setup] mac_array_params_dump.txt written for tools/verify_mac_array_mapping.py\n");
+    }
+
+    bool phase0_ok = false;
+    /* ================= PHASE 0: stride=2 DW correctness (round 5) =================
+     * Real network coverage gap found in code review: PATCH_R_MAX/PATCH_C_MAX
+     * were sized assuming stride=1 ("stride=1 assumed", literally in the old
+     * comment) even though Stem and all 3 Transitions use stride=2 DW convs
+     * in the real network -- at K=3/stride=2 the true receptive field is
+     * 17x17=289, not the 10x10=100 the old bound allocated, an actual
+     * out-of-bounds write no prior round's csim (stride=1 only) ever
+     * exercised. Isolated single-layer test, own buffers, deliberately
+     * non-8-aligned dims (cin=9, h_in=w_in=17) to also hit the tile-
+     * remainder path at stride=2 simultaneously. */
+    {
+        LayerDescV2 s2 = LayerDescV2{ LDESC_OP_DWCONV, /*cin*/9, /*cout*/9, /*h_in*/17, /*w_in*/17,
+                                       /*k*/3, /*stride*/2, /*pad*/1, /*fpg*/1, /*out_shift*/6,
+                                       /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/2601 /* 9*17*17 */ };
+        MacArrayParams p = derive_mac_array_params(s2);
+        s2.h_out = p.h_out; s2.w_out = p.w_out;
+        s2.n_row_tiles = p.n_row_tiles; s2.n_col_tiles = p.n_col_tiles; s2.n_ch_tiles = p.n_ch_tiles;
+        s2.last_row_tile = p.last_row_tile; s2.last_col_tile = p.last_col_tile; s2.last_ch_tile = p.last_ch_tile;
+
+        const int S2_IN = 9 * 17 * 17;             /* 2601 */
+        const int S2_W  = 9 * 3 * 3;                /* 81 */
+        const int S2_B  = 9;
+        const int S2_OUT = 9 * p.h_out * p.w_out;
+        const int S2_TOTAL = S2_IN + S2_OUT;
+
+        std::vector<int8_t>  s2_in_gold(S2_TOTAL, 0);
+        std::vector<int8_t>  s2_w_gold(S2_W, 0);
+        std::vector<int32_t> s2_b_gold(S2_B, 0);
+        Lcg rng2(0xBADC0DE);
+        for (int i = 0; i < S2_IN; i++) s2_in_gold[i] = rng2.next_i8();
+        for (int i = 0; i < S2_W; i++)  s2_w_gold[i]  = rng2.next_i8();
+        for (int i = 0; i < S2_B; i++)  s2_b_gold[i]  = (int32_t)rng2.next_i8() * 4;
+
+        std::vector<int8_t> s2_golden = s2_in_gold;
+        golden_dwconv(s2, p.h_out, p.w_out, s2_golden, s2_w_gold, s2_b_gold, s2_golden);
+
+        std::vector<act_t> s2_feat(S2_TOTAL, act_t(0));
+        std::vector<wt_t>  s2_wbuf(S2_W, wt_t(0));
+        std::vector<acc_t> s2_bbuf(S2_B, acc_t(0));
+        for (int i = 0; i < S2_IN; i++) s2_feat[i] = act_t(s2_in_gold[i]);
+        for (int i = 0; i < S2_W; i++)  s2_wbuf[i] = wt_t(s2_w_gold[i]);
+        for (int i = 0; i < S2_B; i++)  s2_bbuf[i] = acc_t(s2_b_gold[i]);
+
+        int s2_written[1] = {0};
+        mac_array_top(&s2, 1, s2_feat.data(), s2_wbuf.data(), s2_bbuf.data(), s2_feat.data(), s2_written);
+
+        int mismatches_s2 = 0;
+        for (int i = 0; i < S2_TOTAL; i++)
+            if ((int8_t)s2_feat[i] != s2_golden[i]) mismatches_s2++;
+
+        phase0_ok = (mismatches_s2 == 0);
+        printf("[Phase0] stride=2 DW (h_in=w_in=17,cin=9 -> h_out=w_out=%d): %s (%d/%d mismatches)\n",
+               p.h_out, phase0_ok ? "PASS" : "FAIL", mismatches_s2, S2_TOTAL);
     }
 
     const int FEAT_TOTAL = 16000 + 13 * 20 * 20;  /* A(8000) + B(8000) + C(5200) = 21200 */
@@ -246,8 +301,9 @@ int main()
     bool phase1_ok = correctness_pass && weights_untouched && both_written;
     bool phase2_ok = fault_was_reported_done && selfcheck_caught_it;
 
-    printf("\n[Summary] Phase1 (correctness + no collateral writes): %s\n", phase1_ok ? "PASS" : "FAIL");
+    printf("\n[Summary] Phase0 (stride=2 DW correctness): %s\n", phase0_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase1 (correctness + no collateral writes): %s\n", phase1_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase2 (self-verification catches a silently-dropped write): %s\n", phase2_ok ? "PASS" : "FAIL");
 
-    return (phase1_ok && phase2_ok) ? 0 : 1;
+    return (phase0_ok && phase1_ok && phase2_ok) ? 0 : 1;
 }

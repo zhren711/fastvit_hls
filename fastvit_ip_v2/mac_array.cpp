@@ -1,13 +1,16 @@
 #include "mac_array.h"
 
 /* Host-side only (see mac_array.h) -- NOT reachable from mac_array_top's
- * call graph, so none of this division is synthesized into hardware. */
+ * call graph, so none of this division is synthesized into hardware.
+ * ch_dim is ALWAYS Cin (round 5): DW's real per-channel parallel tiling
+ * (cin==cout for depthwise) and PW's Cin reduction-chunk stepping both
+ * key off the same arithmetic. */
 MacArrayParams derive_mac_array_params(const LayerDescV2 &d)
 {
     MacArrayParams p;
     p.h_out = (d.h_in + 2 * d.pad - d.k) / d.stride + 1;
     p.w_out = (d.w_in + 2 * d.pad - d.k) / d.stride + 1;
-    int ch_dim = (d.op_type == LDESC_OP_DWCONV) ? d.cin : d.cout;
+    int ch_dim = d.cin;
 
     p.n_row_tiles = (p.h_out + MAC_PR - 1) / MAC_PR;
     p.n_col_tiles = (p.w_out + MAC_PC - 1) / MAC_PC;
@@ -27,43 +30,23 @@ static acc_t clip_shift(acc_t acc, int shift)
     return v;
 }
 
-/* Round 4 (2026-08-16): restructured in response to round 3's finding that
- * ARRAY_PARTITION complete + a flattened UNROLL-factor loop makes HLS
- * synthesize MAC_UNROLL_FACTOR independent pipelined FSMs (one per lane)
- * instead of one shared-control datapath -- literal "copy the loop body N
- * times", not an actual MAC array. Two structural changes, single
- * variable (only MAC_UNROLL_FACTOR=64 is tested this round, matching the
- * prior 64-point measurement 1:1 so the comparison isolates the code
- * structure change):
- *
- *   1. Spatial patch dims are flattened into ONE dimension and partitioned
- *      `cyclic factor=8` (not `complete`) -- only the dimension actually
- *      read by parallel lanes gets banked, the reduction dimension (DW's
- *      kernel taps, PW's Cin) is left un-partitioned so it can live in
- *      BRAM the way the paper's own resource profile (BRAM=105, nonzero)
- *      implies it should.
- *   2. COMPUTE is now an explicit OUTER(PIPELINE)/INNER(UNROLL) nest
- *      instead of one flattened loop with a bare UNROLL factor -- this is
- *      the idiom that makes HLS schedule the unrolled body as ONE shared
- *      pipeline datapath (single FSM controlling MAC_UNROLL_FACTOR
- *      parallel MAC lanes) rather than replicating independent control
- *      per lane. */
-
-/* patch's spatial dim flattened to one axis so a single ARRAY_PARTITION
- * pragma targets exactly "the dimension parallel lanes read from". */
-#define DW_PATCH_SPATIAL (PATCH_R_MAX * PATCH_C_MAX)
-#define PW_PATCH_SPATIAL (MAC_PR * MAC_PC)
-
+/* ---- DW: pd=8 channel-parallel, pr x pc=64 spatial-parallel, K*K taps
+ * time-multiplexed (paper's literal 512-physical-MAC geometry). The tap
+ * loop's bound is the compile-time MAX_K, not the runtime field K -- an
+ * out-of-range tap is skipped with a runtime `continue` INSIDE the loop
+ * body, never by varying the loop's own trip count -- this is what lets
+ * PIPELINE actually engage (bug 1). Address arithmetic lives only in
+ * STAGE and WRITEOUT, never inside the pipelined tap loop (bug 1's
+ * partner issue: per round-3/4, replicating a runtime multiply per lane
+ * once pipelining worked would have cost 128 extra 32-bit multipliers). */
 static void run_dwconv(const LayerDescV2 &d,
                         const act_t in_base[], const wt_t w_base[], const acc_t b_base[],
                         act_t out_base[])
 {
-    const int C = d.cin, Hin = d.h_in, Win = d.w_in;
+    const int Hin = d.h_in, Win = d.w_in;
     const int K = d.k, S = d.stride, P = d.pad;
     const int patch_r = (MAC_PR - 1) * S + K;
     const int patch_c = (MAC_PC - 1) * S + K;
-    const int TOTAL = MAC_PD * MAC_PR * MAC_PC;          /* 512 */
-    const int OUTER_TRIP = TOTAL / MAC_UNROLL_FACTOR;     /* e.g. 512/64=8 */
 
     for (int ct = 0; ct < d.n_ch_tiles; ct++) {
         int c_sz = (ct == d.n_ch_tiles - 1) ? d.last_ch_tile : MAC_PD;
@@ -72,13 +55,23 @@ static void run_dwconv(const LayerDescV2 &d,
             for (int colt = 0; colt < d.n_col_tiles; colt++) {
                 int col_sz = (colt == d.n_col_tiles - 1) ? d.last_col_tile : MAC_PC;
 
-                act_t patch[MAC_PD][DW_PATCH_SPATIAL];  /* per-channel receptive field, spatial flattened */
-                wt_t  wtile[MAC_PD][MAX_K][MAX_K];       /* reduction operands -- small, kept complete */
+                /* known simplification, not yet addressed this round: DW's
+                 * receptive-field reads overlap between spatial lanes
+                 * (sliding window), so unlike PW's disjoint Cin banking,
+                 * there is no clean compile-time-constant bank assignment
+                 * here without a real line-buffer/shift-register redesign
+                 * -- kept `complete` (register-file, correct but not
+                 * necessarily cheap) rather than guessing at a cyclic
+                 * factor that wouldn't actually avoid runtime address
+                 * decoding for the kh/kw-dependent, stride-scaled offset. */
+                act_t patch[MAC_PD][PATCH_R_MAX][PATCH_C_MAX];
+                wt_t  wtile[MAC_PD][MAX_K][MAX_K];
                 acc_t btile[MAC_PD];
-                #pragma HLS ARRAY_PARTITION variable=patch  cyclic factor=8 dim=2
-                #pragma HLS ARRAY_PARTITION variable=patch  complete dim=1
-                #pragma HLS ARRAY_PARTITION variable=wtile  complete dim=0
-                #pragma HLS ARRAY_PARTITION variable=btile  complete dim=0
+                acc_t acc[MAC_PD][MAC_PR][MAC_PC];
+                #pragma HLS ARRAY_PARTITION variable=patch complete dim=0
+                #pragma HLS ARRAY_PARTITION variable=wtile complete dim=0
+                #pragma HLS ARRAY_PARTITION variable=btile complete dim=0
+                #pragma HLS ARRAY_PARTITION variable=acc   complete dim=0
 
                 STAGE: for (int cc = 0; cc < c_sz; cc++) {
                     int c = ct * MAC_PD + cc;
@@ -93,105 +86,130 @@ static void run_dwconv(const LayerDescV2 &d,
                             act_t v = 0;
                             if (ih >= 0 && ih < Hin && iw >= 0 && iw < Win)
                                 v = in_base[d.in_off + (c * Hin + ih) * Win + iw];
-                            patch[cc][pr * PATCH_C_MAX + pc] = v;
+                            patch[cc][pr][pc] = v;
                         }
                     }
                 }
 
-                OUTER: for (int t = 0; t < OUTER_TRIP; t++) {
-                    #pragma HLS PIPELINE II=1
-                    INNER: for (int p = 0; p < MAC_UNROLL_FACTOR; p++) {
-                        #pragma HLS UNROLL
-                        int idx = t * MAC_UNROLL_FACTOR + p;
-                        int cc = idx / (MAC_PR * MAC_PC);
-                        int rr = (idx / MAC_PC) % MAC_PR;
-                        int cw = idx % MAC_PC;
-                        if (cc >= c_sz || rr >= r_sz || cw >= col_sz) continue;
+                RESET: for (int d0 = 0; d0 < MAC_PD; d0++)
+                    for (int r0 = 0; r0 < MAC_PR; r0++)
+                        for (int c0 = 0; c0 < MAC_PC; c0++) {
+                            #pragma HLS UNROLL
+                            acc[d0][r0][c0] = 0;
+                        }
 
-                        int c  = ct * MAC_PD + cc;
-                        int oh = rt * MAC_PR + rr;
-                        int ow = colt * MAC_PC + cw;
-
-                        acc_t acc = btile[cc];
-                        for (int kh = 0; kh < K; kh++)
-                            for (int kw = 0; kw < K; kw++)
-                                acc += (acc_t)patch[cc][(rr * S + kh) * PATCH_C_MAX + (cw * S + kw)] *
-                                       (acc_t)wtile[cc][kh][kw];
-
-                        out_base[d.out_off + (c * d.h_out + oh) * d.w_out + ow] =
-                            (act_t)clip_shift(acc, d.out_shift);
+                TAP_KH: for (int kh = 0; kh < MAX_K; kh++) {
+                    TAP_KW: for (int kw = 0; kw < MAX_K; kw++) {
+                        #pragma HLS PIPELINE II=1
+                        if (kh >= K || kw >= K) continue;
+                        LANE_D: for (int dd = 0; dd < MAC_PD; dd++) {
+                            #pragma HLS UNROLL
+                            LANE_R: for (int rr = 0; rr < MAC_PR; rr++) {
+                                #pragma HLS UNROLL
+                                LANE_C: for (int cw = 0; cw < MAC_PC; cw++) {
+                                    #pragma HLS UNROLL
+                                    acc[dd][rr][cw] += (acc_t)patch[dd][rr * S + kh][cw * S + kw] *
+                                                        (acc_t)wtile[dd][kh][kw];
+                                }
+                            }
+                        }
                     }
+                }
+
+                WRITEOUT: for (int idx = 0; idx < MAC_PD * MAC_PR * MAC_PC; idx++) {
+                    #pragma HLS PIPELINE II=1
+                    int dd = idx / (MAC_PR * MAC_PC);
+                    int rr = (idx / MAC_PC) % MAC_PR;
+                    int cw = idx % MAC_PC;
+                    if (dd >= c_sz || rr >= r_sz || cw >= col_sz) continue;
+                    int c  = ct * MAC_PD + dd;
+                    int oh = rt * MAC_PR + rr;
+                    int ow = colt * MAC_PC + cw;
+                    out_base[d.out_off + (c * d.h_out + oh) * d.w_out + ow] =
+                        (act_t)clip_shift(acc[dd][rr][cw] + btile[dd], d.out_shift);
                 }
             }
         }
     }
 }
 
+/* ---- PW: pd=8 tiles Cin (the reduction axis), pr x pc=64 is the output
+ * spatial tile computed in parallel every cycle. Output channels are
+ * processed ONE AT A TIME (sequential `co` loop, not tiled) -- the 512
+ * physical MACs are reused across all Cout channels, not replicated
+ * Cout/8-wide the way round 3/4 did. patch's Cin dimension is cyclically
+ * partitioned with factor=MAC_PD: since the reduction loop always steps
+ * `cib` by exactly MAC_PD, `cib+d` (d compile-time 0..7) lands in bank
+ * `d` -- a COMPILE-TIME-KNOWN bank for every unrolled lane, so no runtime
+ * address decoder is needed at all (the fix for bug 2, applied only
+ * where the access pattern is actually this clean -- see DW's patch
+ * above for the case where it isn't). */
 static void run_pwconv(const LayerDescV2 &d,
                         const act_t in_base[], const wt_t w_base[], const acc_t b_base[],
                         act_t out_base[])
 {
     const int Cin = d.cin, H = d.h_in, W = d.w_in;  /* PW: k=1,stride=1,pad=0 -> h_out=h_in, w_out=w_in */
-    const int TOTAL = MAC_PD * MAC_PR * MAC_PC;
-    const int OUTER_TRIP = TOTAL / MAC_UNROLL_FACTOR;
 
-    for (int ct = 0; ct < d.n_ch_tiles; ct++) {
-        int c_sz = (ct == d.n_ch_tiles - 1) ? d.last_ch_tile : MAC_PD;
-        for (int rt = 0; rt < d.n_row_tiles; rt++) {
-            int r_sz = (rt == d.n_row_tiles - 1) ? d.last_row_tile : MAC_PR;
-            for (int colt = 0; colt < d.n_col_tiles; colt++) {
-                int col_sz = (colt == d.n_col_tiles - 1) ? d.last_col_tile : MAC_PC;
+    for (int rt = 0; rt < d.n_row_tiles; rt++) {
+        int r_sz = (rt == d.n_row_tiles - 1) ? d.last_row_tile : MAC_PR;
+        for (int colt = 0; colt < d.n_col_tiles; colt++) {
+            int col_sz = (colt == d.n_col_tiles - 1) ? d.last_col_tile : MAC_PC;
 
-                /* PW reduces across the full input-channel depth (unlike
-                 * DW's per-channel receptive field). Cin (the reduction
-                 * dim, walked sequentially by each lane) is left
-                 * UN-partitioned -- BRAM-natural -- per the 2026-08-16
-                 * direction; only the spatial dim parallel lanes actually
-                 * read simultaneously gets banked. */
-                act_t patch[MAX_CIN_PW][PW_PATCH_SPATIAL];
-                wt_t  wtile[MAC_PD][MAX_CIN_PW];
-                acc_t btile[MAC_PD];
-                #pragma HLS ARRAY_PARTITION variable=patch  cyclic factor=8 dim=2
-                #pragma HLS ARRAY_PARTITION variable=wtile  complete dim=0
-                #pragma HLS ARRAY_PARTITION variable=btile  complete dim=0
+            act_t patch[MAX_CIN_PW][MAC_PR][MAC_PC];
+            #pragma HLS ARRAY_PARTITION variable=patch cyclic factor=8 dim=1
+            #pragma HLS ARRAY_PARTITION variable=patch complete dim=2
+            #pragma HLS ARRAY_PARTITION variable=patch complete dim=3
 
-                STAGE: for (int ci = 0; ci < Cin; ci++) {
-                    for (int rr = 0; rr < r_sz; rr++) {
-                        int oh = rt * MAC_PR + rr;
-                        for (int cw = 0; cw < col_sz; cw++) {
-                            int ow = colt * MAC_PC + cw;
-                            patch[ci][rr * MAC_PC + cw] = in_base[d.in_off + (ci * H + oh) * W + ow];
+            STAGE: for (int ci = 0; ci < Cin; ci++) {
+                for (int rr = 0; rr < r_sz; rr++) {
+                    int oh = rt * MAC_PR + rr;
+                    for (int cw = 0; cw < col_sz; cw++) {
+                        int ow = colt * MAC_PC + cw;
+                        patch[ci][rr][cw] = in_base[d.in_off + (ci * H + oh) * W + ow];
+                    }
+                }
+            }
+
+            CH_LOOP: for (int co = 0; co < d.cout; co++) {
+                wt_t  wtile[MAX_CIN_PW];
+                acc_t acc[MAC_PR][MAC_PC];
+                #pragma HLS ARRAY_PARTITION variable=wtile cyclic factor=8 dim=1
+                #pragma HLS ARRAY_PARTITION variable=acc   complete dim=0
+
+                WSTAGE: for (int ci = 0; ci < Cin; ci++)
+                    wtile[ci] = w_base[d.w_off + co * Cin + ci];
+                acc_t bias_val = b_base[d.b_off + co];
+
+                RESET: for (int r0 = 0; r0 < MAC_PR; r0++)
+                    for (int c0 = 0; c0 < MAC_PC; c0++) {
+                        #pragma HLS UNROLL
+                        acc[r0][c0] = 0;
+                    }
+
+                REDUCE: for (int ct = 0; ct < d.n_ch_tiles; ct++) {
+                    #pragma HLS PIPELINE II=1
+                    int chunk_sz = (ct == d.n_ch_tiles - 1) ? d.last_ch_tile : MAC_PD;
+                    int cib = ct * MAC_PD;
+                    LANE_D: for (int dd = 0; dd < MAC_PD; dd++) {
+                        #pragma HLS UNROLL
+                        if (dd >= chunk_sz) continue;
+                        LANE_R: for (int rr = 0; rr < MAC_PR; rr++) {
+                            #pragma HLS UNROLL
+                            LANE_C: for (int cw = 0; cw < MAC_PC; cw++) {
+                                #pragma HLS UNROLL
+                                acc[rr][cw] += (acc_t)patch[cib + dd][rr][cw] * (acc_t)wtile[cib + dd];
+                            }
                         }
                     }
                 }
-                for (int cc = 0; cc < c_sz; cc++) {
-                    int co = ct * MAC_PD + cc;
-                    btile[cc] = b_base[d.b_off + co];
-                    for (int ci = 0; ci < Cin; ci++)
-                        wtile[cc][ci] = w_base[d.w_off + co * Cin + ci];
-                }
 
-                OUTER: for (int t = 0; t < OUTER_TRIP; t++) {
+                WRITEOUT: for (int idx = 0; idx < MAC_PR * MAC_PC; idx++) {
                     #pragma HLS PIPELINE II=1
-                    INNER: for (int p = 0; p < MAC_UNROLL_FACTOR; p++) {
-                        #pragma HLS UNROLL
-                        int idx = t * MAC_UNROLL_FACTOR + p;
-                        int cc = idx / (MAC_PR * MAC_PC);
-                        int rr = (idx / MAC_PC) % MAC_PR;
-                        int cw = idx % MAC_PC;
-                        if (cc >= c_sz || rr >= r_sz || cw >= col_sz) continue;
-
-                        int co = ct * MAC_PD + cc;
-                        int oh = rt * MAC_PR + rr;
-                        int ow = colt * MAC_PC + cw;
-
-                        acc_t acc = btile[cc];
-                        for (int ci = 0; ci < Cin; ci++)
-                            acc += (acc_t)patch[ci][rr * MAC_PC + cw] * (acc_t)wtile[cc][ci];
-
-                        out_base[d.out_off + (co * d.h_out + oh) * d.w_out + ow] =
-                            (act_t)clip_shift(acc, d.out_shift);
-                    }
+                    int rr = idx / MAC_PC, cw = idx % MAC_PC;
+                    if (rr >= r_sz || cw >= col_sz) continue;
+                    int oh = rt * MAC_PR + rr, ow = colt * MAC_PC + cw;
+                    out_base[d.out_off + (co * d.h_out + oh) * d.w_out + ow] =
+                        (act_t)clip_shift(acc[rr][cw] + bias_val, d.out_shift);
                 }
             }
         }

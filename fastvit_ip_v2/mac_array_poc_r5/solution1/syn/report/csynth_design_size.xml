@@ -1,0 +1,54 @@
+<design_size title="Design Size Report">
+    <item name="Total Instructions per Compilation Phase">
+        <table>
+            <keys size="4">Phase, Step, Instructions, Description</keys>
+            <column name="Compile/Link">,   1790, After all functions are compiled and linked into a single design</column>
+            <column name="">, , </column>
+            <column name="Unroll/Inline">, , After user unroll and inline pragmas are applied</column>
+            <column name="">(1) unroll,  10609, user unroll pragmas are applied</column>
+            <column name="">(2) simplification,   8819, simplification of applied user unroll pragmas</column>
+            <column name="">(3) inline,   8381, user inline pragmas are applied</column>
+            <column name="">(4) simplification,   8365, simplification of applied user inline pragmas</column>
+            <column name="">, , </column>
+            <column name="Array/Struct">, , After user array partition and struct aggregate/disaggregate pragmas are applied</column>
+            <column name="">(1) array partition, 425131 *, user array partition pragmas are applied</column>
+            <column name="">(2) simplification,  38516, simplification of applied user array partition &amp; struct aggregate/disaggregate pragmas</column>
+            <column name="">(3) aggregate/disaggregate ,  38624, user struct aggregate/disaggregate pragmas are applied</column>
+            <column name="">(4) array reshape,  38590, apply array reshape pragmas</column>
+            <column name="">(5) access patterns,  45144, array access pattern optmizations</column>
+            <column name="">, , </column>
+            <column name="Performance">, , After transformations are applied to meet performance pragma targets</column>
+            <column name="">(1) loop simplification,  45044, loop and instruction simplification</column>
+            <column name="">(2) parallelization,  36794, loops are unrolled or pipelined to meet performance targets</column>
+            <column name="">(3) array partition,  36779, arrays are partitioned to meet performance targets</column>
+            <column name="">(4) simplification,  36779, simplification of design after performance transformations</column>
+            <column name="">, , </column>
+            <column name="HW Transforms">, , After hardware transfomations</column>
+            <column name="">(1) lowering,  36698, initial conversion to HW specific instructions</column>
+            <column name="">(2) optimizations,  30338, high level synthesis optimizations</column>
+        </table>
+    </item>
+    <item name="Instructions per Function for each Compilation Phase">
+        <hiertable>
+            <header size="7" col0="Function" col1="Location" col2="Compile/Link" col3="Unroll/Inline" col4="Array/Struct" col5="Performance" col6="HW Transforms"/>
+            <rows>
+                <row id="0" col0="mac_array_top" col1="mac_array.cpp:219" col2="1790" col3="8365" col4="45144" col5="36779" col6="30338">
+                    <row id="3" col0="run_dwconv" col1="mac_array.cpp:42" col2="932" col3="4416" col4="34007" col5="25759" col6="20964">
+                        <row id="1" col0="clip_shift" col1="mac_array.cpp:25" col2="145" col3="" col4="" col5="" col6=""/>
+                    </row>
+                    <row id="2" col0="run_pwconv" col1="mac_array.cpp:147" col2="831" col3="3928" col4="11114" col5="11000" col6="9338">
+                        <row id="1" col0="clip_shift" col1="mac_array.cpp:25" col2="145" col3="" col4="" col5="" col6=""/>
+                    </row>
+                </row>
+            </rows>
+            <notes/>
+        </hiertable>
+    </item>
+    <item name="Design Size Message Settings">
+        <table>
+            <keys size="3">Message Setting, Value, Description</keys>
+            <column name="config_compile -design_size_maximum_warning">100000, Show a warning when total design instructions exceeds this value</column>
+        </table>
+    </item>
+</design_size>
+
