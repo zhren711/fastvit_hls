@@ -30,223 +30,207 @@ static acc_t clip_shift(acc_t acc, int shift)
     return v;
 }
 
-/* ---- round 9: the shared 512-MAC compute step. DW and PW each build a
- * canonical MAC_PD x MAC_PR x MAC_PC "this cycle's operands" view from
- * their own (unchanged, op-specific) patch/wtile addressing, then both
- * call this SAME function -- that's the only thing that makes it one
- * physical 512-MAC engine instead of two. `#pragma HLS INLINE off` is
- * load-bearing: without it Vitis expands a private copy of this loop into
- * each call site (textually identical to what round 5-8 already had) and
- * the merge accomplishes nothing. Weight only depends on dd (broadcasts
- * across rr,cw) for both ops, so w[MAC_PD] is a sufficient shared
- * interface without forcing DW and PW onto a common patch layout -- see
- * ZHR-63/ZHR-92's merge-design discussion for why (a) a shared staging
- * buffer was rejected (S=2 DW bank conflicts under PW's cyclic scheme)
- * in favor of (b) shared compute only. */
-static void mac_reduce_step(
-    const act_t p[MAC_PD][MAC_PR][MAC_PC],
-    const wt_t  w[MAC_PD],
-    acc_t       acc[MAC_PD][MAC_PR][MAC_PC])
+/* ---- round 10: genuinely shared 512-MAC pipeline. Round 9 put
+ * `#pragma HLS PIPELINE II=1` on each CALLER's own step loop
+ * (TAP_KH_TAP_KW, REDUCE) and called a shared-but-not-inlined
+ * mac_reduce_step from inside it. Confirmed via the resource hierarchy
+ * (ZHR-92): two distinct grp_mac_reduce_step_fu_* units, mac_array_top's
+ * DSP unchanged at 1047 -- each caller's own pipeline schedule demanded a
+ * dedicated per-cycle-available copy of whatever it called, so nothing
+ * was actually shared. The PIPELINE annotation has to live in exactly
+ * ONE place, inside the shared function itself.
+ *
+ * round 10 alone wasn't enough either: run_dwconv/run_pwconv were still
+ * two separate top-level functions, each with its OWN (single) call site
+ * into this function -- confirmed via the resource hierarchy again (two
+ * distinct grp_run_reduce_unified_fu_* units, DSP still 1047). Round 9's
+ * diagnosis stands regardless of what the shared callee is named: two
+ * separate functions means two scheduling domains, and HLS's default
+ * resource sharing doesn't reach across that boundary. Round 11 (see
+ * run_layer below) removes run_dwconv/run_pwconv entirely so this
+ * function has exactly ONE call site in the whole design.
+ *
+ * DW and PW's addressing still differs (round 5/9's rejected-(a) reason
+ * stands: DW's overlapping sliding window vs PW's disjoint Cin banking
+ * can't share one buffer layout), so this function takes BOTH shapes as
+ * parameters and branches on op_type ONCE PER STEP, before the 512-lane
+ * region -- not once per lane, which round 7 already proved is expensive
+ * (Expression LUT 79->16,840 for exactly this class of mistake). DW's
+ * invalid-tap case and PW's invalid-last-channel-tile case are both
+ * handled by zeroing the WEIGHT for that step (round 8's zero-fill
+ * approach), never by skipping/branching inside LANE_D/R/C. */
+static void run_reduce_unified(
+    int op_type,
+    int n_steps,
+    /* DW operands -- read only when op_type==LDESC_OP_DWCONV */
+    const act_t dw_patch[MAC_PD][PATCH_R_MAX][PATCH_C_MAX],
+    const wt_t  dw_wtile[MAC_PD][MAX_K][MAX_K],
+    int dw_K, int dw_S,
+    /* PW operands -- read only when op_type==LDESC_OP_PWCONV */
+    const act_t pw_patch[MAX_CIN_PW][MAC_PR][MAC_PC],
+    const wt_t  pw_wtile[MAX_CIN_PW],
+    acc_t acc[MAC_PD][MAC_PR][MAC_PC])
 {
-    #pragma HLS INLINE off
-    #pragma HLS ARRAY_PARTITION variable=p   complete dim=0
-    #pragma HLS ARRAY_PARTITION variable=w   complete dim=0
-    #pragma HLS ARRAY_PARTITION variable=acc complete dim=0
-    LANE_D: for (int dd = 0; dd < MAC_PD; dd++) {
-        #pragma HLS UNROLL
-        LANE_R: for (int rr = 0; rr < MAC_PR; rr++) {
-            #pragma HLS UNROLL
-            LANE_C: for (int cw = 0; cw < MAC_PC; cw++) {
+    #pragma HLS ARRAY_PARTITION variable=dw_patch complete dim=0
+    #pragma HLS ARRAY_PARTITION variable=dw_wtile complete dim=0
+    #pragma HLS ARRAY_PARTITION variable=pw_patch cyclic factor=8 dim=1
+    #pragma HLS ARRAY_PARTITION variable=pw_patch complete dim=2
+    #pragma HLS ARRAY_PARTITION variable=pw_patch complete dim=3
+    #pragma HLS ARRAY_PARTITION variable=pw_wtile cyclic factor=8 dim=1
+    #pragma HLS ARRAY_PARTITION variable=acc      complete dim=0
+
+    UNIFIED: for (int step = 0; step < n_steps; step++) {
+        #pragma HLS PIPELINE II=1
+        act_t lane_in[MAC_PD][MAC_PR][MAC_PC];
+        wt_t  lane_w[MAC_PD];
+        #pragma HLS ARRAY_PARTITION variable=lane_in complete dim=0
+        #pragma HLS ARRAY_PARTITION variable=lane_w  complete dim=0
+
+        if (op_type == LDESC_OP_DWCONV) {
+            int kh = step / MAX_K, kw = step % MAX_K;
+            bool valid = (kh < dw_K) && (kw < dw_K);
+            GATHER_DW_D: for (int dd = 0; dd < MAC_PD; dd++) {
                 #pragma HLS UNROLL
-                acc[dd][rr][cw] += (acc_t)p[dd][rr][cw] * (acc_t)w[dd];
+                lane_w[dd] = valid ? dw_wtile[dd][kh][kw] : (wt_t)0;
+                GATHER_DW_R: for (int rr = 0; rr < MAC_PR; rr++) {
+                    #pragma HLS UNROLL
+                    GATHER_DW_C: for (int cw = 0; cw < MAC_PC; cw++) {
+                        #pragma HLS UNROLL
+                        lane_in[dd][rr][cw] = dw_patch[dd][rr * dw_S + kh][cw * dw_S + kw];
+                    }
+                }
+            }
+        } else {
+            int cib = step * MAC_PD;
+            GATHER_PW_D: for (int dd = 0; dd < MAC_PD; dd++) {
+                #pragma HLS UNROLL
+                lane_w[dd] = pw_wtile[cib + dd];
+                GATHER_PW_R: for (int rr = 0; rr < MAC_PR; rr++) {
+                    #pragma HLS UNROLL
+                    GATHER_PW_C: for (int cw = 0; cw < MAC_PC; cw++) {
+                        #pragma HLS UNROLL
+                        lane_in[dd][rr][cw] = pw_patch[cib + dd][rr][cw];
+                    }
+                }
+            }
+        }
+
+        LANE_D: for (int dd = 0; dd < MAC_PD; dd++) {
+            #pragma HLS UNROLL
+            LANE_R: for (int rr = 0; rr < MAC_PR; rr++) {
+                #pragma HLS UNROLL
+                LANE_C: for (int cw = 0; cw < MAC_PC; cw++) {
+                    #pragma HLS UNROLL
+                    acc[dd][rr][cw] += (acc_t)lane_in[dd][rr][cw] * (acc_t)lane_w[dd];
+                }
             }
         }
     }
 }
 
-/* ---- DW: pd=8 channel-parallel, pr x pc=64 spatial-parallel, K*K taps
- * time-multiplexed (paper's literal 512-physical-MAC geometry). The tap
- * loop's bound is the compile-time MAX_K, not the runtime field K -- an
- * out-of-range tap is skipped with a runtime `continue` INSIDE the loop
- * body, never by varying the loop's own trip count -- this is what lets
- * PIPELINE actually engage (bug 1). Address arithmetic lives only in
- * STAGE and WRITEOUT, never inside the pipelined tap loop (bug 1's
- * partner issue: per round-3/4, replicating a runtime multiply per lane
- * once pipelining worked would have cost 128 extra 32-bit multipliers). */
-static void run_dwconv(const LayerDescV2 &d,
-                        const act_t in_base[], const wt_t w_base[], const acc_t b_base[],
-                        act_t out_base[])
+/* ---- round 11: run_dwconv/run_pwconv are GONE. This is the only tile
+ * driver in the design, and mac_array_top (below) calls it unconditionally
+ * -- no more `if (op==DW) run_dwconv() else run_pwconv()`. That dispatch
+ * was round 9/10's actual root cause (see run_reduce_unified's header):
+ * as long as DW and PW were two separate functions, each got its own
+ * private call site into whatever shared step function existed, no matter
+ * what that function was named or how its own PIPELINE was structured.
+ *
+ * DW and PW's outer tiling genuinely differs in what varies per "output
+ * tile" (`ot`): DW's `ot` is a channel-tile (8 channels, needs its own
+ * patch+weight staging every ot); PW's `ot` is a single output channel
+ * processed sequentially against spatial input staged ONCE per (rt,colt)
+ * and reused across every ot. Rather than force identical staging cost
+ * models onto both (not needed for this round's question -- DSP, not
+ * staging efficiency), both keep their own STAGE/WSTAGE and WRITEOUT
+ * bodies, branched on op_type. What's unconditional and genuinely shared:
+ * the (rt,colt,ot) loop nest itself (one nest, reused by both), RESET,
+ * and the single call into run_reduce_unified. */
+static void run_layer(const LayerDescV2 &d,
+                       const act_t in_base[], const wt_t w_base[], const acc_t b_base[],
+                       act_t out_base[])
 {
     const int Hin = d.h_in, Win = d.w_in;
     const int K = d.k, S = d.stride, P = d.pad;
     const int patch_r = (MAC_PR - 1) * S + K;
     const int patch_c = (MAC_PC - 1) * S + K;
+    const int Cin = d.cin, H = d.h_in, W = d.w_in;
 
-    for (int ct = 0; ct < d.n_ch_tiles; ct++) {
-        int c_sz = (ct == d.n_ch_tiles - 1) ? d.last_ch_tile : MAC_PD;
-        for (int rt = 0; rt < d.n_row_tiles; rt++) {
-            int r_sz = (rt == d.n_row_tiles - 1) ? d.last_row_tile : MAC_PR;
-            for (int colt = 0; colt < d.n_col_tiles; colt++) {
-                int col_sz = (colt == d.n_col_tiles - 1) ? d.last_col_tile : MAC_PC;
-
-                /* known simplification, not yet addressed this round: DW's
-                 * receptive-field reads overlap between spatial lanes
-                 * (sliding window), so unlike PW's disjoint Cin banking,
-                 * there is no clean compile-time-constant bank assignment
-                 * here without a real line-buffer/shift-register redesign
-                 * -- kept `complete` (register-file, correct but not
-                 * necessarily cheap) rather than guessing at a cyclic
-                 * factor that wouldn't actually avoid runtime address
-                 * decoding for the kh/kw-dependent, stride-scaled offset. */
-                act_t patch[MAC_PD][PATCH_R_MAX][PATCH_C_MAX];
-                wt_t  wtile[MAC_PD][MAX_K][MAX_K];
-                acc_t btile[MAC_PD];
-                acc_t acc[MAC_PD][MAC_PR][MAC_PC];
-                #pragma HLS ARRAY_PARTITION variable=patch complete dim=0
-                #pragma HLS ARRAY_PARTITION variable=wtile complete dim=0
-                #pragma HLS ARRAY_PARTITION variable=btile complete dim=0
-                #pragma HLS ARRAY_PARTITION variable=acc   complete dim=0
-
-                STAGE: for (int cc = 0; cc < c_sz; cc++) {
-                    int c = ct * MAC_PD + cc;
-                    btile[cc] = b_base[d.b_off + c];
-                    for (int kh = 0; kh < K; kh++)
-                        for (int kw = 0; kw < K; kw++)
-                            wtile[cc][kh][kw] = w_base[d.w_off + (c * K + kh) * K + kw];
-                    for (int pr = 0; pr < patch_r; pr++) {
-                        int ih = rt * MAC_PR * S - P + pr;
-                        for (int pc = 0; pc < patch_c; pc++) {
-                            int iw = colt * MAC_PC * S - P + pc;
-                            act_t v = 0;
-                            if (ih >= 0 && ih < Hin && iw >= 0 && iw < Win)
-                                v = in_base[d.in_off + (c * Hin + ih) * Win + iw];
-                            patch[cc][pr][pc] = v;
-                        }
-                    }
-                }
-
-                RESET: for (int d0 = 0; d0 < MAC_PD; d0++)
-                    for (int r0 = 0; r0 < MAC_PR; r0++)
-                        for (int c0 = 0; c0 < MAC_PC; c0++) {
-                            #pragma HLS UNROLL
-                            acc[d0][r0][c0] = 0;
-                        }
-
-                TAP_KH: for (int kh = 0; kh < MAX_K; kh++) {
-                    TAP_KW: for (int kw = 0; kw < MAX_K; kw++) {
-                        #pragma HLS PIPELINE II=1
-                        if (kh >= K || kw >= K) continue;
-                        act_t p_gather[MAC_PD][MAC_PR][MAC_PC];
-                        wt_t  w_gather[MAC_PD];
-                        #pragma HLS ARRAY_PARTITION variable=p_gather complete dim=0
-                        #pragma HLS ARRAY_PARTITION variable=w_gather complete dim=0
-                        GATHER_D: for (int dd = 0; dd < MAC_PD; dd++) {
-                            #pragma HLS UNROLL
-                            w_gather[dd] = wtile[dd][kh][kw];
-                            GATHER_R: for (int rr = 0; rr < MAC_PR; rr++) {
-                                #pragma HLS UNROLL
-                                GATHER_C: for (int cw = 0; cw < MAC_PC; cw++) {
-                                    #pragma HLS UNROLL
-                                    p_gather[dd][rr][cw] = patch[dd][rr * S + kh][cw * S + kw];
-                                }
-                            }
-                        }
-                        mac_reduce_step(p_gather, w_gather, acc);
-                    }
-                }
-
-                WRITEOUT: for (int idx = 0; idx < MAC_PD * MAC_PR * MAC_PC; idx++) {
-                    #pragma HLS PIPELINE II=1
-                    int dd = idx / (MAC_PR * MAC_PC);
-                    int rr = (idx / MAC_PC) % MAC_PR;
-                    int cw = idx % MAC_PC;
-                    if (dd >= c_sz || rr >= r_sz || cw >= col_sz) continue;
-                    int c  = ct * MAC_PD + dd;
-                    int oh = rt * MAC_PR + rr;
-                    int ow = colt * MAC_PC + cw;
-                    out_base[d.out_off + (c * d.h_out + oh) * d.w_out + ow] =
-                        (act_t)clip_shift(acc[dd][rr][cw] + btile[dd], d.out_shift);
-                }
-            }
-        }
-    }
-}
-
-/* ---- PW: pd=8 tiles Cin (the reduction axis), pr x pc=64 is the output
- * spatial tile computed in parallel every cycle. Output channels are
- * processed ONE AT A TIME (sequential `co` loop, not tiled) -- the 512
- * physical MACs are reused across all Cout channels, not replicated
- * Cout/8-wide the way round 3/4 did. patch's Cin dimension is cyclically
- * partitioned with factor=MAC_PD: since the reduction loop always steps
- * `cib` by exactly MAC_PD, `cib+d` (d compile-time 0..7) lands in bank
- * `d` -- a COMPILE-TIME-KNOWN bank for every unrolled lane, so no runtime
- * address decoder is needed at all (the fix for bug 2, applied only
- * where the access pattern is actually this clean -- see DW's patch
- * above for the case where it isn't). */
-static void run_pwconv(const LayerDescV2 &d,
-                        const act_t in_base[], const wt_t w_base[], const acc_t b_base[],
-                        act_t out_base[])
-{
-    const int Cin = d.cin, H = d.h_in, W = d.w_in;  /* PW: k=1,stride=1,pad=0 -> h_out=h_in, w_out=w_in */
+    const int n_ot = (d.op_type == LDESC_OP_DWCONV) ? d.n_ch_tiles : d.cout;
 
     for (int rt = 0; rt < d.n_row_tiles; rt++) {
         int r_sz = (rt == d.n_row_tiles - 1) ? d.last_row_tile : MAC_PR;
         for (int colt = 0; colt < d.n_col_tiles; colt++) {
             int col_sz = (colt == d.n_col_tiles - 1) ? d.last_col_tile : MAC_PC;
 
-            act_t patch[MAX_CIN_PW][MAC_PR][MAC_PC];
-            #pragma HLS ARRAY_PARTITION variable=patch cyclic factor=8 dim=1
-            #pragma HLS ARRAY_PARTITION variable=patch complete dim=2
-            #pragma HLS ARRAY_PARTITION variable=patch complete dim=3
-
-            STAGE: for (int ci = 0; ci < Cin; ci++) {
-                for (int rr = 0; rr < r_sz; rr++) {
-                    int oh = rt * MAC_PR + rr;
-                    for (int cw = 0; cw < col_sz; cw++) {
-                        int ow = colt * MAC_PC + cw;
-                        patch[ci][rr][cw] = in_base[d.in_off + (ci * H + oh) * W + ow];
+            /* PW's spatial patch: op-independent across ot (no reduction
+             * over dd here, dd tiles Cin -- see run_reduce_unified), so
+             * staged once per (rt,colt), same as round 5-10. Dummy/unused
+             * when op_type==DWCONV. */
+            act_t pw_patch[MAX_CIN_PW][MAC_PR][MAC_PC];
+            #pragma HLS ARRAY_PARTITION variable=pw_patch cyclic factor=8 dim=1
+            #pragma HLS ARRAY_PARTITION variable=pw_patch complete dim=2
+            #pragma HLS ARRAY_PARTITION variable=pw_patch complete dim=3
+            if (d.op_type == LDESC_OP_PWCONV) {
+                PW_STAGE: for (int ci = 0; ci < Cin; ci++) {
+                    for (int rr = 0; rr < r_sz; rr++) {
+                        int oh = rt * MAC_PR + rr;
+                        for (int cw = 0; cw < col_sz; cw++) {
+                            int ow = colt * MAC_PC + cw;
+                            pw_patch[ci][rr][cw] = in_base[d.in_off + (ci * H + oh) * W + ow];
+                        }
                     }
                 }
             }
 
-            CH_LOOP: for (int co = 0; co < d.cout; co++) {
-                wt_t  wtile[MAX_CIN_PW];
-                /* round 7: give each dd its own accumulator (512 total,
-                 * mirroring DW's acc[MAC_PD][MAC_PR][MAC_PC] exactly) instead
-                 * of round 6's shared acc[rr][cw] + separate psum[] tree.
-                 * round 6 fixed REDUCE's II by moving the 8-way sum off the
-                 * carried-dependency path, but splitting the multiply from
-                 * its accumulate broke Vitis's a*b+=acc -> DSP48-mac-adder
-                 * pattern match, so all 512 multiplies fell back to LUT
-                 * fabric (measured: pwconv DSP 524->12, LUT 40,791->66,453).
-                 * Per-dd accumulation keeps `acc[dd][rr][cw] += a*b` intact
-                 * -- the exact form DW already proves binds to mac_muladd/
-                 * dsp_slice at II=1 -- and pushes the 8-way combine out of
-                 * the pipelined region entirely, into WRITEOUT (executed
-                 * once per output channel, not once per ct iteration, so it
-                 * carries no loop-carried dependency to violate II=1 there
-                 * either). Costs 7*MAC_PR*MAC_PC=448 extra acc_t registers
-                 * (~14k FF) versus round 5/6. */
+            for (int ot = 0; ot < n_ot; ot++) {
+                /* known simplification, not yet addressed: DW's receptive-
+                 * field reads overlap between spatial lanes (sliding
+                 * window), so unlike PW's disjoint Cin banking there is no
+                 * clean compile-time-constant bank assignment here without
+                 * a real line-buffer/shift-register redesign -- kept
+                 * `complete` (register-file, correct but not necessarily
+                 * cheap). Dummy/unused when op_type==PWCONV. */
+                act_t dw_patch[MAC_PD][PATCH_R_MAX][PATCH_C_MAX];
+                wt_t  dw_wtile[MAC_PD][MAX_K][MAX_K];
+                acc_t dw_btile[MAC_PD];
+                #pragma HLS ARRAY_PARTITION variable=dw_patch complete dim=0
+                #pragma HLS ARRAY_PARTITION variable=dw_wtile complete dim=0
+                #pragma HLS ARRAY_PARTITION variable=dw_btile complete dim=0
+
+                wt_t   pw_wtile[MAX_CIN_PW];
+                acc_t  pw_bias_val = 0;
+                #pragma HLS ARRAY_PARTITION variable=pw_wtile cyclic factor=8 dim=1
+
+                int c_sz = MAC_PD;
+
+                if (d.op_type == LDESC_OP_DWCONV) {
+                    c_sz = (ot == d.n_ch_tiles - 1) ? d.last_ch_tile : MAC_PD;
+                    DW_STAGE: for (int cc = 0; cc < c_sz; cc++) {
+                        int c = ot * MAC_PD + cc;
+                        dw_btile[cc] = b_base[d.b_off + c];
+                        for (int kh = 0; kh < K; kh++)
+                            for (int kw = 0; kw < K; kw++)
+                                dw_wtile[cc][kh][kw] = w_base[d.w_off + (c * K + kh) * K + kw];
+                        for (int pr = 0; pr < patch_r; pr++) {
+                            int ih = rt * MAC_PR * S - P + pr;
+                            for (int pc = 0; pc < patch_c; pc++) {
+                                int iw = colt * MAC_PC * S - P + pc;
+                                act_t v = 0;
+                                if (ih >= 0 && ih < Hin && iw >= 0 && iw < Win)
+                                    v = in_base[d.in_off + (c * Hin + ih) * Win + iw];
+                                dw_patch[cc][pr][pc] = v;
+                            }
+                        }
+                    }
+                } else {
+                    PW_WSTAGE: for (int ci = 0; ci < MAX_CIN_PW; ci++)
+                        pw_wtile[ci] = (ci < Cin) ? w_base[d.w_off + ot * Cin + ci] : (wt_t)0;
+                    pw_bias_val = b_base[d.b_off + ot];
+                }
+
                 acc_t acc[MAC_PD][MAC_PR][MAC_PC];
-                #pragma HLS ARRAY_PARTITION variable=wtile cyclic factor=8 dim=1
-                #pragma HLS ARRAY_PARTITION variable=acc   complete dim=0
-
-                /* round 8: the last (possibly partial) channel tile used to
-                 * be guarded with `if (dd >= chunk_sz) continue` INSIDE the
-                 * unrolled LANE_D loop -- a runtime-valued (chunk_sz derives
-                 * from d.last_ch_tile) comparison replicated once per
-                 * physical lane/accumulator, same class of error as ZHR-92's
-                 * "runtime value inside an UNROLLed region" even though it's
-                 * a guard, not a loop bound. Zero-padding wtile out to the
-                 * full MAX_CIN_PW here (staging, not unrolled -- a plain
-                 * Cin<=32-iteration sequential loop) makes every out-of-
-                 * range cib+dd multiply-by-zero and harmless, so the guard
-                 * can be deleted from REDUCE entirely instead of replicated
-                 * 512 times. */
-                WSTAGE: for (int ci = 0; ci < MAX_CIN_PW; ci++)
-                    wtile[ci] = (ci < Cin) ? w_base[d.w_off + co * Cin + ci] : (wt_t)0;
-                acc_t bias_val = b_base[d.b_off + co];
-
+                #pragma HLS ARRAY_PARTITION variable=acc complete dim=0
                 RESET: for (int d0 = 0; d0 < MAC_PD; d0++)
                     for (int r0 = 0; r0 < MAC_PR; r0++)
                         for (int c0 = 0; c0 < MAC_PC; c0++) {
@@ -254,39 +238,39 @@ static void run_pwconv(const LayerDescV2 &d,
                             acc[d0][r0][c0] = 0;
                         }
 
-                REDUCE: for (int ct = 0; ct < d.n_ch_tiles; ct++) {
-                    #pragma HLS PIPELINE II=1
-                    int cib = ct * MAC_PD;
-                    act_t p_gather[MAC_PD][MAC_PR][MAC_PC];
-                    wt_t  w_gather[MAC_PD];
-                    #pragma HLS ARRAY_PARTITION variable=p_gather complete dim=0
-                    #pragma HLS ARRAY_PARTITION variable=w_gather complete dim=0
-                    GATHER_D: for (int dd = 0; dd < MAC_PD; dd++) {
-                        #pragma HLS UNROLL
-                        w_gather[dd] = wtile[cib + dd];
-                        GATHER_R: for (int rr = 0; rr < MAC_PR; rr++) {
-                            #pragma HLS UNROLL
-                            GATHER_C: for (int cw = 0; cw < MAC_PC; cw++) {
-                                #pragma HLS UNROLL
-                                p_gather[dd][rr][cw] = patch[cib + dd][rr][cw];
-                            }
-                        }
-                    }
-                    mac_reduce_step(p_gather, w_gather, acc);
-                }
+                int n_steps = (d.op_type == LDESC_OP_DWCONV) ? (MAX_K * MAX_K) : d.n_ch_tiles;
+                run_reduce_unified(d.op_type, n_steps,
+                                    dw_patch, dw_wtile, K, S,
+                                    pw_patch, pw_wtile,
+                                    acc);
 
-                WRITEOUT: for (int idx = 0; idx < MAC_PR * MAC_PC; idx++) {
-                    #pragma HLS PIPELINE II=1
-                    int rr = idx / MAC_PC, cw = idx % MAC_PC;
-                    if (rr >= r_sz || cw >= col_sz) continue;
-                    int oh = rt * MAC_PR + rr, ow = colt * MAC_PC + cw;
-                    acc_t s0 = acc[0][rr][cw] + acc[1][rr][cw];
-                    acc_t s1 = acc[2][rr][cw] + acc[3][rr][cw];
-                    acc_t s2 = acc[4][rr][cw] + acc[5][rr][cw];
-                    acc_t s3 = acc[6][rr][cw] + acc[7][rr][cw];
-                    acc_t total = (s0 + s1) + (s2 + s3);
-                    out_base[d.out_off + (co * d.h_out + oh) * d.w_out + ow] =
-                        (act_t)clip_shift(total + bias_val, d.out_shift);
+                if (d.op_type == LDESC_OP_DWCONV) {
+                    WRITEOUT_DW: for (int idx = 0; idx < MAC_PD * MAC_PR * MAC_PC; idx++) {
+                        #pragma HLS PIPELINE II=1
+                        int dd = idx / (MAC_PR * MAC_PC);
+                        int rr = (idx / MAC_PC) % MAC_PR;
+                        int cw = idx % MAC_PC;
+                        if (dd >= c_sz || rr >= r_sz || cw >= col_sz) continue;
+                        int c  = ot * MAC_PD + dd;
+                        int oh = rt * MAC_PR + rr;
+                        int ow = colt * MAC_PC + cw;
+                        out_base[d.out_off + (c * d.h_out + oh) * d.w_out + ow] =
+                            (act_t)clip_shift(acc[dd][rr][cw] + dw_btile[dd], d.out_shift);
+                    }
+                } else {
+                    WRITEOUT_PW: for (int idx = 0; idx < MAC_PR * MAC_PC; idx++) {
+                        #pragma HLS PIPELINE II=1
+                        int rr = idx / MAC_PC, cw = idx % MAC_PC;
+                        if (rr >= r_sz || cw >= col_sz) continue;
+                        int oh = rt * MAC_PR + rr, ow = colt * MAC_PC + cw;
+                        acc_t s0 = acc[0][rr][cw] + acc[1][rr][cw];
+                        acc_t s1 = acc[2][rr][cw] + acc[3][rr][cw];
+                        acc_t s2 = acc[4][rr][cw] + acc[5][rr][cw];
+                        acc_t s3 = acc[6][rr][cw] + acc[7][rr][cw];
+                        acc_t total = (s0 + s1) + (s2 + s3);
+                        out_base[d.out_off + (ot * d.h_out + oh) * d.w_out + ow] =
+                            (act_t)clip_shift(total + pw_bias_val, d.out_shift);
+                    }
                 }
             }
         }
@@ -303,10 +287,7 @@ void mac_array_top(
     int          out_written[])
 {
     for (int i = 0; i < n_layers; i++) {
-        if (desc[i].op_type == LDESC_OP_DWCONV)
-            run_dwconv(desc[i], in_base, w_base, b_base, out_base);
-        else
-            run_pwconv(desc[i], in_base, w_base, b_base, out_base);
+        run_layer(desc[i], in_base, w_base, b_base, out_base);
         out_written[i] = 1;
     }
 }
