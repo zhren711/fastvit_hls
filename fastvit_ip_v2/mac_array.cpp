@@ -30,6 +30,47 @@ static acc_t clip_shift(acc_t acc, int shift)
     return v;
 }
 
+/* ---- round 14: the actual MAC application, and ONLY the MAC
+ * application, as its own non-inlined, function-pipelined unit. Reads
+ * only the already-gathered lane_in/lane_w -- zero runtime addressing of
+ * any kind inside it, so round 12/13's dw_S and kh/kw problems can't
+ * recur here regardless of what fills lane_in upstream. `#pragma HLS
+ * PIPELINE II=1` is at FUNCTION scope (no loop inside after the 512-way
+ * unroll collapses to combinational-ish logic), which pipelines the
+ * CALL sequence itself for back-to-back invocation, without requiring
+ * the CALLER's loop to carry its own PIPELINE annotation. That's the
+ * point: round 9/10 failed because the call sat inside a caller-owned
+ * PIPELINE'd loop, which forces a dedicated per-caller instance to
+ * guarantee that loop's own II. Here neither caller loop (DW's tap nest,
+ * PW's step loop, both below) is itself PIPELINE'd -- they're ordinary
+ * sequential loops that happen to call a function-pipelined callee --
+ * so HLS's normal resource sharing across mutually-exclusive callers
+ * (round 11's mechanism) should apply. Not yet proven for two SEPARATE
+ * call sites reached via two SEPARATE (if merely non-pipelined) loops in
+ * the same function -- round 11 only tested one call site -- so this is
+ * this round's first and decisive check, not an assumption. */
+static void drive_mac(
+    const act_t lane_in[MAC_PD][MAC_PR][MAC_PC],
+    const wt_t  lane_w[MAC_PD],
+    acc_t       acc[MAC_PD][MAC_PR][MAC_PC])
+{
+    #pragma HLS INLINE off
+    #pragma HLS PIPELINE II=1
+    #pragma HLS ARRAY_PARTITION variable=lane_in complete dim=0
+    #pragma HLS ARRAY_PARTITION variable=lane_w  complete dim=0
+    #pragma HLS ARRAY_PARTITION variable=acc     complete dim=0
+    LANE_D: for (int dd = 0; dd < MAC_PD; dd++) {
+        #pragma HLS UNROLL
+        LANE_R: for (int rr = 0; rr < MAC_PR; rr++) {
+            #pragma HLS UNROLL
+            LANE_C: for (int cw = 0; cw < MAC_PC; cw++) {
+                #pragma HLS UNROLL
+                acc[dd][rr][cw] += (acc_t)lane_in[dd][rr][cw] * (acc_t)lane_w[dd];
+            }
+        }
+    }
+}
+
 /* ---- round 10: genuinely shared 512-MAC pipeline. Round 9 put
  * `#pragma HLS PIPELINE II=1` on each CALLER's own step loop
  * (TAP_KH_TAP_KW, REDUCE) and called a shared-but-not-inlined
@@ -71,36 +112,94 @@ static void run_reduce_unified(
     const wt_t  pw_wtile[MAX_CIN_PW],
     acc_t acc[MAC_PD][MAC_PR][MAC_PC])
 {
+    /* round 15: cyclic factor was hardcoded to 8 (matching the old fixed
+     * MAC_PD=8) at all four sites in this file; caught while dropping
+     * MAC_PD to 2 -- with a hardcoded 8, bank=(cib+dd) mod 8 stops being
+     * compile-time-known for unrolled dd once cib=step*MAC_PD's stride no
+     * longer equals the partition factor, reopening a runtime bank-select
+     * cost round 5/8 already eliminated. Must always equal MAC_PD. */
     #pragma HLS ARRAY_PARTITION variable=dw_patch complete dim=0
     #pragma HLS ARRAY_PARTITION variable=dw_wtile complete dim=0
-    #pragma HLS ARRAY_PARTITION variable=pw_patch cyclic factor=8 dim=1
+    #pragma HLS ARRAY_PARTITION variable=pw_patch cyclic factor=MAC_PD dim=1
     #pragma HLS ARRAY_PARTITION variable=pw_patch complete dim=2
     #pragma HLS ARRAY_PARTITION variable=pw_patch complete dim=3
-    #pragma HLS ARRAY_PARTITION variable=pw_wtile cyclic factor=8 dim=1
+    #pragma HLS ARRAY_PARTITION variable=pw_wtile cyclic factor=MAC_PD dim=1
     #pragma HLS ARRAY_PARTITION variable=acc      complete dim=0
 
-    UNIFIED: for (int step = 0; step < n_steps; step++) {
-        #pragma HLS PIPELINE II=1
-        act_t lane_in[MAC_PD][MAC_PR][MAC_PC];
-        wt_t  lane_w[MAC_PD];
-        #pragma HLS ARRAY_PARTITION variable=lane_in complete dim=0
-        #pragma HLS ARRAY_PARTITION variable=lane_w  complete dim=0
+    /* round 13: round 12's `int kh = step / MAX_K, kw = step % MAX_K`
+     * was the real problem, one level deeper than the dw_S fix reached.
+     * step is a genuine runtime pipeline induction variable (this loop
+     * body is shared with PW, whose n_steps is a real runtime value, so
+     * the compiler can never prove DW's call always sees exactly 9) --
+     * so step/MAX_K and step%MAX_K are real divide/modulo hardware whose
+     * result fans out into 512 lane addresses + 8 weight lookups + the
+     * valid check, and HLS replicates that decode along the fanout to
+     * hold II=1 (confirmed: the `sparsemux_*` cores in round 12's
+     * Instance bucket, ~3000+ of them). Round 5, 8, and 12 each cleared
+     * a different form of "runtime value inside the 512-lane region"
+     * (loop bound, guard, dynamic index); this is a fourth form --
+     * an induction variable's *derived* value, still runtime despite
+     * looking like it comes from a loop.
+     *
+     * Fix: DW gets its own doubly-nested compile-time loop (kh, kw each
+     * 0..MAX_K-1, both literal bounds) so kh/kw are genuine loop
+     * induction variables of directly-bounded loops, not arithmetic
+     * derived from a shared flat counter -- the pattern Vitis can
+     * actually constant-propagate per pipeline stage. This makes DW's
+     * LANE_D/R/C block textually distinct from PW's (duplicated source,
+     * not shared) -- unavoidable once DW's iteration can no longer share
+     * PW's parameterized-bound step loop. Whether this reintroduces
+     * round 9/10's two-separate-pipelines duplication (DSP 512->1024) is
+     * this round's first and decisive check, not assumed either way. */
+    if (op_type == LDESC_OP_DWCONV) {
+        DW_TAP_H: for (int kh = 0; kh < MAX_K; kh++) {
+            DW_TAP_W: for (int kw = 0; kw < MAX_K; kw++) {
+                /* round 14: no PIPELINE here -- this loop is ordinary
+                 * sequential control flow; drive_mac carries its own
+                 * pipelining. See drive_mac's header for why. */
+                bool valid = (kh < dw_K) && (kw < dw_K);
+                act_t lane_in[MAC_PD][MAC_PR][MAC_PC];
+                wt_t  lane_w[MAC_PD];
+                #pragma HLS ARRAY_PARTITION variable=lane_in complete dim=0
+                #pragma HLS ARRAY_PARTITION variable=lane_w  complete dim=0
 
-        if (op_type == LDESC_OP_DWCONV) {
-            int kh = step / MAX_K, kw = step % MAX_K;
-            bool valid = (kh < dw_K) && (kw < dw_K);
-            GATHER_DW_D: for (int dd = 0; dd < MAC_PD; dd++) {
-                #pragma HLS UNROLL
-                lane_w[dd] = valid ? dw_wtile[dd][kh][kw] : (wt_t)0;
-                GATHER_DW_R: for (int rr = 0; rr < MAC_PR; rr++) {
-                    #pragma HLS UNROLL
-                    GATHER_DW_C: for (int cw = 0; cw < MAC_PC; cw++) {
+                if (dw_S == 1) {
+                    GATHER_DW_D_S1: for (int dd = 0; dd < MAC_PD; dd++) {
                         #pragma HLS UNROLL
-                        lane_in[dd][rr][cw] = dw_patch[dd][rr * dw_S + kh][cw * dw_S + kw];
+                        lane_w[dd] = valid ? dw_wtile[dd][kh][kw] : (wt_t)0;
+                        GATHER_DW_R_S1: for (int rr = 0; rr < MAC_PR; rr++) {
+                            #pragma HLS UNROLL
+                            GATHER_DW_C_S1: for (int cw = 0; cw < MAC_PC; cw++) {
+                                #pragma HLS UNROLL
+                                lane_in[dd][rr][cw] = dw_patch[dd][rr * 1 + kh][cw * 1 + kw];
+                            }
+                        }
+                    }
+                } else {
+                    GATHER_DW_D_S2: for (int dd = 0; dd < MAC_PD; dd++) {
+                        #pragma HLS UNROLL
+                        lane_w[dd] = valid ? dw_wtile[dd][kh][kw] : (wt_t)0;
+                        GATHER_DW_R_S2: for (int rr = 0; rr < MAC_PR; rr++) {
+                            #pragma HLS UNROLL
+                            GATHER_DW_C_S2: for (int cw = 0; cw < MAC_PC; cw++) {
+                                #pragma HLS UNROLL
+                                lane_in[dd][rr][cw] = dw_patch[dd][rr * 2 + kh][cw * 2 + kw];
+                            }
+                        }
                     }
                 }
+
+                drive_mac(lane_in, lane_w, acc);
             }
-        } else {
+        }
+    } else {
+        UNIFIED_PW: for (int step = 0; step < n_steps; step++) {
+            /* round 14: no PIPELINE here either -- same reasoning. */
+            act_t lane_in[MAC_PD][MAC_PR][MAC_PC];
+            wt_t  lane_w[MAC_PD];
+            #pragma HLS ARRAY_PARTITION variable=lane_in complete dim=0
+            #pragma HLS ARRAY_PARTITION variable=lane_w  complete dim=0
+
             int cib = step * MAC_PD;
             GATHER_PW_D: for (int dd = 0; dd < MAC_PD; dd++) {
                 #pragma HLS UNROLL
@@ -113,17 +212,8 @@ static void run_reduce_unified(
                     }
                 }
             }
-        }
 
-        LANE_D: for (int dd = 0; dd < MAC_PD; dd++) {
-            #pragma HLS UNROLL
-            LANE_R: for (int rr = 0; rr < MAC_PR; rr++) {
-                #pragma HLS UNROLL
-                LANE_C: for (int cw = 0; cw < MAC_PC; cw++) {
-                    #pragma HLS UNROLL
-                    acc[dd][rr][cw] += (acc_t)lane_in[dd][rr][cw] * (acc_t)lane_w[dd];
-                }
-            }
+            drive_mac(lane_in, lane_w, acc);
         }
     }
 }
@@ -168,7 +258,7 @@ static void run_layer(const LayerDescV2 &d,
              * staged once per (rt,colt), same as round 5-10. Dummy/unused
              * when op_type==DWCONV. */
             act_t pw_patch[MAX_CIN_PW][MAC_PR][MAC_PC];
-            #pragma HLS ARRAY_PARTITION variable=pw_patch cyclic factor=8 dim=1
+            #pragma HLS ARRAY_PARTITION variable=pw_patch cyclic factor=MAC_PD dim=1
             #pragma HLS ARRAY_PARTITION variable=pw_patch complete dim=2
             #pragma HLS ARRAY_PARTITION variable=pw_patch complete dim=3
             if (d.op_type == LDESC_OP_PWCONV) {
@@ -200,7 +290,7 @@ static void run_layer(const LayerDescV2 &d,
 
                 wt_t   pw_wtile[MAX_CIN_PW];
                 acc_t  pw_bias_val = 0;
-                #pragma HLS ARRAY_PARTITION variable=pw_wtile cyclic factor=8 dim=1
+                #pragma HLS ARRAY_PARTITION variable=pw_wtile cyclic factor=MAC_PD dim=1
 
                 int c_sz = MAC_PD;
 
@@ -263,11 +353,16 @@ static void run_layer(const LayerDescV2 &d,
                         int rr = idx / MAC_PC, cw = idx % MAC_PC;
                         if (rr >= r_sz || cw >= col_sz) continue;
                         int oh = rt * MAC_PR + rr, ow = colt * MAC_PC + cw;
-                        acc_t s0 = acc[0][rr][cw] + acc[1][rr][cw];
-                        acc_t s1 = acc[2][rr][cw] + acc[3][rr][cw];
-                        acc_t s2 = acc[4][rr][cw] + acc[5][rr][cw];
-                        acc_t s3 = acc[6][rr][cw] + acc[7][rr][cw];
-                        acc_t total = (s0 + s1) + (s2 + s3);
+                        /* round 15: generic MAC_PD-wide combine (was
+                         * hardcoded to 8 terms when MAC_PD was fixed at
+                         * 8 -- now a compile-time-bounded unrolled sum so
+                         * it stays correct at MAC_PD=2 and any other
+                         * future width). */
+                        acc_t total = 0;
+                        COMBINE: for (int dd = 0; dd < MAC_PD; dd++) {
+                            #pragma HLS UNROLL
+                            total += acc[dd][rr][cw];
+                        }
                         out_base[d.out_off + (ot * d.h_out + oh) * d.w_out + ow] =
                             (act_t)clip_shift(total + pw_bias_val, d.out_shift);
                     }

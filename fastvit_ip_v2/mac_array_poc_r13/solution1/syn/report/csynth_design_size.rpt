@@ -1,0 +1,53 @@
+================================================================
+== Design Size Report
+================================================================
+
+* Total Instructions per Compilation Phase
++---------------+-----------------------------+--------------+----------------------------------------------------------------------------------------+
+| Phase         | Step                        | Instructions | Description                                                                            |
++---------------+-----------------------------+--------------+----------------------------------------------------------------------------------------+
+| Compile/Link  |                             |   2,864      | After all functions are compiled and linked into a single design                       |
+|               |                             |              |                                                                                        |
+| Unroll/Inline |                             |              | After user unroll and inline pragmas are applied                                       |
+|               | (1) unroll                  |  17,764      | user unroll pragmas are applied                                                        |
+|               | (2) simplification          |  14,557      | simplification of applied user unroll pragmas                                          |
+|               | (3) inline                  |  13,508      | user inline pragmas are applied                                                        |
+|               | (4) simplification          |  13,486      | simplification of applied user inline pragmas                                          |
+|               |                             |              |                                                                                        |
+| Array/Struct  |                             |              | After user array partition and struct aggregate/disaggregate pragmas are applied       |
+|               | (1) array partition         | 321,678 *    | user array partition pragmas are applied                                               |
+|               | (2) simplification          |  38,041      | simplification of applied user array partition & struct aggregate/disaggregate pragmas |
+|               | (3) aggregate/disaggregate  |  38,104      | user struct aggregate/disaggregate pragmas are applied                                 |
+|               | (4) array reshape           |  38,083      | apply array reshape pragmas                                                            |
+|               | (5) access patterns         |  70,985      | array access pattern optmizations                                                      |
+|               |                             |              |                                                                                        |
+| Performance   |                             |              | After transformations are applied to meet performance pragma targets                   |
+|               | (1) loop simplification     |  52,566      | loop and instruction simplification                                                    |
+|               | (2) parallelization         |  43,828      | loops are unrolled or pipelined to meet performance targets                            |
+|               | (3) array partition         |  43,816      | arrays are partitioned to meet performance targets                                     |
+|               | (4) simplification          |  43,809      | simplification of design after performance transformations                             |
+|               |                             |              |                                                                                        |
+| HW Transforms |                             |              | After hardware transfomations                                                          |
+|               | (1) lowering                |  43,753      | initial conversion to HW specific instructions                                         |
+|               | (2) optimizations           |  38,838      | high level synthesis optimizations                                                     |
++---------------+-----------------------------+--------------+----------------------------------------------------------------------------------------+
+    * - Exceeded design size warning message threshold
+
+* Instructions per Function for each Compilation Phase
++------------------------+-------------------+----------------+---------------+--------------+-------------+---------------+
+| Function               | Location          | Compile/Link   | Unroll/Inline | Array/Struct | Performance | HW Transforms |
++------------------------+-------------------+----------------+---------------+--------------+-------------+---------------+
+| + mac_array_top        | mac_array.cpp:339 | 2,864          | 13,486        | 70,985       | 43,809      | 38,838        |
+|  + run_layer           | mac_array.cpp:208 | 2,848          | 13,472        | 70,971       | 43,795      | 38,808        |
+|     run_reduce_unified | mac_array.cpp:62  |  752           | 13,048        | 15,684       | 10,929      | 10,939        |
+|     clip_shift         | mac_array.cpp:25  |  290 (2 calls) |               |              |             |               |
++------------------------+-------------------+----------------+---------------+--------------+-------------+---------------+
+
+* Design Size Message Settings
++---------------------------------------------+--------+------------------------------------------------------------------+
+| Message Setting                             | Value  | Description                                                      |
++---------------------------------------------+--------+------------------------------------------------------------------+
+| config_compile -design_size_maximum_warning | 100000 | Show a warning when total design instructions exceeds this value |
++---------------------------------------------+--------+------------------------------------------------------------------+
+
+

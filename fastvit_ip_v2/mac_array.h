@@ -67,12 +67,28 @@ typedef ap_int<8>   act_t;   /* activation, matches fastvit_ip's act_t */
 typedef ap_int<8>   wt_t;    /* weight */
 typedef ap_int<32>  acc_t;   /* accumulator / bias */
 
-/* pr x pc x pd = 8x8x8 = 512 physical MACs (ZHR-63 Phase A array geometry,
- * confirmed 2026-08-16). pd's role differs by op (see the round-5 note
- * above): DW's real parallel channel axis vs. PW's reduction-tile axis. */
-#define MAC_PR 8   /* output-row tile size (both ops)   */
+/* round 15 (2026-08-20): pr x pc x pd = 4x8x2 = 64 physical MACs --
+ * DELIBERATE, REGISTERED reproduction deviation from the paper's literal
+ * 8x8x8=512 (see ZHR-64 sec.8 checklist + comment log). Rounds 11-14
+ * proved DSP can be shared across DW/PW at 512-wide (535 DSP), but every
+ * variant blew LUT (2.4x+ over budget) and/or FF (up to 160%) at that
+ * width -- confirmed NOT a timing artifact (all csynth so far is at the
+ * loose 10ns/100MHz constraint; never even attempted 200MHz), so lowering
+ * clock cannot recover resources here. Dropping array width is the only
+ * lever that actually shrinks LUT/FF/DSP. Throughput cost is ~8x
+ * (~280ms vs the 512-wide ideal's ~35ms @100MHz) -- registered in advance,
+ * not a surprise if that's what round 15's on-chip numbers eventually
+ * show. Goal of this width is getting a complete, correct, real-hardware-
+ * measured system first (Add/GELU/ReLU/SE/GAP/layer controller/AXI-DMA,
+ * none of which exist yet); array width is revisited as an independently
+ * sweepable parameter once that system exists and each point can be
+ * verified on real hardware instead of csynth estimates alone (this
+ * project has never run a single P&R). pd's role differs by op (see the
+ * round-5 note above): DW's real parallel channel axis vs. PW's
+ * reduction-tile axis. */
+#define MAC_PR 4   /* output-row tile size (both ops)   */
 #define MAC_PC 8   /* output-col tile size (both ops)   */
-#define MAC_PD 8   /* DW: channel tile. PW: Cin reduction-chunk size. */
+#define MAC_PD 2   /* DW: channel tile. PW: Cin reduction-chunk size. */
 
 /* Compile-time bounds for on-chip staging buffers -- sized for this PoC's
  * test problem (Cin<=32), NOT arbitrary real FastViT layer sizes (e.g.
