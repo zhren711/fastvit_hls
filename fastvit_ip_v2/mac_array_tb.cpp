@@ -193,6 +193,21 @@ static void golden_scale(const LayerDescV2 &d, const std::vector<int8_t> &in, st
     }
 }
 
+/* layer_scale: same shape as golden_scale, op1 read from the WEIGHT
+ * buffer (w_off, cin values) instead of the activation buffer. */
+static void golden_lscale(const LayerDescV2 &d, const std::vector<int8_t> &in,
+                           const std::vector<int8_t> &w, std::vector<int8_t> &out)
+{
+    int HW = d.h_in * d.w_in;
+    for (int c = 0; c < d.cin; c++) {
+        int8_t gate = w[d.w_off + c];
+        for (int i = 0; i < HW; i++) {
+            int64_t prod = (int64_t)in[d.in_off + c * HW + i] * (int64_t)gate;
+            out[d.out_off + c * HW + i] = (int8_t)g_clip_shift(prod, d.out_shift);
+        }
+    }
+}
+
 /* independent, plain-int re-derivation matching mac_array.h's contract --
  * deliberately NOT calling derive_mac_array_params(), same spirit as the
  * Python cross-check but exercised here too so the dump reflects what an
@@ -911,6 +926,76 @@ int main()
                "%s (%d/%d mismatches)\n", phase9_ok ? "PASS" : "FAIL", mismatches_9, S9_TOTAL);
     }
 
+    /* ================= PHASE 10: layer_scale (A2, real block pattern) =================
+     * DW(token_mixer, identity branch) + PW(stands in for mlp/fc2 output)
+     * -> LSCALE(applied to the PW/fc2 output, gate from w_base) ->
+     * Add(op0=DW's raw output, op1=LSCALE's output) -- the exact real
+     * FastViT-T8 block pattern (token_mixer -> [mlp branch -> fc2 ->
+     * layer_scale] -> Add with the identity branch), confirmed from
+     * layer_dag_ground_truth.json's multi_input_nodes. */
+    bool phase10_ok = false;
+    {
+        LayerDescV2 desc10[4];
+        desc10[0] = LayerDescV2{ LDESC_OP_DWCONV, /*cin*/6, /*cout*/6, /*h_in*/10, /*w_in*/10,
+                                  /*k*/3, /*stride*/1, /*pad*/1, /*fpg*/1, /*out_shift*/6,
+                                  /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/600 };
+        desc10[1] = LayerDescV2{ LDESC_OP_PWCONV, /*cin*/8, /*cout*/6, /*h_in*/10, /*w_in*/10,
+                                  /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/6,
+                                  /*in_off*/1200, /*w_off*/54, /*b_off*/6, /*out_off*/2000 };
+        desc10[2] = LayerDescV2{ LDESC_OP_LSCALE, /*cin*/6, /*cout*/6, /*h_in*/10, /*w_in*/10,
+                                  /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/6,
+                                  /*in_off*/2000, /*w_off*/102, /*b_off*/0, /*out_off*/2600 };
+        desc10[3] = LayerDescV2{ LDESC_OP_ADD, /*cin*/6, /*cout*/6, /*h_in*/10, /*w_in*/10,
+                                  /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/0,
+                                  /*in_off*/600, /*w_off*/0, /*b_off*/0, /*out_off*/3200 };
+        desc10[3].in2_off = 2600;  /* op0=DW's raw output (identity branch), op1=LSCALE output */
+        for (int i = 0; i < 4; i++) {
+            MacArrayParams p = derive_mac_array_params(desc10[i]);
+            desc10[i].h_out = p.h_out; desc10[i].w_out = p.w_out;
+            desc10[i].n_row_tiles = p.n_row_tiles; desc10[i].n_col_tiles = p.n_col_tiles; desc10[i].n_ch_tiles = p.n_ch_tiles;
+            desc10[i].last_row_tile = p.last_row_tile; desc10[i].last_col_tile = p.last_col_tile; desc10[i].last_ch_tile = p.last_ch_tile;
+        }
+
+        const int F10_TOTAL = 3800;  /* D_in(600)+D_out(600)+P_in(800)+P_out(600)+LSCALE_out(600)+Add_out(600) */
+        const int W10_TOTAL = 54 + 48 + 6;  /* D_w + P_w + lscale gate (cin=6) */
+        const int B10_TOTAL = 6 + 6;
+
+        std::vector<int8_t>  f10_gold(F10_TOTAL, 0);
+        std::vector<int8_t>  w10_gold(W10_TOTAL, 0);
+        std::vector<int32_t> b10_gold(B10_TOTAL, 0);
+        Lcg rng10(0x15CA1E00);
+        for (int i = 0; i < 600; i++)       f10_gold[desc10[0].in_off + i] = rng10.next_i8();
+        for (int i = 0; i < 800; i++)       f10_gold[desc10[1].in_off + i] = rng10.next_i8();
+        for (int i = 0; i < W10_TOTAL; i++) w10_gold[i] = rng10.next_i8();
+        for (int i = 0; i < B10_TOTAL; i++) b10_gold[i] = (int32_t)rng10.next_i8() * 4;
+
+        int h10d, w10d, h10p, w10p;
+        golden_out_dims(desc10[0], h10d, w10d);
+        golden_out_dims(desc10[1], h10p, w10p);
+        std::vector<int8_t> f10_expected = f10_gold;
+        golden_dwconv(desc10[0], h10d, w10d, f10_expected, w10_gold, b10_gold, f10_expected);
+        golden_pwconv(desc10[1], h10p, w10p, f10_expected, w10_gold, b10_gold, f10_expected);
+        golden_lscale(desc10[2], f10_expected, w10_gold, f10_expected);
+        golden_add(desc10[3], f10_expected, f10_expected);
+
+        std::vector<act_t> f10(F10_TOTAL, act_t(0));
+        std::vector<wt_t>  w10buf(W10_TOTAL, wt_t(0));
+        std::vector<acc_t> b10buf(B10_TOTAL, acc_t(0));
+        for (int i = 0; i < F10_TOTAL; i++) f10[i] = act_t(f10_gold[i]);
+        for (int i = 0; i < W10_TOTAL; i++) w10buf[i] = wt_t(w10_gold[i]);
+        for (int i = 0; i < B10_TOTAL; i++) b10buf[i] = acc_t(b10_gold[i]);
+
+        int w10ritten[4] = {0, 0, 0, 0};
+        mac_array_top(desc10, 4, f10.data(), w10buf.data(), b10buf.data(), f10.data(), w10ritten);
+
+        int mismatches_10 = 0;
+        for (int i = 0; i < F10_TOTAL; i++)
+            if ((int8_t)f10[i] != f10_expected[i]) mismatches_10++;
+        phase10_ok = (mismatches_10 == 0);
+        printf("[Phase10] DW+PW->LSCALE->Add (real block pattern): %s (%d/%d mismatches)\n",
+               phase10_ok ? "PASS" : "FAIL", mismatches_10, F10_TOTAL);
+    }
+
     printf("\n[Summary] Phase0 (stride=2 DW correctness): %s\n", phase0_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase1 (correctness + no collateral writes): %s\n", phase1_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase2 (self-verification catches a silently-dropped write): %s\n", phase2_ok ? "PASS" : "FAIL");
@@ -921,6 +1006,7 @@ int main()
     printf("[Summary] Phase7 (GELU, A1 operator coverage complete): %s\n", phase7_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase8 (K=7 DW correctness, A2 pre-step): %s\n", phase8_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase9 (fpg=2 DW correctness, real stage-downsample shape): %s\n", phase9_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase10 (layer_scale, real block pattern): %s\n", phase10_ok ? "PASS" : "FAIL");
 
-    return (phase0_ok && phase1_ok && phase2_ok && phase3_ok && phase4_ok && phase5_ok && phase6_ok && phase7_ok && phase8_ok && phase9_ok) ? 0 : 1;
+    return (phase0_ok && phase1_ok && phase2_ok && phase3_ok && phase4_ok && phase5_ok && phase6_ok && phase7_ok && phase8_ok && phase9_ok && phase10_ok) ? 0 : 1;
 }

@@ -532,6 +532,26 @@ static void run_scale(const LayerDescV2 &d, const act_t in_base[], act_t out_bas
     }
 }
 
+/* A2 (2026-08-21): layer_scale -- structurally identical to run_scale
+ * (per-channel broadcast multiply), the only difference is where op1
+ * comes from: a TRAINED WEIGHT (w_base at w_off, cin values, one per
+ * channel) instead of a computed activation (in_base at in2_off). Found
+ * during the A2 design pass -- every mlp/fc2 output in the real network
+ * feeds a layer_scale Mul (10 instances) before the residual Add, and no
+ * A1 test sequence exercised it since none was built. */
+static void run_lscale(const LayerDescV2 &d, const act_t in_base[], const wt_t w_base[], act_t out_base[])
+{
+    const int HW = d.h_in * d.w_in;
+    LSCALE_C: for (int c = 0; c < d.cin; c++) {
+        wt_t gate = w_base[d.w_off + c];
+        LSCALE_HW: for (int i = 0; i < HW; i++) {
+            #pragma HLS PIPELINE II=1
+            acc_t prod = (acc_t)in_base[d.in_off + c * HW + i] * (acc_t)gate;
+            out_base[d.out_off + c * HW + i] = (act_t)clip_shift(prod, d.out_shift);
+        }
+    }
+}
+
 void mac_array_top(
     const LayerDescV2 desc[],
     int n_layers,
@@ -549,6 +569,7 @@ void mac_array_top(
             case LDESC_OP_SIGMOID: run_sigmoid(desc[i], in_base, out_base); break;
             case LDESC_OP_SCALE:   run_scale(desc[i], in_base, out_base); break;
             case LDESC_OP_GELU:    run_gelu(desc[i], in_base, out_base); break;
+            case LDESC_OP_LSCALE:  run_lscale(desc[i], in_base, w_base, out_base); break;
             default:                run_layer(desc[i], in_base, w_base, b_base, out_base); break;
         }
         out_written[i] = 1;

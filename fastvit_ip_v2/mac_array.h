@@ -142,6 +142,16 @@ typedef ap_int<32>  acc_t;   /* accumulator / bias */
                                * C-length gate, broadcast over spatial -- confirmed from
                                * layer_dag_ground_truth.json: final_conv fan_out=2 feeds both
                                * ReduceMean and this Mul directly from the SAME tensor */
+#define LDESC_OP_LSCALE  8   /* layer_scale: per-channel broadcast multiply, same shape as
+                               * LDESC_OP_SCALE but op1 (the C-length factor) is a TRAINED
+                               * WEIGHT (read from w_base at w_off) not a computed activation
+                               * (in_base) -- found during the A2 design pass: 10 real layers
+                               * (every mlp/fc2 output) feed a layer_scale Mul before the
+                               * residual Add, and A1 never built this op because no synthetic
+                               * test sequence exercised it. Confirmed distinct from SE's
+                               * LDESC_OP_SCALE by consumer-tag co-occurrence in
+                               * layer_descriptor_256.json ('mul' alone = layer_scale, 'mul'
+                               * co-occurring with 'se_reduce' = SE's gate multiply). */
 #define LDESC_OP_GELU    7   /* elementwise GELU, single source. This is the ATOMIC hardware
                                * op only -- confirmed via direct ONNX inspection that the real
                                * graph represents each GELU as a 4-node Div->Erf->Add->Mul
