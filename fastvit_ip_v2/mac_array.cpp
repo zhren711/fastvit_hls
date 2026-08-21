@@ -293,15 +293,32 @@ static void run_layer(const LayerDescV2 &d,
                 #pragma HLS ARRAY_PARTITION variable=pw_wtile cyclic factor=MAC_PD dim=1
 
                 int c_sz = MAC_PD;
+                int n_f = 1;
 
+                /* A2 pre-step (2026-08-21): fpg (filters-per-group) was
+                 * carried in LayerDescV2 but never read anywhere in this
+                 * file -- DW implicitly assumed fpg=1 (cout==cin, one
+                 * filter per input channel). Real network has 4 layers
+                 * (3 stage-downsamples + final_conv) at fpg=2: each INPUT
+                 * channel produces fpg INDEPENDENT output channels, each
+                 * with its own K*K filter, but still only reducing over
+                 * that SAME single input channel's receptive field (no
+                 * cross-channel accumulation -- still depthwise-shaped,
+                 * just multiple filters per input channel instead of one).
+                 * Same failure class as the K=7 gap: silently wrong on
+                 * those 4 layers today, no crash. Fix: patch staging
+                 * (reads the input, doesn't depend on which output filter)
+                 * stays a single per-ot step; weight/bias staging, RESET,
+                 * the MAC reduction, and WRITEOUT now repeat for f=0..fpg-1,
+                 * each producing output channel oc = c*fpg+f from the SAME
+                 * staged patch with a DIFFERENT weight set. n_f=1 for PW
+                 * (fpg always 1 there) makes this loop a no-op wrapper for
+                 * the PW path -- unchanged behavior. */
                 if (d.op_type == LDESC_OP_DWCONV) {
                     c_sz = (ot == d.n_ch_tiles - 1) ? d.last_ch_tile : MAC_PD;
-                    DW_STAGE: for (int cc = 0; cc < c_sz; cc++) {
+                    n_f = d.fpg;
+                    DW_PATCH_STAGE: for (int cc = 0; cc < c_sz; cc++) {
                         int c = ot * MAC_PD + cc;
-                        dw_btile[cc] = b_base[d.b_off + c];
-                        for (int kh = 0; kh < K; kh++)
-                            for (int kw = 0; kw < K; kw++)
-                                dw_wtile[cc][kh][kw] = w_base[d.w_off + (c * K + kh) * K + kw];
                         for (int pr = 0; pr < patch_r; pr++) {
                             int ih = rt * MAC_PR * S - P + pr;
                             for (int pc = 0; pc < patch_c; pc++) {
@@ -319,52 +336,66 @@ static void run_layer(const LayerDescV2 &d,
                     pw_bias_val = b_base[d.b_off + ot];
                 }
 
-                acc_t acc[MAC_PD][MAC_PR][MAC_PC];
-                #pragma HLS ARRAY_PARTITION variable=acc complete dim=0
-                RESET: for (int d0 = 0; d0 < MAC_PD; d0++)
-                    for (int r0 = 0; r0 < MAC_PR; r0++)
-                        for (int c0 = 0; c0 < MAC_PC; c0++) {
-                            #pragma HLS UNROLL
-                            acc[d0][r0][c0] = 0;
+                for (int f = 0; f < n_f; f++) {
+                    if (d.op_type == LDESC_OP_DWCONV) {
+                        DW_WT_STAGE: for (int cc = 0; cc < c_sz; cc++) {
+                            int c  = ot * MAC_PD + cc;
+                            int oc = c * d.fpg + f;
+                            dw_btile[cc] = b_base[d.b_off + oc];
+                            for (int kh = 0; kh < K; kh++)
+                                for (int kw = 0; kw < K; kw++)
+                                    dw_wtile[cc][kh][kw] = w_base[d.w_off + (oc * K + kh) * K + kw];
                         }
-
-                int n_steps = (d.op_type == LDESC_OP_DWCONV) ? (MAX_K * MAX_K) : d.n_ch_tiles;
-                run_reduce_unified(d.op_type, n_steps,
-                                    dw_patch, dw_wtile, K, S,
-                                    pw_patch, pw_wtile,
-                                    acc);
-
-                if (d.op_type == LDESC_OP_DWCONV) {
-                    WRITEOUT_DW: for (int idx = 0; idx < MAC_PD * MAC_PR * MAC_PC; idx++) {
-                        #pragma HLS PIPELINE II=1
-                        int dd = idx / (MAC_PR * MAC_PC);
-                        int rr = (idx / MAC_PC) % MAC_PR;
-                        int cw = idx % MAC_PC;
-                        if (dd >= c_sz || rr >= r_sz || cw >= col_sz) continue;
-                        int c  = ot * MAC_PD + dd;
-                        int oh = rt * MAC_PR + rr;
-                        int ow = colt * MAC_PC + cw;
-                        out_base[d.out_off + (c * d.h_out + oh) * d.w_out + ow] =
-                            (act_t)clip_shift(acc[dd][rr][cw] + dw_btile[dd], d.out_shift);
                     }
-                } else {
-                    WRITEOUT_PW: for (int idx = 0; idx < MAC_PR * MAC_PC; idx++) {
-                        #pragma HLS PIPELINE II=1
-                        int rr = idx / MAC_PC, cw = idx % MAC_PC;
-                        if (rr >= r_sz || cw >= col_sz) continue;
-                        int oh = rt * MAC_PR + rr, ow = colt * MAC_PC + cw;
-                        /* round 15: generic MAC_PD-wide combine (was
-                         * hardcoded to 8 terms when MAC_PD was fixed at
-                         * 8 -- now a compile-time-bounded unrolled sum so
-                         * it stays correct at MAC_PD=2 and any other
-                         * future width). */
-                        acc_t total = 0;
-                        COMBINE: for (int dd = 0; dd < MAC_PD; dd++) {
-                            #pragma HLS UNROLL
-                            total += acc[dd][rr][cw];
+
+                    acc_t acc[MAC_PD][MAC_PR][MAC_PC];
+                    #pragma HLS ARRAY_PARTITION variable=acc complete dim=0
+                    RESET: for (int d0 = 0; d0 < MAC_PD; d0++)
+                        for (int r0 = 0; r0 < MAC_PR; r0++)
+                            for (int c0 = 0; c0 < MAC_PC; c0++) {
+                                #pragma HLS UNROLL
+                                acc[d0][r0][c0] = 0;
+                            }
+
+                    int n_steps = (d.op_type == LDESC_OP_DWCONV) ? (MAX_K * MAX_K) : d.n_ch_tiles;
+                    run_reduce_unified(d.op_type, n_steps,
+                                        dw_patch, dw_wtile, K, S,
+                                        pw_patch, pw_wtile,
+                                        acc);
+
+                    if (d.op_type == LDESC_OP_DWCONV) {
+                        WRITEOUT_DW: for (int idx = 0; idx < MAC_PD * MAC_PR * MAC_PC; idx++) {
+                            #pragma HLS PIPELINE II=1
+                            int dd = idx / (MAC_PR * MAC_PC);
+                            int rr = (idx / MAC_PC) % MAC_PR;
+                            int cw = idx % MAC_PC;
+                            if (dd >= c_sz || rr >= r_sz || cw >= col_sz) continue;
+                            int c  = ot * MAC_PD + dd;
+                            int oc = c * d.fpg + f;
+                            int oh = rt * MAC_PR + rr;
+                            int ow = colt * MAC_PC + cw;
+                            out_base[d.out_off + (oc * d.h_out + oh) * d.w_out + ow] =
+                                (act_t)clip_shift(acc[dd][rr][cw] + dw_btile[dd], d.out_shift);
                         }
-                        out_base[d.out_off + (ot * d.h_out + oh) * d.w_out + ow] =
-                            (act_t)clip_shift(total + pw_bias_val, d.out_shift);
+                    } else {
+                        WRITEOUT_PW: for (int idx = 0; idx < MAC_PR * MAC_PC; idx++) {
+                            #pragma HLS PIPELINE II=1
+                            int rr = idx / MAC_PC, cw = idx % MAC_PC;
+                            if (rr >= r_sz || cw >= col_sz) continue;
+                            int oh = rt * MAC_PR + rr, ow = colt * MAC_PC + cw;
+                            /* round 15: generic MAC_PD-wide combine (was
+                             * hardcoded to 8 terms when MAC_PD was fixed at
+                             * 8 -- now a compile-time-bounded unrolled sum so
+                             * it stays correct at MAC_PD=2 and any other
+                             * future width). */
+                            acc_t total = 0;
+                            COMBINE: for (int dd = 0; dd < MAC_PD; dd++) {
+                                #pragma HLS UNROLL
+                                total += acc[dd][rr][cw];
+                            }
+                            out_base[d.out_off + (ot * d.h_out + oh) * d.w_out + ow] =
+                                (act_t)clip_shift(total + pw_bias_val, d.out_shift);
+                        }
                     }
                 }
             }

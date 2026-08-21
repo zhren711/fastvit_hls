@@ -1,0 +1,215 @@
+
+
+================================================================
+== Vitis HLS Report for 'run_layer_Pipeline_WRITEOUT_PW'
+================================================================
+* Date:           Thu Aug 20 23:19:31 2026
+
+* Version:        2024.2 (Build 5238294 on Nov  8 2024)
+* Project:        mac_array_poc_a2_w32
+* Solution:       solution1 (Vivado IP Flow Target)
+* Product family: zynq
+* Target device:  xc7z020-clg400-1
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+----------+----------+------------+
+    |  Clock |  Target  | Estimated| Uncertainty|
+    +--------+----------+----------+------------+
+    |ap_clk  |  10.00 ns|  6.842 ns|     2.70 ns|
+    +--------+----------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+    |  Latency (cycles) |  Latency (absolute) |  Interval |                    Pipeline                    |
+    |   min   |   max   |    min   |    max   | min | max |                      Type                      |
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+    |       20|       20|  0.200 us|  0.200 us|   17|   17|  loop auto-rewind stp (delay=0 clock cycles(s))|
+    +---------+---------+----------+----------+-----+-----+------------------------------------------------+
+
+    + Detail: 
+        * Instance: 
+        N/A
+
+        * Loop: 
+        +---------------+---------+---------+----------+-----------+-----------+------+----------+
+        |               |  Latency (cycles) | Iteration|  Initiation Interval  | Trip |          |
+        |   Loop Name   |   min   |   max   |  Latency |  achieved |   target  | Count| Pipelined|
+        +---------------+---------+---------+----------+-----------+-----------+------+----------+
+        |- WRITEOUT_PW  |       18|       18|         4|          1|          1|    16|       yes|
+        +---------------+---------+---------+----------+-----------+-----------+------+----------+
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++-----------------+---------+-----+--------+-------+-----+
+|       Name      | BRAM_18K| DSP |   FF   |  LUT  | URAM|
++-----------------+---------+-----+--------+-------+-----+
+|DSP              |        -|    -|       -|      -|    -|
+|Expression       |        -|    -|       0|    521|    -|
+|FIFO             |        -|    -|       -|      -|    -|
+|Instance         |        -|    -|       0|    200|    -|
+|Memory           |        -|    -|       -|      -|    -|
+|Multiplexer      |        -|    -|       0|     36|    -|
+|Register         |        -|    -|     230|     32|    -|
++-----------------+---------+-----+--------+-------+-----+
+|Total            |        0|    0|     230|    789|    0|
++-----------------+---------+-----+--------+-------+-----+
+|Available        |      280|  220|  106400|  53200|    0|
++-----------------+---------+-----+--------+-------+-----+
+|Utilization (%)  |        0|    0|      ~0|      1|    0|
++-----------------+---------+-----+--------+-------+-----+
+
++ Detail: 
+    * Instance: 
+    +----------------------------+----------------------+---------+----+---+----+-----+
+    |          Instance          |        Module        | BRAM_18K| DSP| FF| LUT| URAM|
+    +----------------------------+----------------------+---------+----+---+----+-----+
+    |sparsemux_9_2_32_1_1_U1920  |sparsemux_9_2_32_1_1  |        0|   0|  0|  20|    0|
+    |sparsemux_9_2_32_1_1_U1921  |sparsemux_9_2_32_1_1  |        0|   0|  0|  20|    0|
+    |sparsemux_9_2_32_1_1_U1922  |sparsemux_9_2_32_1_1  |        0|   0|  0|  20|    0|
+    |sparsemux_9_2_32_1_1_U1923  |sparsemux_9_2_32_1_1  |        0|   0|  0|  20|    0|
+    |sparsemux_9_2_32_1_1_U1924  |sparsemux_9_2_32_1_1  |        0|   0|  0|  20|    0|
+    |sparsemux_9_2_32_1_1_U1925  |sparsemux_9_2_32_1_1  |        0|   0|  0|  20|    0|
+    |sparsemux_9_2_32_1_1_U1926  |sparsemux_9_2_32_1_1  |        0|   0|  0|  20|    0|
+    |sparsemux_9_2_32_1_1_U1927  |sparsemux_9_2_32_1_1  |        0|   0|  0|  20|    0|
+    |sparsemux_9_2_32_1_1_U1928  |sparsemux_9_2_32_1_1  |        0|   0|  0|  20|    0|
+    |sparsemux_9_2_32_1_1_U1929  |sparsemux_9_2_32_1_1  |        0|   0|  0|  20|    0|
+    +----------------------------+----------------------+---------+----+---+----+-----+
+    |Total                       |                      |        0|   0|  0| 200|    0|
+    +----------------------------+----------------------+---------+----+---+----+-----+
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +------------------------+----------+----+---+-----+------------+------------+
+    |      Variable Name     | Operation| DSP| FF| LUT | Bitwidth P0| Bitwidth P1|
+    +------------------------+----------+----+---+-----+------------+------------+
+    |acc_32_fu_700_p2        |         +|   0|  0|   32|          32|          32|
+    |add_ln397_fu_696_p2     |         +|   0|  0|   32|          32|          32|
+    |idx_2_fu_393_p2         |         +|   0|  0|   13|           5|           1|
+    |ashr_ln27_fu_705_p2     |      ashr|   0|  0|  100|          32|          32|
+    |icmp_ln28_fu_730_p2     |      icmp|   0|  0|   32|          25|           1|
+    |icmp_ln29_fu_742_p2     |      icmp|   0|  0|   39|          32|           9|
+    |icmp_ln381_fu_387_p2    |      icmp|   0|  0|   14|           5|           6|
+    |icmp_ln384_1_fu_433_p2  |      icmp|   0|  0|   39|          32|          32|
+    |icmp_ln384_fu_421_p2    |      icmp|   0|  0|   39|          32|          32|
+    |or_ln384_fu_445_p2      |        or|   0|  0|    2|           1|           1|
+    |out_base                |    select|   0|  0|    9|           1|           9|
+    |select_ln27_fu_713_p3   |    select|   0|  0|   32|           1|          32|
+    |select_ln28_fu_735_p3   |    select|   0|  0|   32|           1|           7|
+    |shl_ln27_fu_709_p2      |       shl|   0|  0|  100|          32|          32|
+    |ap_enable_pp0           |       xor|   0|  0|    2|           1|           2|
+    |xor_ln384_1_fu_439_p2   |       xor|   0|  0|    2|           1|           2|
+    |xor_ln384_fu_427_p2     |       xor|   0|  0|    2|           1|           2|
+    +------------------------+----------+----+---+-----+------------+------------+
+    |Total                   |          |   0|  0|  521|         266|         264|
+    +------------------------+----------+----+---+-----+------------+------------+
+
+    * Multiplexer: 
+    +-------------------------+----+-----------+-----+-----------+
+    |           Name          | LUT| Input Size| Bits| Total Bits|
+    +-------------------------+----+-----------+-----+-----------+
+    |ap_done_int              |   9|          2|    1|          2|
+    |ap_enable_reg_pp0_iter1  |   9|          2|    1|          2|
+    |ap_sig_allocacmp_idx_1   |   9|          2|    5|         10|
+    |idx_fu_140               |   9|          2|    5|         10|
+    +-------------------------+----+-----------+-----+-----------+
+    |Total                    |  36|          8|   12|         24|
+    +-------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +----------------------------------+----+----+-----+-----------+
+    |               Name               | FF | LUT| Bits| Const Bits|
+    +----------------------------------+----+----+-----+-----------+
+    |acc_32_reg_806                    |  32|   0|   32|          0|
+    |ap_CS_fsm                         |   1|   0|    1|          0|
+    |ap_done_reg                       |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter1           |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter2           |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter3           |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter1_reg  |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter2_reg  |   1|   0|    1|          0|
+    |idx_fu_140                        |   5|   0|    5|          0|
+    |or_ln384_reg_792                  |   1|   0|    1|          0|
+    |select_ln27_reg_812               |  32|   0|   32|          0|
+    |tmp_193_reg_801                   |  32|   0|   32|          0|
+    |tmp_1_reg_817                     |  25|   0|   25|          0|
+    |total_reg_796                     |  32|   0|   32|          0|
+    |or_ln384_reg_792                  |  64|  32|    1|          0|
+    +----------------------------------+----+----+-----+-----------+
+    |Total                             | 230|  32|  167|          0|
+    +----------------------------------+----+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++-----------------+-----+-----+------------+--------------------------------+--------------+
+|    RTL Ports    | Dir | Bits|  Protocol  |          Source Object         |    C Type    |
++-----------------+-----+-----+------------+--------------------------------+--------------+
+|ap_clk           |   in|    1|  ap_ctrl_hs|  run_layer_Pipeline_WRITEOUT_PW|  return value|
+|ap_rst           |   in|    1|  ap_ctrl_hs|  run_layer_Pipeline_WRITEOUT_PW|  return value|
+|ap_start         |   in|    1|  ap_ctrl_hs|  run_layer_Pipeline_WRITEOUT_PW|  return value|
+|ap_done          |  out|    1|  ap_ctrl_hs|  run_layer_Pipeline_WRITEOUT_PW|  return value|
+|ap_idle          |  out|    1|  ap_ctrl_hs|  run_layer_Pipeline_WRITEOUT_PW|  return value|
+|ap_ready         |  out|    1|  ap_ctrl_hs|  run_layer_Pipeline_WRITEOUT_PW|  return value|
+|r_sz             |   in|   32|     ap_none|                            r_sz|        scalar|
+|col_sz           |   in|   32|     ap_none|                          col_sz|        scalar|
+|acc              |   in|   32|     ap_none|                             acc|        scalar|
+|acc_1            |   in|   32|     ap_none|                           acc_1|        scalar|
+|acc_2            |   in|   32|     ap_none|                           acc_2|        scalar|
+|acc_3            |   in|   32|     ap_none|                           acc_3|        scalar|
+|acc_4            |   in|   32|     ap_none|                           acc_4|        scalar|
+|acc_5            |   in|   32|     ap_none|                           acc_5|        scalar|
+|acc_6            |   in|   32|     ap_none|                           acc_6|        scalar|
+|acc_7            |   in|   32|     ap_none|                           acc_7|        scalar|
+|acc_8            |   in|   32|     ap_none|                           acc_8|        scalar|
+|acc_9            |   in|   32|     ap_none|                           acc_9|        scalar|
+|acc_10           |   in|   32|     ap_none|                          acc_10|        scalar|
+|acc_11           |   in|   32|     ap_none|                          acc_11|        scalar|
+|acc_12           |   in|   32|     ap_none|                          acc_12|        scalar|
+|acc_13           |   in|   32|     ap_none|                          acc_13|        scalar|
+|acc_14           |   in|   32|     ap_none|                          acc_14|        scalar|
+|acc_15           |   in|   32|     ap_none|                          acc_15|        scalar|
+|acc_16           |   in|   32|     ap_none|                          acc_16|        scalar|
+|acc_17           |   in|   32|     ap_none|                          acc_17|        scalar|
+|acc_18           |   in|   32|     ap_none|                          acc_18|        scalar|
+|acc_19           |   in|   32|     ap_none|                          acc_19|        scalar|
+|acc_20           |   in|   32|     ap_none|                          acc_20|        scalar|
+|acc_21           |   in|   32|     ap_none|                          acc_21|        scalar|
+|acc_22           |   in|   32|     ap_none|                          acc_22|        scalar|
+|acc_23           |   in|   32|     ap_none|                          acc_23|        scalar|
+|acc_24           |   in|   32|     ap_none|                          acc_24|        scalar|
+|acc_25           |   in|   32|     ap_none|                          acc_25|        scalar|
+|acc_26           |   in|   32|     ap_none|                          acc_26|        scalar|
+|acc_27           |   in|   32|     ap_none|                          acc_27|        scalar|
+|acc_28           |   in|   32|     ap_none|                          acc_28|        scalar|
+|acc_29           |   in|   32|     ap_none|                          acc_29|        scalar|
+|acc_30           |   in|   32|     ap_none|                          acc_30|        scalar|
+|acc_31           |   in|   32|     ap_none|                          acc_31|        scalar|
+|pw_bias_val      |   in|   32|     ap_none|                     pw_bias_val|        scalar|
+|shift            |   in|   32|     ap_none|                           shift|        scalar|
+|sub_i_i          |   in|   32|     ap_none|                         sub_i_i|        scalar|
+|empty            |   in|    1|     ap_none|                           empty|        scalar|
+|out_base         |  out|    8|      ap_vld|                        out_base|       pointer|
+|out_base_ap_vld  |  out|    1|      ap_vld|                        out_base|       pointer|
++-----------------+-----+-----+------------+--------------------------------+--------------+
+

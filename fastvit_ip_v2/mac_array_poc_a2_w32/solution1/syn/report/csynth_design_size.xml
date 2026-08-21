@@ -1,0 +1,71 @@
+<design_size title="Design Size Report">
+    <item name="Total Instructions per Compilation Phase">
+        <table>
+            <keys size="4">Phase, Step, Instructions, Description</keys>
+            <column name="Compile/Link">,  4752, After all functions are compiled and linked into a single design</column>
+            <column name="">, , </column>
+            <column name="Unroll/Inline">, , After user unroll and inline pragmas are applied</column>
+            <column name="">(1) unroll,  2270, user unroll pragmas are applied</column>
+            <column name="">(2) simplification,  1805, simplification of applied user unroll pragmas</column>
+            <column name="">(3) inline,  1781, user inline pragmas are applied</column>
+            <column name="">(4) simplification,  1718, simplification of applied user inline pragmas</column>
+            <column name="">, , </column>
+            <column name="Array/Struct">, , After user array partition and struct aggregate/disaggregate pragmas are applied</column>
+            <column name="">(1) array partition, 10093, user array partition pragmas are applied</column>
+            <column name="">(2) simplification,  5574, simplification of applied user array partition &amp; struct aggregate/disaggregate pragmas</column>
+            <column name="">(3) aggregate/disaggregate ,  5751, user struct aggregate/disaggregate pragmas are applied</column>
+            <column name="">(4) array reshape,  5691, apply array reshape pragmas</column>
+            <column name="">(5) access patterns, 10736, array access pattern optmizations</column>
+            <column name="">, , </column>
+            <column name="Performance">, , After transformations are applied to meet performance pragma targets</column>
+            <column name="">(1) loop simplification,  7497, loop and instruction simplification</column>
+            <column name="">(2) parallelization,  5745, loops are unrolled or pipelined to meet performance targets</column>
+            <column name="">(3) array partition,  5721, arrays are partitioned to meet performance targets</column>
+            <column name="">(4) simplification,  5720, simplification of design after performance transformations</column>
+            <column name="">, , </column>
+            <column name="HW Transforms">, , After hardware transfomations</column>
+            <column name="">(1) lowering,  5575, initial conversion to HW specific instructions</column>
+            <column name="">(2) optimizations,  4994, high level synthesis optimizations</column>
+        </table>
+    </item>
+    <item name="Instructions per Function for each Compilation Phase">
+        <hiertable>
+            <header size="7" col0="Function" col1="Location" col2="Compile/Link" col3="Unroll/Inline" col4="Array/Struct" col5="Performance" col6="HW Transforms"/>
+            <rows>
+                <row id="0" col0="mac_array_top" col1="mac_array.cpp:535" col2="4752" col3="1718" col4="10736" col5="5720" col6="4994">
+                    <row id="7" col0="run_add" col1="mac_array.cpp:420" col2="458" col3="" col4="" col5="" col6="">
+                        <row id="10" col0="clip_shift" col1="mac_array.cpp:25" col2="145" col3="" col4="" col5="" col6=""/>
+                    </row>
+                    <row id="6" col0="run_gap" col1="mac_array.cpp:445" col2="422" col3="" col4="" col5="" col6="">
+                        <row id="10" col0="clip_shift" col1="mac_array.cpp:25" col2="145" col3="" col4="" col5="" col6=""/>
+                    </row>
+                    <row id="11" col0="run_relu" col1="mac_array.cpp:459" col2="93" col3="" col4="" col5="" col6=""/>
+                    <row id="4" col0="run_sigmoid" col1="mac_array.cpp:490" col2="377" col3="" col4="" col5="" col6="">
+                        <row id="9" col0="quantized_sigmoid" col1="mac_array.cpp:482" col2="338" col3="" col4="" col5="" col6=""/>
+                    </row>
+                    <row id="1" col0="run_scale" col1="mac_array.cpp:522" col2="477" col3="" col4="" col5="" col6="">
+                        <row id="10" col0="clip_shift" col1="mac_array.cpp:25" col2="145" col3="" col4="" col5="" col6=""/>
+                    </row>
+                    <row id="8" col0="run_gelu" col1="mac_array.cpp:507" col2="807" col3="" col4="" col5="" col6="">
+                        <row id="9" col0="quantized_sigmoid" col1="mac_array.cpp:482" col2="338" col3="" col4="" col5="" col6=""/>
+                        <row id="10" col0="clip_shift" col1="mac_array.cpp:25" col2="145" col3="" col4="" col5="" col6=""/>
+                    </row>
+                    <row id="2" col0="run_layer" col1="mac_array.cpp:239" col2="2072" col3="1408" col4="10351" col5="5419" col6="4791">
+                        <row id="3" col0="run_reduce_unified" col1="mac_array.cpp:103" col2="766" col3="978" col4="1699" col5="723" col6="736">
+                            <row id="5" col0="drive_mac" col1="mac_array.cpp:52" col2="472" col2_disp=" 472 (2 calls)" col3="524" col3_disp=" 524 (2 calls)" col4="394" col4_disp="  394 (2 calls)" col5="326" col5_disp=" 326 (2 calls)" col6="330" col6_disp=" 330 (2 calls)"/>
+                        </row>
+                        <row id="10" col0="clip_shift" col1="mac_array.cpp:25" col2="290" col2_disp=" 290 (2 calls)" col3="" col4="" col5="" col6=""/>
+                    </row>
+                </row>
+            </rows>
+            <notes/>
+        </hiertable>
+    </item>
+    <item name="Design Size Message Settings">
+        <table>
+            <keys size="3">Message Setting, Value, Description</keys>
+            <column name="config_compile -design_size_maximum_warning">100000, Show a warning when total design instructions exceeds this value</column>
+        </table>
+    </item>
+</design_size>
+

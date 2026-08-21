@@ -56,27 +56,36 @@ static int32_t g_clip_shift(int64_t acc, int shift)
     return (int32_t)v;
 }
 
+/* fpg (filters-per-group) aware, independent of mac_array.cpp's fix:
+ * for fpg=1 (standard depthwise, the only case every prior test used)
+ * this reduces to exactly the old loop -- oc=c*1+0=c. For fpg>1, each
+ * input channel c produces fpg independent output channels oc=c*fpg+f,
+ * each with its own K*K filter, still reducing only over that one input
+ * channel's receptive field (no cross-channel accumulation). */
 static void golden_dwconv(const LayerDescV2 &d, int h_out, int w_out,
                            const std::vector<int8_t> &in, const std::vector<int8_t> &w,
                            const std::vector<int32_t> &b, std::vector<int8_t> &out)
 {
     for (int c = 0; c < d.cin; c++) {
-        for (int oh = 0; oh < h_out; oh++) {
-            for (int ow = 0; ow < w_out; ow++) {
-                int64_t acc = b[d.b_off + c];
-                for (int kh = 0; kh < d.k; kh++) {
-                    int ih = oh * d.stride - d.pad + kh;
-                    if (ih < 0 || ih >= d.h_in) continue;
-                    for (int kw = 0; kw < d.k; kw++) {
-                        int iw = ow * d.stride - d.pad + kw;
-                        if (iw < 0 || iw >= d.w_in) continue;
-                        int8_t x = in[d.in_off + (c * d.h_in + ih) * d.w_in + iw];
-                        int8_t wv = w[d.w_off + (c * d.k + kh) * d.k + kw];
-                        acc += (int64_t)x * (int64_t)wv;
+        for (int f = 0; f < d.fpg; f++) {
+            int oc = c * d.fpg + f;
+            for (int oh = 0; oh < h_out; oh++) {
+                for (int ow = 0; ow < w_out; ow++) {
+                    int64_t acc = b[d.b_off + oc];
+                    for (int kh = 0; kh < d.k; kh++) {
+                        int ih = oh * d.stride - d.pad + kh;
+                        if (ih < 0 || ih >= d.h_in) continue;
+                        for (int kw = 0; kw < d.k; kw++) {
+                            int iw = ow * d.stride - d.pad + kw;
+                            if (iw < 0 || iw >= d.w_in) continue;
+                            int8_t x = in[d.in_off + (c * d.h_in + ih) * d.w_in + iw];
+                            int8_t wv = w[d.w_off + (oc * d.k + kh) * d.k + kw];
+                            acc += (int64_t)x * (int64_t)wv;
+                        }
                     }
+                    out[d.out_off + (oc * h_out + oh) * w_out + ow] =
+                        (int8_t)g_clip_shift(acc, d.out_shift);
                 }
-                out[d.out_off + (c * h_out + oh) * w_out + ow] =
-                    (int8_t)g_clip_shift(acc, d.out_shift);
             }
         }
     }
@@ -848,6 +857,60 @@ int main()
         phase8_ok = phase8a_ok && phase8b_ok;
     }
 
+    /* ================= PHASE 9: fpg=2 DW correctness (A2 pre-step, 2026-08-21) =================
+     * fpg was carried in LayerDescV2 but never read in mac_array.cpp --
+     * run_layer's DW path silently assumed fpg=1. Direct inspection of
+     * tools/layer_descriptor_256.json found exactly 4 real layers at
+     * fpg=2 (3 stage-downsamples + final_conv), all of which ALSO use
+     * K=7 and 3 of which ALSO use stride=2 -- this test combines all
+     * three (K=7, stride=2, fpg=2) to match the real worst-case layer
+     * shape directly, now that both prerequisite fixes (K=7 in Phase8,
+     * fpg here) are in place together. */
+    bool phase9_ok = false;
+    {
+        LayerDescV2 desc9 = LayerDescV2{ LDESC_OP_DWCONV, /*cin*/4, /*cout*/8, /*h_in*/16, /*w_in*/16,
+                                          /*k*/7, /*stride*/2, /*pad*/3, /*fpg*/2, /*out_shift*/6,
+                                          /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/1024 };
+        MacArrayParams p9 = derive_mac_array_params(desc9);
+        desc9.h_out = p9.h_out; desc9.w_out = p9.w_out;
+        desc9.n_row_tiles = p9.n_row_tiles; desc9.n_col_tiles = p9.n_col_tiles; desc9.n_ch_tiles = p9.n_ch_tiles;
+        desc9.last_row_tile = p9.last_row_tile; desc9.last_col_tile = p9.last_col_tile; desc9.last_ch_tile = p9.last_ch_tile;
+
+        const int S9_IN = 4 * 16 * 16;        /* 1024 */
+        const int S9_W  = 8 * 7 * 7;           /* 392, indexed by output channel (cout=8) */
+        const int S9_B  = 8;                   /* per output channel */
+        const int S9_OUT = 8 * p9.h_out * p9.w_out;
+        const int S9_TOTAL = S9_IN + S9_OUT;
+
+        std::vector<int8_t>  s9_in(S9_TOTAL, 0);
+        std::vector<int8_t>  s9_w(S9_W, 0);
+        std::vector<int32_t> s9_b(S9_B, 0);
+        Lcg rng9(0x00FF9600);
+        for (int i = 0; i < S9_IN; i++) s9_in[i] = rng9.next_i8();
+        for (int i = 0; i < S9_W; i++)  s9_w[i]  = rng9.next_i8();
+        for (int i = 0; i < S9_B; i++)  s9_b[i]  = (int32_t)rng9.next_i8() * 4;
+
+        std::vector<int8_t> s9_gold = s9_in;
+        golden_dwconv(desc9, p9.h_out, p9.w_out, s9_gold, s9_w, s9_b, s9_gold);
+
+        std::vector<act_t> s9_feat(S9_TOTAL, act_t(0));
+        std::vector<wt_t>  s9_wbuf(S9_W, wt_t(0));
+        std::vector<acc_t> s9_bbuf(S9_B, acc_t(0));
+        for (int i = 0; i < S9_IN; i++) s9_feat[i] = act_t(s9_in[i]);
+        for (int i = 0; i < S9_W; i++)  s9_wbuf[i] = wt_t(s9_w[i]);
+        for (int i = 0; i < S9_B; i++)  s9_bbuf[i] = acc_t(s9_b[i]);
+
+        int s9_written[1] = {0};
+        mac_array_top(&desc9, 1, s9_feat.data(), s9_wbuf.data(), s9_bbuf.data(), s9_feat.data(), s9_written);
+
+        int mismatches_9 = 0;
+        for (int i = 0; i < S9_TOTAL; i++)
+            if ((int8_t)s9_feat[i] != s9_gold[i]) mismatches_9++;
+        phase9_ok = (mismatches_9 == 0);
+        printf("[Phase9] fpg=2 DW, K=7 stride=2 combined (real stage-downsample shape): "
+               "%s (%d/%d mismatches)\n", phase9_ok ? "PASS" : "FAIL", mismatches_9, S9_TOTAL);
+    }
+
     printf("\n[Summary] Phase0 (stride=2 DW correctness): %s\n", phase0_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase1 (correctness + no collateral writes): %s\n", phase1_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase2 (self-verification catches a silently-dropped write): %s\n", phase2_ok ? "PASS" : "FAIL");
@@ -857,6 +920,7 @@ int main()
     printf("[Summary] Phase6 (SE data flow: GAP + broadcast Scale): %s\n", phase6_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase7 (GELU, A1 operator coverage complete): %s\n", phase7_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase8 (K=7 DW correctness, A2 pre-step): %s\n", phase8_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase9 (fpg=2 DW correctness, real stage-downsample shape): %s\n", phase9_ok ? "PASS" : "FAIL");
 
-    return (phase0_ok && phase1_ok && phase2_ok && phase3_ok && phase4_ok && phase5_ok && phase6_ok && phase7_ok && phase8_ok) ? 0 : 1;
+    return (phase0_ok && phase1_ok && phase2_ok && phase3_ok && phase4_ok && phase5_ok && phase6_ok && phase7_ok && phase8_ok && phase9_ok) ? 0 : 1;
 }
