@@ -748,6 +748,106 @@ int main()
                phase7_ok ? "PASS" : "FAIL", mismatches_p7, F7_TOTAL);
     }
 
+    /* ================= PHASE 8: K=7 DW correctness (A2 pre-step, 2026-08-21) =================
+     * MAX_K was 3, silently wrong for 13 of the real network's 52 DW
+     * layers (K=7, confirmed via direct inspection of
+     * tools/layer_descriptor_256.json, not assumed) -- no prior test
+     * ever exercised K>3. Two sub-cases, both with fpg=1 (cin==cout)
+     * deliberately, to isolate the K=7 fix from the SEPARATE fpg=2
+     * (channel-multiplier depthwise) gap found while adding this test --
+     * that gap is NOT fixed here, single variable. Phase8a matches the
+     * real network's K=7/stride=1 shape (layer 4); Phase8b is a
+     * synthetic K=7/stride=2 case (the real stride=2 K=7 layers all also
+     * have fpg=2, untestable in isolation until that's fixed too). */
+    bool phase8_ok = false;
+    {
+        LayerDescV2 desc8a = LayerDescV2{ LDESC_OP_DWCONV, /*cin*/6, /*cout*/6, /*h_in*/14, /*w_in*/14,
+                                           /*k*/7, /*stride*/1, /*pad*/3, /*fpg*/1, /*out_shift*/6,
+                                           /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/1176 };
+        MacArrayParams p8a = derive_mac_array_params(desc8a);
+        desc8a.h_out = p8a.h_out; desc8a.w_out = p8a.w_out;
+        desc8a.n_row_tiles = p8a.n_row_tiles; desc8a.n_col_tiles = p8a.n_col_tiles; desc8a.n_ch_tiles = p8a.n_ch_tiles;
+        desc8a.last_row_tile = p8a.last_row_tile; desc8a.last_col_tile = p8a.last_col_tile; desc8a.last_ch_tile = p8a.last_ch_tile;
+
+        const int S8A_IN = 6 * 14 * 14;   /* 1176 */
+        const int S8A_W  = 6 * 7 * 7;     /* 294 */
+        const int S8A_B  = 6;
+        const int S8A_OUT = 6 * p8a.h_out * p8a.w_out;
+        const int S8A_TOTAL = S8A_IN + S8A_OUT;
+
+        std::vector<int8_t>  s8a_in(S8A_TOTAL, 0);
+        std::vector<int8_t>  s8a_w(S8A_W, 0);
+        std::vector<int32_t> s8a_b(S8A_B, 0);
+        Lcg rng8a(0x0000A7EF);
+        for (int i = 0; i < S8A_IN; i++) s8a_in[i] = rng8a.next_i8();
+        for (int i = 0; i < S8A_W; i++)  s8a_w[i]  = rng8a.next_i8();
+        for (int i = 0; i < S8A_B; i++)  s8a_b[i]  = (int32_t)rng8a.next_i8() * 4;
+
+        std::vector<int8_t> s8a_gold = s8a_in;
+        golden_dwconv(desc8a, p8a.h_out, p8a.w_out, s8a_gold, s8a_w, s8a_b, s8a_gold);
+
+        std::vector<act_t> s8a_feat(S8A_TOTAL, act_t(0));
+        std::vector<wt_t>  s8a_wbuf(S8A_W, wt_t(0));
+        std::vector<acc_t> s8a_bbuf(S8A_B, acc_t(0));
+        for (int i = 0; i < S8A_IN; i++) s8a_feat[i] = act_t(s8a_in[i]);
+        for (int i = 0; i < S8A_W; i++)  s8a_wbuf[i] = wt_t(s8a_w[i]);
+        for (int i = 0; i < S8A_B; i++)  s8a_bbuf[i] = acc_t(s8a_b[i]);
+
+        int s8a_written[1] = {0};
+        mac_array_top(&desc8a, 1, s8a_feat.data(), s8a_wbuf.data(), s8a_bbuf.data(), s8a_feat.data(), s8a_written);
+
+        int mismatches_8a = 0;
+        for (int i = 0; i < S8A_TOTAL; i++)
+            if ((int8_t)s8a_feat[i] != s8a_gold[i]) mismatches_8a++;
+        bool phase8a_ok = (mismatches_8a == 0);
+        printf("[Phase8a] K=7,stride=1 DW (real layer-4 shape): %s (%d/%d mismatches)\n",
+               phase8a_ok ? "PASS" : "FAIL", mismatches_8a, S8A_TOTAL);
+
+        LayerDescV2 desc8b = LayerDescV2{ LDESC_OP_DWCONV, /*cin*/5, /*cout*/5, /*h_in*/20, /*w_in*/20,
+                                           /*k*/7, /*stride*/2, /*pad*/3, /*fpg*/1, /*out_shift*/6,
+                                           /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/2000 };
+        MacArrayParams p8b = derive_mac_array_params(desc8b);
+        desc8b.h_out = p8b.h_out; desc8b.w_out = p8b.w_out;
+        desc8b.n_row_tiles = p8b.n_row_tiles; desc8b.n_col_tiles = p8b.n_col_tiles; desc8b.n_ch_tiles = p8b.n_ch_tiles;
+        desc8b.last_row_tile = p8b.last_row_tile; desc8b.last_col_tile = p8b.last_col_tile; desc8b.last_ch_tile = p8b.last_ch_tile;
+
+        const int S8B_IN = 5 * 20 * 20;   /* 2000 */
+        const int S8B_W  = 5 * 7 * 7;     /* 245 */
+        const int S8B_B  = 5;
+        const int S8B_OUT = 5 * p8b.h_out * p8b.w_out;
+        const int S8B_TOTAL = S8B_IN + S8B_OUT;
+
+        std::vector<int8_t>  s8b_in(S8B_TOTAL, 0);
+        std::vector<int8_t>  s8b_w(S8B_W, 0);
+        std::vector<int32_t> s8b_b(S8B_B, 0);
+        Lcg rng8b(0x0000B7EF);
+        for (int i = 0; i < S8B_IN; i++) s8b_in[i] = rng8b.next_i8();
+        for (int i = 0; i < S8B_W; i++)  s8b_w[i]  = rng8b.next_i8();
+        for (int i = 0; i < S8B_B; i++)  s8b_b[i]  = (int32_t)rng8b.next_i8() * 4;
+
+        std::vector<int8_t> s8b_gold = s8b_in;
+        golden_dwconv(desc8b, p8b.h_out, p8b.w_out, s8b_gold, s8b_w, s8b_b, s8b_gold);
+
+        std::vector<act_t> s8b_feat(S8B_TOTAL, act_t(0));
+        std::vector<wt_t>  s8b_wbuf(S8B_W, wt_t(0));
+        std::vector<acc_t> s8b_bbuf(S8B_B, acc_t(0));
+        for (int i = 0; i < S8B_IN; i++) s8b_feat[i] = act_t(s8b_in[i]);
+        for (int i = 0; i < S8B_W; i++)  s8b_wbuf[i] = wt_t(s8b_w[i]);
+        for (int i = 0; i < S8B_B; i++)  s8b_bbuf[i] = acc_t(s8b_b[i]);
+
+        int s8b_written[1] = {0};
+        mac_array_top(&desc8b, 1, s8b_feat.data(), s8b_wbuf.data(), s8b_bbuf.data(), s8b_feat.data(), s8b_written);
+
+        int mismatches_8b = 0;
+        for (int i = 0; i < S8B_TOTAL; i++)
+            if ((int8_t)s8b_feat[i] != s8b_gold[i]) mismatches_8b++;
+        bool phase8b_ok = (mismatches_8b == 0);
+        printf("[Phase8b] K=7,stride=2 DW (synthetic, fpg=1 isolated from the fpg=2 gap): "
+               "%s (%d/%d mismatches)\n", phase8b_ok ? "PASS" : "FAIL", mismatches_8b, S8B_TOTAL);
+
+        phase8_ok = phase8a_ok && phase8b_ok;
+    }
+
     printf("\n[Summary] Phase0 (stride=2 DW correctness): %s\n", phase0_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase1 (correctness + no collateral writes): %s\n", phase1_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase2 (self-verification catches a silently-dropped write): %s\n", phase2_ok ? "PASS" : "FAIL");
@@ -756,6 +856,7 @@ int main()
     printf("[Summary] Phase5 (Add correctness + self-verified writeback, defect-5 check): %s\n", phase5_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase6 (SE data flow: GAP + broadcast Scale): %s\n", phase6_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase7 (GELU, A1 operator coverage complete): %s\n", phase7_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase8 (K=7 DW correctness, A2 pre-step): %s\n", phase8_ok ? "PASS" : "FAIL");
 
-    return (phase0_ok && phase1_ok && phase2_ok && phase3_ok && phase4_ok && phase5_ok && phase6_ok && phase7_ok) ? 0 : 1;
+    return (phase0_ok && phase1_ok && phase2_ok && phase3_ok && phase4_ok && phase5_ok && phase6_ok && phase7_ok && phase8_ok) ? 0 : 1;
 }

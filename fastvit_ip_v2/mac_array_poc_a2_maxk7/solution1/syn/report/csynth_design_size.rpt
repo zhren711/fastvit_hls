@@ -1,0 +1,65 @@
+================================================================
+== Design Size Report
+================================================================
+
+* Total Instructions per Compilation Phase
++---------------+-----------------------------+--------------+----------------------------------------------------------------------------------------+
+| Phase         | Step                        | Instructions | Description                                                                            |
++---------------+-----------------------------+--------------+----------------------------------------------------------------------------------------+
+| Compile/Link  |                             |  4,716       | After all functions are compiled and linked into a single design                       |
+|               |                             |              |                                                                                        |
+| Unroll/Inline |                             |              | After user unroll and inline pragmas are applied                                       |
+|               | (1) unroll                  |  3,264       | user unroll pragmas are applied                                                        |
+|               | (2) simplification          |  2,704       | simplification of applied user unroll pragmas                                          |
+|               | (3) inline                  |  2,637       | user inline pragmas are applied                                                        |
+|               | (4) simplification          |  2,574       | simplification of applied user inline pragmas                                          |
+|               |                             |              |                                                                                        |
+| Array/Struct  |                             |              | After user array partition and struct aggregate/disaggregate pragmas are applied       |
+|               | (1) array partition         | 19,893       | user array partition pragmas are applied                                               |
+|               | (2) simplification          |  8,529       | simplification of applied user array partition & struct aggregate/disaggregate pragmas |
+|               | (3) aggregate/disaggregate  |  8,703       | user struct aggregate/disaggregate pragmas are applied                                 |
+|               | (4) array reshape           |  8,645       | apply array reshape pragmas                                                            |
+|               | (5) access patterns         | 16,747       | array access pattern optmizations                                                      |
+|               |                             |              |                                                                                        |
+| Performance   |                             |              | After transformations are applied to meet performance pragma targets                   |
+|               | (1) loop simplification     | 11,248       | loop and instruction simplification                                                    |
+|               | (2) parallelization         |  9,309       | loops are unrolled or pipelined to meet performance targets                            |
+|               | (3) array partition         |  9,286       | arrays are partitioned to meet performance targets                                     |
+|               | (4) simplification          |  9,285       | simplification of design after performance transformations                             |
+|               |                             |              |                                                                                        |
+| HW Transforms |                             |              | After hardware transfomations                                                          |
+|               | (1) lowering                |  9,148       | initial conversion to HW specific instructions                                         |
+|               | (2) optimizations           |  7,646       | high level synthesis optimizations                                                     |
++---------------+-----------------------------+--------------+----------------------------------------------------------------------------------------+
+
+* Instructions per Function for each Compilation Phase
++------------------------+-------------------+----------------+-----------------+-----------------+----------------+----------------+
+| Function               | Location          | Compile/Link   | Unroll/Inline   | Array/Struct    | Performance    | HW Transforms  |
++------------------------+-------------------+----------------+-----------------+-----------------+----------------+----------------+
+| + mac_array_top        | mac_array.cpp:504 | 4,716          | 2,574           | 16,747          | 9,285          | 7,646          |
+|  + run_add             | mac_array.cpp:389 |  458           |                 |                 |                |                |
+|     clip_shift         | mac_array.cpp:25  |  145           |                 |                 |                |                |
+|  + run_gap             | mac_array.cpp:414 |  422           |                 |                 |                |                |
+|     clip_shift         | mac_array.cpp:25  |  145           |                 |                 |                |                |
+|    run_relu            | mac_array.cpp:428 |   93           |                 |                 |                |                |
+|  + run_sigmoid         | mac_array.cpp:459 |  377           |                 |                 |                |                |
+|     quantized_sigmoid  | mac_array.cpp:451 |  338           |                 |                 |                |                |
+|  + run_scale           | mac_array.cpp:491 |  477           |                 |                 |                |                |
+|     clip_shift         | mac_array.cpp:25  |  145           |                 |                 |                |                |
+|  + run_gelu            | mac_array.cpp:476 |  807           |                 |                 |                |                |
+|     quantized_sigmoid  | mac_array.cpp:451 |  338           |                 |                 |                |                |
+|     clip_shift         | mac_array.cpp:25  |  145           |                 |                 |                |                |
+|  + run_layer           | mac_array.cpp:239 | 2,036          | 2,264           | 16,362          | 8,984          | 7,443          |
+|   + run_reduce_unified | mac_array.cpp:103 |  766           | 1,850           | 2,907           | 1,363          | 1,376          |
+|      drive_mac         | mac_array.cpp:52  |  472 (2 calls) | 1,036 (2 calls) |   778 (2 calls) |  646 (2 calls) |  650 (2 calls) |
+|     clip_shift         | mac_array.cpp:25  |  290 (2 calls) |                 |                 |                |                |
++------------------------+-------------------+----------------+-----------------+-----------------+----------------+----------------+
+
+* Design Size Message Settings
++---------------------------------------------+--------+------------------------------------------------------------------+
+| Message Setting                             | Value  | Description                                                      |
++---------------------------------------------+--------+------------------------------------------------------------------+
+| config_compile -design_size_maximum_warning | 100000 | Show a warning when total design instructions exceeds this value |
++---------------------------------------------+--------+------------------------------------------------------------------+
+
+

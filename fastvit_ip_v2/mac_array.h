@@ -93,13 +93,30 @@ typedef ap_int<32>  acc_t;   /* accumulator / bias */
 /* Compile-time bounds for on-chip staging buffers -- sized for this PoC's
  * test problem (Cin<=32), NOT arbitrary real FastViT layer sizes (e.g.
  * Stage3's Cin=192 PW). MAX_STRIDE=2 covers every real DW stride used in
- * FastViT-T8 (Stem + the 3 Transitions); MAX_K=3 covers every real DW
- * kernel size used. Both are upper bounds guarded at runtime inside
- * compile-time-bounded loops, never used as a loop's own runtime bound. */
-#define MAX_K             3
+ * FastViT-T8 (Stem + the 3 Transitions). Both are upper bounds guarded at
+ * runtime inside compile-time-bounded loops, never used as a loop's own
+ * runtime bound.
+ *
+ * A2 pre-step (2026-08-21): MAX_K was 3, silently wrong for real
+ * FastViT-T8 -- direct inspection of tools/layer_descriptor_256.json
+ * found 13 of the 52 real DW conv layers use K=7 (the mlp/conv/conv
+ * layers and all 3 stage-downsample layers, 3 of those ALSO at stride=2),
+ * not just K=3. With MAX_K=3, the tap loop (DW_TAP_H/DW_TAP_W, both
+ * bounded by MAX_K) only ever covered 9 of a K=7 kernel's 49 real taps --
+ * no crash, no error, just a quietly wrong convolution result on a
+ * quarter of the network's DW layers. Found and fixed before any A2
+ * integration code was written, not after (see the A2 design doc on
+ * ZHR-63/92). PATCH_R_MAX/PATCH_C_MAX grow accordingly (9->13, 17->21 at
+ * the current MAC_PR=4/MAC_PC=8); dw_wtile's per-channel K*K storage
+ * grows 3x3->7x7; DW_TAP_H/DW_TAP_W's trip count grows 9->49 (K=3 layers
+ * still take the same real work, just waste more `valid=false`
+ * zero-weight cycles now that the shared bound is bigger -- MAX_K is one
+ * global constant for every DW call, not per-layer, so this affects the
+ * resource/cycle cost of K=3 layers too, not just K=7 ones). */
+#define MAX_K             7
 #define MAX_STRIDE        2
-#define PATCH_R_MAX       ((MAC_PR - 1) * MAX_STRIDE + MAX_K)   /* 17 */
-#define PATCH_C_MAX       ((MAC_PC - 1) * MAX_STRIDE + MAX_K)   /* 17 */
+#define PATCH_R_MAX       ((MAC_PR - 1) * MAX_STRIDE + MAX_K)
+#define PATCH_C_MAX       ((MAC_PC - 1) * MAX_STRIDE + MAX_K)
 #define MAX_CIN_PW        32
 
 #define LDESC_OP_DWCONV  0
