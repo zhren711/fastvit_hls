@@ -102,6 +102,88 @@ static void golden_pwconv(const LayerDescV2 &d, int h_out, int w_out,
     }
 }
 
+/* Phase A1 (2026-08-20): elementwise residual add, two sources (op0=in_off,
+ * op1=in2_off) both confirmed from tools/layer_dag_ground_truth.json's
+ * multi_input_nodes -- every real Add reads a token_mixer/identity branch
+ * and a layer_scale/processed branch, both same shape. */
+static void golden_add(const LayerDescV2 &d, const std::vector<int8_t> &in, std::vector<int8_t> &out)
+{
+    int total = d.cin * d.h_in * d.w_in;
+    for (int i = 0; i < total; i++) {
+        int64_t sum = (int64_t)in[d.in_off + i] + (int64_t)in[d.in2_off + i];
+        out[d.out_off + i] = (int8_t)g_clip_shift(sum, d.out_shift);
+    }
+}
+
+/* Phase A1 SE block: GAP, ReLU, placeholder Sigmoid, broadcast Scale.
+ * Independent re-implementations, not calls into mac_array.cpp -- same
+ * verification philosophy as golden_dwconv/golden_pwconv above. */
+static void golden_gap(const LayerDescV2 &d, const std::vector<int8_t> &in, std::vector<int8_t> &out)
+{
+    int HW = d.h_in * d.w_in;
+    for (int c = 0; c < d.cin; c++) {
+        int64_t sum = 0;
+        for (int i = 0; i < HW; i++) sum += (int64_t)in[d.in_off + c * HW + i];
+        int64_t avg = sum / HW;
+        out[d.out_off + c] = (int8_t)g_clip_shift(avg, d.out_shift);
+    }
+}
+
+static void golden_relu(const LayerDescV2 &d, const std::vector<int8_t> &in, std::vector<int8_t> &out)
+{
+    int total = d.cin * d.h_in * d.w_in;
+    for (int i = 0; i < total; i++) {
+        int8_t v = in[d.in_off + i];
+        out[d.out_off + i] = (v < 0) ? (int8_t)0 : v;
+    }
+}
+
+/* Same placeholder formula as mac_array.cpp's quantized_sigmoid --
+ * independently written, not a shared call, but deliberately the SAME
+ * (uncalibrated) approximation since the point of this phase is proving
+ * the data flow wires together, not sigmoid numeric accuracy. */
+static int8_t golden_quantized_sigmoid(int8_t x)
+{
+    int32_t v = (int32_t)x + 64;
+    if (v > 127) v = 127;
+    if (v < 0)   v = 0;
+    return (int8_t)v;
+}
+
+static void golden_sigmoid(const LayerDescV2 &d, const std::vector<int8_t> &in, std::vector<int8_t> &out)
+{
+    int total = d.cin * d.h_in * d.w_in;
+    for (int i = 0; i < total; i++)
+        out[d.out_off + i] = golden_quantized_sigmoid(in[d.in_off + i]);
+}
+
+/* GELU~=x*sigmoid(1.702x), computed here as x*golden_quantized_sigmoid(x)
+ * -- same placeholder-accuracy caveat as golden_sigmoid; this checks that
+ * run_gelu (the ATOMIC hardware op) is wired correctly, not that it's a
+ * calibrated match to the real Div/Erf/Add/Mul decomposition (that's
+ * gen_layer_descriptor.py's folding logic, A2 work). */
+static void golden_gelu(const LayerDescV2 &d, const std::vector<int8_t> &in, std::vector<int8_t> &out)
+{
+    int total = d.cin * d.h_in * d.w_in;
+    for (int i = 0; i < total; i++) {
+        int8_t x = in[d.in_off + i];
+        int64_t prod = (int64_t)x * (int64_t)golden_quantized_sigmoid(x);
+        out[d.out_off + i] = (int8_t)g_clip_shift(prod, d.out_shift);
+    }
+}
+
+static void golden_scale(const LayerDescV2 &d, const std::vector<int8_t> &in, std::vector<int8_t> &out)
+{
+    int HW = d.h_in * d.w_in;
+    for (int c = 0; c < d.cin; c++) {
+        int8_t gate = in[d.in2_off + c];
+        for (int i = 0; i < HW; i++) {
+            int64_t prod = (int64_t)in[d.in_off + c * HW + i] * (int64_t)gate;
+            out[d.out_off + c * HW + i] = (int8_t)g_clip_shift(prod, d.out_shift);
+        }
+    }
+}
+
 /* independent, plain-int re-derivation matching mac_array.h's contract --
  * deliberately NOT calling derive_mac_array_params(), same spirit as the
  * Python cross-check but exercised here too so the dump reflects what an
@@ -433,11 +515,247 @@ int main()
                "%s (%d/%d mismatches)\n", phase4_ok ? "PASS" : "FAIL", mismatches_p4, F4_TOTAL);
     }
 
+    /* ================= PHASE 5: Add correctness + self-verified writeback (A1) =================
+     * DW(cin=10,cout=10,12x12) -> PW(cin=13,cout=10,12x12, independent
+     * second source) -> Add(op0=DW out, op1=PW out). Mirrors the real
+     * network's residual shape (two independently-produced same-shape
+     * feature maps, tools/layer_dag_ground_truth.json confirmed), not a
+     * self-add. Phase5a checks correctness against an independent golden
+     * chain; Phase5b re-runs clean then corrupts ONLY the Add layer's
+     * output region post-call (out_written[2] stays 1, same defect-5
+     * symptom as Phase2) -- directly answers "does the historical Add
+     * write-back defect reproduce on this architecture" for the first
+     * time since it was found (root cause was never isolated on the old
+     * one). */
+    bool phase5_ok = false;
+    {
+        LayerDescV2 desc5[3];
+        desc5[0] = LayerDescV2{ LDESC_OP_DWCONV, /*cin*/10, /*cout*/10, /*h_in*/12, /*w_in*/12,
+                                 /*k*/3, /*stride*/1, /*pad*/1, /*fpg*/1, /*out_shift*/6,
+                                 /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/1440 };
+        desc5[1] = LayerDescV2{ LDESC_OP_PWCONV, /*cin*/13, /*cout*/10, /*h_in*/12, /*w_in*/12,
+                                 /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/6,
+                                 /*in_off*/2880, /*w_off*/90, /*b_off*/10, /*out_off*/4752 };
+        desc5[2] = LayerDescV2{ LDESC_OP_ADD, /*cin*/10, /*cout*/10, /*h_in*/12, /*w_in*/12,
+                                 /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/0,
+                                 /*in_off*/1440, /*w_off*/0, /*b_off*/0, /*out_off*/6192 };
+        desc5[2].in2_off = 4752;  /* op1 = PW's output; op0 (in_off) = DW's output */
+        for (int i = 0; i < 3; i++) {
+            MacArrayParams p = derive_mac_array_params(desc5[i]);
+            desc5[i].h_out = p.h_out; desc5[i].w_out = p.w_out;
+            desc5[i].n_row_tiles = p.n_row_tiles; desc5[i].n_col_tiles = p.n_col_tiles; desc5[i].n_ch_tiles = p.n_ch_tiles;
+            desc5[i].last_row_tile = p.last_row_tile; desc5[i].last_col_tile = p.last_col_tile; desc5[i].last_ch_tile = p.last_ch_tile;
+        }
+
+        const int F5_TOTAL = 7632;  /* D_in(1440)+D_out(1440)+P_in(1872)+P_out(1440)+Add_out(1440) */
+        const int W5_TOTAL = 90 + 130;
+        const int B5_TOTAL = 10 + 10;
+
+        std::vector<int8_t>  f5_gold(F5_TOTAL, 0);
+        std::vector<int8_t>  w5_gold(W5_TOTAL, 0);
+        std::vector<int32_t> b5_gold(B5_TOTAL, 0);
+        Lcg rng5(0x5EEDADD5);
+        for (int i = 0; i < 1440; i++)     f5_gold[desc5[0].in_off + i] = rng5.next_i8();
+        for (int i = 0; i < 1872; i++)     f5_gold[desc5[1].in_off + i] = rng5.next_i8();
+        for (int i = 0; i < W5_TOTAL; i++) w5_gold[i] = rng5.next_i8();
+        for (int i = 0; i < B5_TOTAL; i++) b5_gold[i] = (int32_t)rng5.next_i8() * 4;
+
+        int h5d, w5d, h5p, w5p;
+        golden_out_dims(desc5[0], h5d, w5d);
+        golden_out_dims(desc5[1], h5p, w5p);
+        std::vector<int8_t> f5_expected = f5_gold;
+        golden_dwconv(desc5[0], h5d, w5d, f5_expected, w5_gold, b5_gold, f5_expected);
+        golden_pwconv(desc5[1], h5p, w5p, f5_expected, w5_gold, b5_gold, f5_expected);
+        golden_add(desc5[2], f5_expected, f5_expected);
+
+        std::vector<act_t> f5(F5_TOTAL, act_t(0));
+        std::vector<wt_t>  w5buf(W5_TOTAL, wt_t(0));
+        std::vector<acc_t> b5buf(B5_TOTAL, acc_t(0));
+        for (int i = 0; i < F5_TOTAL; i++) f5[i] = act_t(f5_gold[i]);
+        for (int i = 0; i < W5_TOTAL; i++) w5buf[i] = wt_t(w5_gold[i]);
+        for (int i = 0; i < B5_TOTAL; i++) b5buf[i] = acc_t(b5_gold[i]);
+
+        int w5ritten[3] = {0, 0, 0};
+        mac_array_top(desc5, 3, f5.data(), w5buf.data(), b5buf.data(), f5.data(), w5ritten);
+
+        int mismatches_p5a = 0;
+        for (int i = 0; i < F5_TOTAL; i++)
+            if ((int8_t)f5[i] != f5_expected[i]) mismatches_p5a++;
+        bool phase5a_ok = (mismatches_p5a == 0);
+        printf("[Phase5a] DW->PW->Add correctness: %s (%d/%d mismatches)\n",
+               phase5a_ok ? "PASS" : "FAIL", mismatches_p5a, F5_TOTAL);
+
+        /* Phase5b: clean re-run, then corrupt ONLY the Add layer's output
+         * region back to its pre-call contents -- out_written[2] stays 1,
+         * exactly the defect-5 symptom (IP reports done, write silently
+         * didn't happen), this time targeting Add specifically instead of
+         * PW (Phase2's target). */
+        std::vector<act_t> f5b(F5_TOTAL, act_t(0));
+        for (int i = 0; i < F5_TOTAL; i++) f5b[i] = act_t(f5_gold[i]);
+        std::vector<act_t> pre_call_snapshot5 = f5b;
+
+        int w5ritten_b[3] = {0, 0, 0};
+        mac_array_top(desc5, 3, f5b.data(), w5buf.data(), b5buf.data(), f5b.data(), w5ritten_b);
+
+        for (int i = desc5[2].out_off; i < F5_TOTAL; i++) f5b[i] = pre_call_snapshot5[i];
+
+        int mismatches_p5b = 0;
+        for (int i = 0; i < F5_TOTAL; i++)
+            if ((int8_t)f5b[i] != f5_expected[i]) mismatches_p5b++;
+        bool add_fault_reported_done = (w5ritten_b[2] == 1);
+        bool add_selfcheck_caught_it = (mismatches_p5b > 0);
+        printf("[Phase5b] Add fault-injected: out_written[2] still reports done: %s "
+               "(defect-5 symptom, targeting Add specifically this time)\n",
+               add_fault_reported_done ? "true (as intended)" : "false (test setup bug)");
+        printf("[Phase5b] self-verification caught the silently-dropped Add write: "
+               "%s (%d/%d mismatches)\n",
+               add_selfcheck_caught_it ? "PASS -- CAUGHT" : "FAIL -- MISSED", mismatches_p5b, F5_TOTAL);
+
+        phase5_ok = phase5a_ok && add_fault_reported_done && add_selfcheck_caught_it;
+    }
+
+    /* ================= PHASE 6: SE block data flow (A1, priority 1) =================
+     * GAP -> fc1(PWCONV,1x1) -> ReLU -> fc2(PWCONV,1x1) -> Sigmoid(placeholder)
+     * -> Scale(broadcast gate multiply). Chosen first per user direction:
+     * GAP's full-reduction and Scale's broadcast are the only channel-
+     * reduction + broadcast pattern in this op set, most likely to expose
+     * a buffer/descriptor design gap before A2. fc1/fc2 reuse LDESC_OP_PWCONV
+     * with h_in=w_in=1 (verified run_layer's PW path needs no special-
+     * casing for 1x1 spatial -- it's just a degenerate single-tile case). */
+    bool phase6_ok = false;
+    {
+        const int C = 10, H = 6, W = 6, CR = 4;  /* HW=36, deliberately not a power of 2 */
+        LayerDescV2 desc6[6];
+        desc6[0] = LayerDescV2{ LDESC_OP_GAP, /*cin*/C, /*cout*/C, /*h_in*/H, /*w_in*/W,
+                                 /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/0,
+                                 /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/360 };
+        desc6[1] = LayerDescV2{ LDESC_OP_PWCONV, /*cin*/C, /*cout*/CR, /*h_in*/1, /*w_in*/1,
+                                 /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/6,
+                                 /*in_off*/360, /*w_off*/0, /*b_off*/0, /*out_off*/370 };
+        desc6[2] = LayerDescV2{ LDESC_OP_RELU, /*cin*/CR, /*cout*/CR, /*h_in*/1, /*w_in*/1,
+                                 /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/0,
+                                 /*in_off*/370, /*w_off*/0, /*b_off*/0, /*out_off*/374 };
+        desc6[3] = LayerDescV2{ LDESC_OP_PWCONV, /*cin*/CR, /*cout*/C, /*h_in*/1, /*w_in*/1,
+                                 /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/6,
+                                 /*in_off*/374, /*w_off*/40, /*b_off*/4, /*out_off*/378 };
+        desc6[4] = LayerDescV2{ LDESC_OP_SIGMOID, /*cin*/C, /*cout*/C, /*h_in*/1, /*w_in*/1,
+                                 /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/0,
+                                 /*in_off*/378, /*w_off*/0, /*b_off*/0, /*out_off*/388 };
+        desc6[5] = LayerDescV2{ LDESC_OP_SCALE, /*cin*/C, /*cout*/C, /*h_in*/H, /*w_in*/W,
+                                 /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/6,
+                                 /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/398 };
+        desc6[5].in2_off = 388;  /* op0 (in_off=0) is the ORIGINAL feature map, same tensor
+                                   * GAP read -- final_conv's real fan_out=2 pattern */
+        for (int i = 0; i < 6; i++) {
+            MacArrayParams p = derive_mac_array_params(desc6[i]);
+            desc6[i].h_out = p.h_out; desc6[i].w_out = p.w_out;
+            desc6[i].n_row_tiles = p.n_row_tiles; desc6[i].n_col_tiles = p.n_col_tiles; desc6[i].n_ch_tiles = p.n_ch_tiles;
+            desc6[i].last_row_tile = p.last_row_tile; desc6[i].last_col_tile = p.last_col_tile; desc6[i].last_ch_tile = p.last_ch_tile;
+        }
+
+        const int F6_TOTAL = 758;  /* feat_in(360)+gap(10)+fc1(4)+relu(4)+fc2(10)+sigmoid(10)+scale_out(360) */
+        const int W6_TOTAL = 40 + 40;
+        const int B6_TOTAL = 4 + 10;
+
+        std::vector<int8_t>  f6_gold(F6_TOTAL, 0);
+        std::vector<int8_t>  w6_gold(W6_TOTAL, 0);
+        std::vector<int32_t> b6_gold(B6_TOTAL, 0);
+        Lcg rng6(0x5EB10CC5);
+        for (int i = 0; i < C * H * W; i++) f6_gold[desc6[0].in_off + i] = rng6.next_i8();
+        for (int i = 0; i < W6_TOTAL; i++)  w6_gold[i] = rng6.next_i8();
+        for (int i = 0; i < B6_TOTAL; i++)  b6_gold[i] = (int32_t)rng6.next_i8() * 4;
+
+        std::vector<int8_t> f6_expected = f6_gold;
+        golden_gap(desc6[0], f6_expected, f6_expected);
+        golden_pwconv(desc6[1], 1, 1, f6_expected, w6_gold, b6_gold, f6_expected);
+        golden_relu(desc6[2], f6_expected, f6_expected);
+        golden_pwconv(desc6[3], 1, 1, f6_expected, w6_gold, b6_gold, f6_expected);
+        golden_sigmoid(desc6[4], f6_expected, f6_expected);
+        golden_scale(desc6[5], f6_expected, f6_expected);
+
+        std::vector<act_t> f6(F6_TOTAL, act_t(0));
+        std::vector<wt_t>  w6buf(W6_TOTAL, wt_t(0));
+        std::vector<acc_t> b6buf(B6_TOTAL, acc_t(0));
+        for (int i = 0; i < F6_TOTAL; i++) f6[i] = act_t(f6_gold[i]);
+        for (int i = 0; i < W6_TOTAL; i++) w6buf[i] = wt_t(w6_gold[i]);
+        for (int i = 0; i < B6_TOTAL; i++) b6buf[i] = acc_t(b6_gold[i]);
+
+        int w6ritten[6] = {0, 0, 0, 0, 0, 0};
+        mac_array_top(desc6, 6, f6.data(), w6buf.data(), b6buf.data(), f6.data(), w6ritten);
+
+        int mismatches_p6 = 0;
+        for (int i = 0; i < F6_TOTAL; i++)
+            if ((int8_t)f6[i] != f6_expected[i]) mismatches_p6++;
+        phase6_ok = (mismatches_p6 == 0);
+        printf("[Phase6] SE data flow (GAP->fc1->ReLU->fc2->Sigmoid->Scale): "
+               "%s (%d/%d mismatches)\n", phase6_ok ? "PASS" : "FAIL", mismatches_p6, F6_TOTAL);
+    }
+
+    /* ================= PHASE 7: GELU (A1, last operator) =================
+     * DW -> GELU, GELU reading the conv output directly (op0 only, single
+     * source -- the real position in the network per the confirmed
+     * Conv->Div->Erf->Add->Mul chain, ZHR-64). Closes out A1's operator
+     * coverage. */
+    bool phase7_ok = false;
+    {
+        LayerDescV2 desc7[2];
+        desc7[0] = LayerDescV2{ LDESC_OP_DWCONV, /*cin*/8, /*cout*/8, /*h_in*/10, /*w_in*/10,
+                                 /*k*/3, /*stride*/1, /*pad*/1, /*fpg*/1, /*out_shift*/6,
+                                 /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/800 };
+        desc7[1] = LayerDescV2{ LDESC_OP_GELU, /*cin*/8, /*cout*/8, /*h_in*/10, /*w_in*/10,
+                                 /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/6,
+                                 /*in_off*/800, /*w_off*/0, /*b_off*/0, /*out_off*/1600 };
+        for (int i = 0; i < 2; i++) {
+            MacArrayParams p = derive_mac_array_params(desc7[i]);
+            desc7[i].h_out = p.h_out; desc7[i].w_out = p.w_out;
+            desc7[i].n_row_tiles = p.n_row_tiles; desc7[i].n_col_tiles = p.n_col_tiles; desc7[i].n_ch_tiles = p.n_ch_tiles;
+            desc7[i].last_row_tile = p.last_row_tile; desc7[i].last_col_tile = p.last_col_tile; desc7[i].last_ch_tile = p.last_ch_tile;
+        }
+
+        const int F7_TOTAL = 2400;  /* D_in(800)+D_out(800)+GELU_out(800) */
+        const int W7_TOTAL = 72;
+        const int B7_TOTAL = 8;
+
+        std::vector<int8_t>  f7_gold(F7_TOTAL, 0);
+        std::vector<int8_t>  w7_gold(W7_TOTAL, 0);
+        std::vector<int32_t> b7_gold(B7_TOTAL, 0);
+        Lcg rng7(0x9E1000AA);
+        for (int i = 0; i < 800; i++)       f7_gold[desc7[0].in_off + i] = rng7.next_i8();
+        for (int i = 0; i < W7_TOTAL; i++)  w7_gold[i] = rng7.next_i8();
+        for (int i = 0; i < B7_TOTAL; i++)  b7_gold[i] = (int32_t)rng7.next_i8() * 4;
+
+        int h7d, w7d;
+        golden_out_dims(desc7[0], h7d, w7d);
+        std::vector<int8_t> f7_expected = f7_gold;
+        golden_dwconv(desc7[0], h7d, w7d, f7_expected, w7_gold, b7_gold, f7_expected);
+        golden_gelu(desc7[1], f7_expected, f7_expected);
+
+        std::vector<act_t> f7(F7_TOTAL, act_t(0));
+        std::vector<wt_t>  w7buf(W7_TOTAL, wt_t(0));
+        std::vector<acc_t> b7buf(B7_TOTAL, acc_t(0));
+        for (int i = 0; i < F7_TOTAL; i++) f7[i] = act_t(f7_gold[i]);
+        for (int i = 0; i < W7_TOTAL; i++) w7buf[i] = wt_t(w7_gold[i]);
+        for (int i = 0; i < B7_TOTAL; i++) b7buf[i] = acc_t(b7_gold[i]);
+
+        int w7ritten[2] = {0, 0};
+        mac_array_top(desc7, 2, f7.data(), w7buf.data(), b7buf.data(), f7.data(), w7ritten);
+
+        int mismatches_p7 = 0;
+        for (int i = 0; i < F7_TOTAL; i++)
+            if ((int8_t)f7[i] != f7_expected[i]) mismatches_p7++;
+        phase7_ok = (mismatches_p7 == 0);
+        printf("[Phase7] DW->GELU: %s (%d/%d mismatches)\n",
+               phase7_ok ? "PASS" : "FAIL", mismatches_p7, F7_TOTAL);
+    }
+
     printf("\n[Summary] Phase0 (stride=2 DW correctness): %s\n", phase0_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase1 (correctness + no collateral writes): %s\n", phase1_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase2 (self-verification catches a silently-dropped write): %s\n", phase2_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase3 (PW->DW transition on the shared array): %s\n", phase3_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase4 (DW->PW->PW mixed sequence, shrinking Cin): %s\n", phase4_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase5 (Add correctness + self-verified writeback, defect-5 check): %s\n", phase5_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase6 (SE data flow: GAP + broadcast Scale): %s\n", phase6_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase7 (GELU, A1 operator coverage complete): %s\n", phase7_ok ? "PASS" : "FAIL");
 
-    return (phase0_ok && phase1_ok && phase2_ok && phase3_ok && phase4_ok) ? 0 : 1;
+    return (phase0_ok && phase1_ok && phase2_ok && phase3_ok && phase4_ok && phase5_ok && phase6_ok && phase7_ok) ? 0 : 1;
 }

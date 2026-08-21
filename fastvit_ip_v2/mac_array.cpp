@@ -372,6 +372,135 @@ static void run_layer(const LayerDescV2 &d,
     }
 }
 
+/* ---- Phase A1 (2026-08-20): elementwise residual Add, two DRAM sources
+ * (op0=in_off, op1=in2_off, confirmed from tools/layer_dag_ground_truth.json's
+ * multi_input_nodes -- every real Add in the network reads the
+ * token_mixer/identity branch and the layer_scale/processed branch),
+ * one write. No MAC array involvement, so this being a separate function
+ * with its own call site (see mac_array_top below) does NOT reintroduce
+ * round 9/10's duplication problem -- that was specifically about two
+ * callers needing the SAME expensive shared 64-wide MAC array; Add shares
+ * no resource with run_layer's DW/PW path, there's nothing to duplicate.
+ * Self-verified writeback (ZHR-91 row 6): exercised via
+ * mac_array_tb.cpp's existing fault-injection harness pattern, extended
+ * to target an Add layer specifically -- the historical defect-5 (Add
+ * write-back failure on the old architecture, root cause never isolated)
+ * is untested on this architecture until that check runs and passes. */
+static void run_add(const LayerDescV2 &d,
+                     const act_t in_base[], act_t out_base[])
+{
+    const int total = d.cin * d.h_in * d.w_in;
+    ADD: for (int i = 0; i < total; i++) {
+        #pragma HLS PIPELINE II=1
+        acc_t sum = (acc_t)in_base[d.in_off + i] + (acc_t)in_base[d.in2_off + i];
+        out_base[d.out_off + i] = (act_t)clip_shift(sum, d.out_shift);
+    }
+}
+
+/* ---- Phase A1 (SE block, priority 1 per user direction 2026-08-20):
+ * GAP is the only operator in the whole design with a genuine full-tensor
+ * read-before-write dependency -- every other op (DW/PW/Add/ReLU/Sigmoid/
+ * Scale) can stream one output per some small constant number of reads.
+ * GAP has to consume all H*W pixels of a channel before it can produce
+ * that channel's single output value. This is the "does it expose
+ * buffer/descriptor design gaps" case the whole SE-first ordering was
+ * chosen for (see the interface sketch, ZHR-92: GAP flagged there as the
+ * one op needing different layer-controller scheduling treatment, not a
+ * new port). Division by H*W (not a power of 2 for arbitrary real layer
+ * shapes) is a real integer divide here -- functionally correct for A1's
+ * csim-level goal, but a synthesis-cost item to revisit later, not
+ * solved now (matches the project's "don't optimize efficiency this
+ * round" discipline). */
+static void run_gap(const LayerDescV2 &d, const act_t in_base[], act_t out_base[])
+{
+    const int HW = d.h_in * d.w_in;
+    GAP_C: for (int c = 0; c < d.cin; c++) {
+        acc_t sum = 0;
+        GAP_HW: for (int i = 0; i < HW; i++) {
+            #pragma HLS PIPELINE II=1
+            sum += (acc_t)in_base[d.in_off + c * HW + i];
+        }
+        acc_t avg = sum / HW;
+        out_base[d.out_off + c] = (act_t)clip_shift(avg, d.out_shift);
+    }
+}
+
+static void run_relu(const LayerDescV2 &d, const act_t in_base[], act_t out_base[])
+{
+    const int total = d.cin * d.h_in * d.w_in;
+    RELU: for (int i = 0; i < total; i++) {
+        #pragma HLS PIPELINE II=1
+        act_t v = in_base[d.in_off + i];
+        out_base[d.out_off + i] = (v < 0) ? act_t(0) : v;
+    }
+}
+
+/* PLACEHOLDER quantized sigmoid -- a crude monotonic saturating linear
+ * map, NOT calibrated against any real sigmoid curve. Proves the
+ * GAP->fc1->ReLU->fc2->Sigmoid->Scale data flow wires together and
+ * produces a plausible gate; numeric accuracy is explicitly out of scope
+ * for A1 (that's calibration/quantization work, later). Flagging this
+ * now rather than letting it silently become a landmine -- this project
+ * has already been burned once by an unflagged placeholder
+ * (calibrate_activations.py's default_act_scale, 37x off, undiscovered
+ * for 9+ rounds). Reused (not shared code, but the same intent) by
+ * run_gelu below -- GELU(x)~=x*sigmoid(1.702x) is a standard documented
+ * approximation, so using this same placeholder gate for both keeps the
+ * two "uncalibrated" surfaces consistent instead of inventing a second,
+ * unrelated placeholder shape for GELU. */
+static act_t quantized_sigmoid(act_t x)
+{
+    acc_t v = (acc_t)x + 64;
+    if (v > 127) v = 127;
+    if (v < 0)   v = 0;
+    return (act_t)v;
+}
+
+static void run_sigmoid(const LayerDescV2 &d, const act_t in_base[], act_t out_base[])
+{
+    const int total = d.cin * d.h_in * d.w_in;
+    SIGMOID: for (int i = 0; i < total; i++) {
+        #pragma HLS PIPELINE II=1
+        out_base[d.out_off + i] = quantized_sigmoid(in_base[d.in_off + i]);
+    }
+}
+
+/* GELU, single source (op0 only) -- real ONNX pattern is Div->Erf->Add->
+ * Mul (17 instances, confirmed via direct node inspection, see ZHR-64);
+ * this is the ATOMIC hardware op a folded descriptor entry dispatches to,
+ * not a re-implementation of the 4-node decomposition. gelu(x)~=x*sigmoid
+ * (1.702x), computed here as x*quantized_sigmoid(x) -- same placeholder-
+ * accuracy caveat as run_sigmoid, proves data flow not numeric fidelity.
+ * tools/gen_gelu_lut.py exists as the real calibrated asset to integrate
+ * when this needs actual accuracy (not this round). */
+static void run_gelu(const LayerDescV2 &d, const act_t in_base[], act_t out_base[])
+{
+    const int total = d.cin * d.h_in * d.w_in;
+    GELU: for (int i = 0; i < total; i++) {
+        #pragma HLS PIPELINE II=1
+        act_t x = in_base[d.in_off + i];
+        acc_t prod = (acc_t)x * (acc_t)quantized_sigmoid(x);
+        out_base[d.out_off + i] = (act_t)clip_shift(prod, d.out_shift);
+    }
+}
+
+/* SE's final gate multiply: op0 (in_off) is the full HxWxC feature map,
+ * op1 (in2_off) is the C-length gate, broadcast over spatial -- confirmed
+ * from tools/layer_dag_ground_truth.json: final_conv's node has fan_out=2,
+ * feeding both ReduceMean AND this Mul directly from the same tensor. */
+static void run_scale(const LayerDescV2 &d, const act_t in_base[], act_t out_base[])
+{
+    const int HW = d.h_in * d.w_in;
+    SCALE_C: for (int c = 0; c < d.cin; c++) {
+        act_t gate = in_base[d.in2_off + c];
+        SCALE_HW: for (int i = 0; i < HW; i++) {
+            #pragma HLS PIPELINE II=1
+            acc_t prod = (acc_t)in_base[d.in_off + c * HW + i] * (acc_t)gate;
+            out_base[d.out_off + c * HW + i] = (act_t)clip_shift(prod, d.out_shift);
+        }
+    }
+}
+
 void mac_array_top(
     const LayerDescV2 desc[],
     int n_layers,
@@ -382,7 +511,15 @@ void mac_array_top(
     int          out_written[])
 {
     for (int i = 0; i < n_layers; i++) {
-        run_layer(desc[i], in_base, w_base, b_base, out_base);
+        switch (desc[i].op_type) {
+            case LDESC_OP_ADD:     run_add(desc[i], in_base, out_base); break;
+            case LDESC_OP_GAP:     run_gap(desc[i], in_base, out_base); break;
+            case LDESC_OP_RELU:    run_relu(desc[i], in_base, out_base); break;
+            case LDESC_OP_SIGMOID: run_sigmoid(desc[i], in_base, out_base); break;
+            case LDESC_OP_SCALE:   run_scale(desc[i], in_base, out_base); break;
+            case LDESC_OP_GELU:    run_gelu(desc[i], in_base, out_base); break;
+            default:                run_layer(desc[i], in_base, w_base, b_base, out_base); break;
+        }
         out_written[i] = 1;
     }
 }

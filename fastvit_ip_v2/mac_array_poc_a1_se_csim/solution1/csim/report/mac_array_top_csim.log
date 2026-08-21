@@ -1,0 +1,29 @@
+INFO: [SIM 2] *************** CSIM start ***************
+INFO: [SIM 4] CSIM will launch CLANG as the compiler.
+   Compiling ../../../../mac_array_tb.cpp in debug mode
+   Compiling ../../../../mac_array.cpp in debug mode
+   Generating csim.exe
+[Setup] mac_array_params_dump.txt written for tools/verify_mac_array_mapping.py
+[Phase0] stride=2 DW (h_in=w_in=17,cin=9 -> h_out=w_out=9): PASS (0/3330 mismatches)
+[Phase1] correctness: PASS (0/21200 mismatches)
+[Phase1] weight/bias buffers untouched by the op: PASS
+[Phase1] out_written flags set for both layers: PASS
+
+[Phase2] fault-injected layer 1: out_written[1] still reports done: true (as intended) (this is the defect-5 symptom: IP claims success)
+[Phase2] self-verification (output-vs-golden compare) independently caught the silently-dropped write: PASS -- CAUGHT (5193/21200 mismatches in the corrupted layer)
+[Phase3] PW->DW transition (round 9 shared-array direction not covered by Phase1): PASS (0/8694 mismatches)
+[Phase4] DW(stride=2)->PW(Cin=32)->PW(Cin=8) mixed sequence: PASS (0/8183 mismatches)
+[Phase5a] DW->PW->Add correctness: PASS (0/7632 mismatches)
+[Phase5b] Add fault-injected: out_written[2] still reports done: true (as intended) (defect-5 symptom, targeting Add specifically this time)
+[Phase5b] self-verification caught the silently-dropped Add write: PASS -- CAUGHT (1440/7632 mismatches)
+[Phase6] SE data flow (GAP->fc1->ReLU->fc2->Sigmoid->Scale): PASS (0/758 mismatches)
+
+[Summary] Phase0 (stride=2 DW correctness): PASS
+[Summary] Phase1 (correctness + no collateral writes): PASS
+[Summary] Phase2 (self-verification catches a silently-dropped write): PASS
+[Summary] Phase3 (PW->DW transition on the shared array): PASS
+[Summary] Phase4 (DW->PW->PW mixed sequence, shrinking Cin): PASS
+[Summary] Phase5 (Add correctness + self-verified writeback, defect-5 check): PASS
+[Summary] Phase6 (SE data flow: GAP + broadcast Scale): PASS
+INFO: [SIM 1] CSim done with 0 errors.
+INFO: [SIM 3] *************** CSIM finish ***************

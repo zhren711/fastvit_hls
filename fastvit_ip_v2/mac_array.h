@@ -102,8 +102,30 @@ typedef ap_int<32>  acc_t;   /* accumulator / bias */
 #define PATCH_C_MAX       ((MAC_PC - 1) * MAX_STRIDE + MAX_K)   /* 17 */
 #define MAX_CIN_PW        32
 
-#define LDESC_OP_DWCONV 0
-#define LDESC_OP_PWCONV 1
+#define LDESC_OP_DWCONV  0
+#define LDESC_OP_PWCONV  1
+#define LDESC_OP_ADD     2   /* elementwise residual add, two sources */
+#define LDESC_OP_GAP     3   /* global average pool: HxW per channel -> 1 value/channel */
+#define LDESC_OP_RELU    4   /* elementwise ReLU (SE block only -- confirmed via ONNX node
+                               * histogram, 1 total Relu node in the whole 52-layer graph) */
+#define LDESC_OP_SIGMOID 5   /* elementwise sigmoid (SE gate -- 1 total Sigmoid node) --
+                               * PLACEHOLDER quantization (see run_sigmoid), not calibrated,
+                               * proves the GAP->fc->act->gate data flow, not numeric accuracy */
+#define LDESC_OP_SCALE   6   /* per-channel broadcast gate multiply (SE's final Mul):
+                               * op0=in_off is the full HxWxC feature map, op1=in2_off is the
+                               * C-length gate, broadcast over spatial -- confirmed from
+                               * layer_dag_ground_truth.json: final_conv fan_out=2 feeds both
+                               * ReduceMean and this Mul directly from the SAME tensor */
+#define LDESC_OP_GELU    7   /* elementwise GELU, single source. This is the ATOMIC hardware
+                               * op only -- confirmed via direct ONNX inspection that the real
+                               * graph represents each GELU as a 4-node Div->Erf->Add->Mul
+                               * chain (17 instances total), so a real gen_layer_descriptor.py
+                               * run must fold that 4-node pattern into ONE LDESC_OP_GELU entry
+                               * (old driver did this too, per ZHR-9) -- that folding is
+                               * generator-side Python work, deferred to A2 when the real
+                               * descriptor JSON is actually consumed. This round only builds
+                               * and tests the hardware op itself via a directly-constructed
+                               * descriptor, same as every other A1 op so far. */
 
 /* Layer descriptor -- structurally the same fields as
  * tools/gen_layer_descriptor.py's JSON output (step 2a), plus the
@@ -111,14 +133,24 @@ typedef ap_int<32>  acc_t;   /* accumulator / bias */
  * hardware executes", removes runtime division from the synthesized
  * design). n_ch_tiles/last_ch_tile are always computed from Cin (round 5:
  * DW uses them for its real output-channel tiling -- cin==cout for
- * depthwise; PW uses them for its Cin reduction-chunk stepping). */
+ * depthwise; PW uses them for its Cin reduction-chunk stepping).
+ *
+ * Phase A1 (2026-08-20): added in2_off for Add's second operand (the
+ * layer_scale/processed-branch source; op0 is the existing in_off, the
+ * token_mixer/identity branch -- both confirmed from
+ * tools/layer_dag_ground_truth.json's multi_input_nodes, not assumed).
+ * Interface-sketch note (reviewed, not yet implemented): a real m_axi
+ * design will also need an in2_stride_mode bit to distinguish Add's
+ * same-shape second operand from SE's channel-broadcast one -- not
+ * needed yet since Add is the only two-source op this round. */
 struct LayerDescV2 {
-    int op_type;             /* LDESC_OP_DWCONV | LDESC_OP_PWCONV */
+    int op_type;             /* LDESC_OP_DWCONV | LDESC_OP_PWCONV | LDESC_OP_ADD */
     int cin, cout;
     int h_in, w_in;
     int k, stride, pad, fpg; /* fpg unused by PW (always 1), kept for DW parity with fastvit_ip's descriptor fields */
     int out_shift;
     int in_off, w_off, b_off, out_off;  /* element offsets into in_base/w_base/b_base/out_base */
+    int in2_off;              /* Add's second operand offset into in_base (op0=in_off, op1=in2_off) */
 
     /* host-precomputed -- NOT computed by mac_array_top. */
     int h_out, w_out;
