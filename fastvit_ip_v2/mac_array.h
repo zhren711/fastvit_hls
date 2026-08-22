@@ -128,6 +128,75 @@ typedef ap_int<32>  acc_t;   /* accumulator / bias */
 #define PATCH_C_MAX       ((MAC_PC - 1) * MAX_STRIDE + MAX_K)
 #define MAX_CIN_PW        32
 
+/* A3 round (2026-08-21, ZHR-92): PW's weight+bias only depend on
+ * (ot,cbase), never on the (rt,colt) spatial tile -- but PW_STAGE/
+ * PW_WSTAGE/the bias read all sit inside the rt/colt/ot/cbase nest, so
+ * every real (rt,colt) spatial tile re-fetches the SAME weight+bias data
+ * from DRAM. Measured exactly on entry[3] of the real 82-entry sequence
+ * (cin=cout=48, 64x64, 4x4 tiling): weight redundancy = n_row_tiles *
+ * n_col_tiles = 256.0x exactly, confirmed against the HLS burst-inference
+ * log independently (PW_WSTAGE is the one path with NO burst inference at
+ * all -- two separate pieces of evidence pointing at the same victim).
+ * Fix: cache the layer's FULL weight+bias matrix on-chip ONCE, before the
+ * rt/colt loop (loop-invariant hoist -- doesn't touch the rt/colt/ot/cbase
+ * nest itself, so acc's cross-cbase accumulation and WRITEOUT timing are
+ * unaffected).
+ *
+ * MAX_PW_WEIGHT_CACHE is NOT sized for entry 3 alone -- an earlier attempt
+ * at 4096 (entry 3's own 2304-element need) silently overran on
+ * mac_array_tb.cpp's own Phase12 (cin=1152,cout=384, the REAL
+ * layer_0044_pwconv shape, 442368 elements), corrupting a `static` array
+ * rather than crashing cleanly. 442368 is confirmed (via
+ * weights_layout.h's FV_WEIGHT_SIZES) to be the largest PW weight blob in
+ * the whole real 52-layer network -- sized to that exactly, a deliberate
+ * ~432KB BRAM commitment (current P&R headroom: 6/280 RAMB18E1 used, but
+ * that number predates this change and is NOT yet re-verified against it).
+ * Activation's separate 48x redundancy needs an actual loop-nest reorder
+ * (ot moved outside rt/colt), which changes acc lifetime and WRITEOUT
+ * timing and is deliberately deferred to its own round, not bundled with
+ * this change. */
+#define MAX_PW_WEIGHT_CACHE  442368
+#define MAX_PW_BIAS_CACHE    1152
+
+/* A3 round 2 (2026-08-21, ZHR-92): the weight-hoist round's own result
+ * (eliminating 587,520 bytes of DRAM traffic barely moved the needle,
+ * 700.27ms -> 690.37ms) led to a corrected diagnosis: cost is per-AXI-
+ * TRANSACTION, not per-byte -- PW_STAGE's innermost contiguous run is
+ * only MAC_PC=4 bytes (one output row's worth of a single channel), so
+ * every (rt,colt,ot,cbase) restage issues Cin*MAC_PR = 192 separate
+ * 4-byte bursts. Measured: 699ms / (16*16*48 * 192) bursts = 296 ns/burst
+ * (~30 cycles/burst through SmartConnect+HP+DDR3 for an unpipelined short
+ * transaction) -- a normal number for THAT many small requests, not
+ * evidence of a slow interconnect. Weight's DRAM traffic was already a
+ * small, CONTIGUOUS blob (few bursts to begin with), so hoisting it barely
+ * touched the burst count; activation's staging reruns once per (rt,colt,
+ * ot,cbase) even though the data only depends on (rt,colt) -- the SAME
+ * loop-invariant redundancy class weight had, just not fixed yet.
+ * Retraction: the round-1 conclusion "activation's 48x isn't worth doing
+ * (it cuts bytes, not iterations)" was wrong -- PW_STAGE's DRAM traffic
+ * IS re-issued once per (rt,colt,ot,cbase) iteration, so 48x fewer
+ * activation restages means 48x fewer bursts too, not just fewer bytes.
+ *
+ * Fix: same technique as the weight hoist -- stage the full-Cin spatial
+ * patch for a given (rt,colt) ONCE (right after colt is known, before the
+ * ot loop), reused across every ot/cbase, instead of restaging it from
+ * DRAM on every one of the 48 output channels that don't change it.
+ * MAX_CIN=1152 is the real network's largest channel count (same real-
+ * network scoping as MAX_PW_WEIGHT_CACHE, not a PoC-only bound) -- buffer
+ * is MAX_CIN*MAC_PR*MAC_PC = 18,432 bytes (~5 BRAM36 tiles), small next to
+ * the weight cache's ~432KB commitment. No loop reorder, no change to
+ * acc's cross-cbase accumulation or WRITEOUT timing -- exactly the same
+ * risk profile the weight hoist already proved out. */
+#define MAX_CIN  1152
+
+/* A3 round 3 (2026-08-21, ZHR-92): bound for run_reduce_unified's
+ * per-step gather buffers (lane_in_all/lane_w_all), see mac_array.cpp's
+ * header comment on the drive_mac removal for the full rationale. Must
+ * cover DW's real step count (MAX_K*MAX_K=49 taps) -- PW's per-cbase
+ * step count (ceil(MAX_CIN_PW/MAC_PD)=16) always fits comfortably
+ * within that. */
+#define MAX_STEPS (MAX_K * MAX_K)
+
 #define LDESC_OP_DWCONV  0
 #define LDESC_OP_PWCONV  1
 #define LDESC_OP_ADD     2   /* elementwise residual add, two sources */
@@ -142,16 +211,15 @@ typedef ap_int<32>  acc_t;   /* accumulator / bias */
                                * C-length gate, broadcast over spatial -- confirmed from
                                * layer_dag_ground_truth.json: final_conv fan_out=2 feeds both
                                * ReduceMean and this Mul directly from the SAME tensor */
-#define LDESC_OP_LSCALE  8   /* layer_scale: per-channel broadcast multiply, same shape as
-                               * LDESC_OP_SCALE but op1 (the C-length factor) is a TRAINED
-                               * WEIGHT (read from w_base at w_off) not a computed activation
-                               * (in_base) -- found during the A2 design pass: 10 real layers
-                               * (every mlp/fc2 output) feed a layer_scale Mul before the
-                               * residual Add, and A1 never built this op because no synthetic
-                               * test sequence exercised it. Confirmed distinct from SE's
-                               * LDESC_OP_SCALE by consumer-tag co-occurrence in
-                               * layer_descriptor_256.json ('mul' alone = layer_scale, 'mul'
-                               * co-occurring with 'se_reduce' = SE's gate multiply). */
+/* LDESC_OP_LSCALE (layer_scale as a standalone op, value 8) was implemented
+ * and verified 2026-08-21 (commit e5e1246) then removed the same day once
+ * ZHR-92 confirmed Route A: gamma is folded into fc2's weight+bias at
+ * export time (tools/fold_layer_scale.py, validated to ~1e-16, Phase A
+ * step 2b-1), so the real 83-entry hardware sequence never dispatches a
+ * layer_scale op -- fc2's own PWCONV output already carries the scale.
+ * Full implementation + Phase10 csim coverage recoverable from git
+ * (commit e5e1246) if a future quantization scheme (Phase C, W8A4
+ * retrain) makes gamma non-foldable again. */
 #define LDESC_OP_GELU    7   /* elementwise GELU, single source. This is the ATOMIC hardware
                                * op only -- confirmed via direct ONNX inspection that the real
                                * graph represents each GELU as a 4-node Div->Erf->Add->Mul
@@ -199,6 +267,36 @@ struct LayerDescV2 {
     int h_out, w_out;
     int n_row_tiles, n_col_tiles, n_ch_tiles;        /* ceil(dim / tile_size); n_ch_tiles from Cin always */
     int last_row_tile, last_col_tile, last_ch_tile;  /* remainder tile size (1..8) */
+
+    /* A2 (2026-08-21, ZHR-92): per-channel out_shift. A single averaged
+     * shift per layer saturates channels whose weight_scale is far above
+     * the layer's mean (confirmed on real data: Stem's weight_scale spans
+     * 396x across 48 channels, 29/48 output channels >50% saturated at
+     * the shared shift; network-wide median spread is 43.7x, worst layer
+     * 5507x -- not a Stem-specific quirk). Deliberately appended at the
+     * END of the struct, not inserted near out_shift, so every existing
+     * positional brace-initializer (all 14 csim phases predating this)
+     * keeps working unmodified -- they never mention these two fields,
+     * C++ aggregate init zero-fills trailing unspecified fields, and
+     * use_shift_table=0 is exactly "use the old scalar out_shift",
+     * i.e. zero-init IS backward compatible by construction, not by
+     * convention someone has to remember. */
+    int use_shift_table;     /* 0 = use out_shift (scalar, old behavior).
+                               * 1 = look up w_base[shift_off + channel]
+                               * per output channel instead. */
+    int shift_off;           /* element offset into w_base (reused, not a
+                               * new array -- shift values fit trivially
+                               * in wt_t's 8 bits) of a Cout-length table,
+                               * one shift value per output channel. Only
+                               * meaningful when use_shift_table=1. */
+
+    /* A3 (2026-08-21, ZHR-92): host-precomputed channel-plane strides,
+     * same append-at-the-end / zero-init-is-safe convention as
+     * use_shift_table/shift_off above. See MacArrayParams' in_ch_stride/
+     * out_ch_stride for why -- eliminates the runtime h_in*w_in /
+     * h_out*w_out multiply from run_layer's per-lane address arithmetic
+     * entirely; hardware reads these fields instead. */
+    int in_ch_stride, out_ch_stride;
 };
 
 /* Host-side utility (stands in for the real descriptor generator). NOT
@@ -210,6 +308,22 @@ struct MacArrayParams {
     int h_out, w_out;
     int n_row_tiles, n_col_tiles, n_ch_tiles;
     int last_row_tile, last_col_tile, last_ch_tile;
+    int in_ch_stride, out_ch_stride;  /* A3 (2026-08-21, ZHR-92): h_in*w_in,
+                                        * h_out*w_out precomputed host-side.
+                                        * Address arithmetic in run_layer
+                                        * used to form these products with
+                                        * a runtime multiply INSIDE the
+                                        * per-lane loops -- confirmed by
+                                        * direct diff of csynth Instance
+                                        * tables (pre/post real m_axi
+                                        * interface: run_layer's own DSP
+                                        * count 71->106, +35, matching the
+                                        * overall +41 DSP delta together
+                                        * with mac_array_top's own +6).
+                                        * Precomputing means hardware reads
+                                        * a field instead of multiplying --
+                                        * same technique round 3 used to
+                                        * remove a hardware divider. */
 };
 MacArrayParams derive_mac_array_params(const LayerDescV2 &d);
 

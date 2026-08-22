@@ -21,7 +21,11 @@ INFO: [SIM 4] CSIM will launch CLANG as the compiler.
 [Phase8a] K=7,stride=1 DW (real layer-4 shape): PASS (0/2352 mismatches)
 [Phase8b] K=7,stride=2 DW (synthetic, fpg=1 isolated from the fpg=2 gap): PASS (0/2500 mismatches)
 [Phase9] fpg=2 DW, K=7 stride=2 combined (real stage-downsample shape): PASS (0/1536 mismatches)
-[Phase10] DW+PW->LSCALE->Add (real block pattern): PASS (0/3800 mismatches)
+[Phase10] DW+PW(gamma-folded weight)->Add (real block pattern): PASS (0/3200 mismatches)
+[Phase11] DW fpg=48 feasibility (cin=1->cout=48, real Stem-branch shape): PASS (0/851968 mismatches)
+[Phase12] PW Cin-chunking fix (cin=1152->cout=384, real layer_0044_pwconv shape): PASS (0/98304 mismatches)
+[Phase13] PW Cin-chunking tail case (cin=144->cout=48, real layer_0006_pwconv, the original crash site): PASS (0/786432 mismatches)
+[Phase14] per-channel out_shift table (use_shift_table=1, 8 distinct shifts): PASS (0/5600 mismatches)
 
 [Summary] Phase0 (stride=2 DW correctness): PASS
 [Summary] Phase1 (correctness + no collateral writes): PASS
@@ -33,6 +37,10 @@ INFO: [SIM 4] CSIM will launch CLANG as the compiler.
 [Summary] Phase7 (GELU, A1 operator coverage complete): PASS
 [Summary] Phase8 (K=7 DW correctness, A2 pre-step): PASS
 [Summary] Phase9 (fpg=2 DW correctness, real stage-downsample shape): PASS
-[Summary] Phase10 (layer_scale, real block pattern): PASS
+[Summary] Phase10 (gamma-folded block pattern, DW+PW->Add): PASS
+[Summary] Phase11 (DW fpg=48 feasibility, route-B check): PASS
+[Summary] Phase12 (PW Cin-chunking fix, real cin=1152 shape): PASS
+[Summary] Phase13 (PW Cin-chunking tail case, real cin=144 crash site): PASS
+[Summary] Phase14 (per-channel out_shift table, use_shift_table=1): PASS
 INFO: [SIM 1] CSim done with 0 errors.
 INFO: [SIM 3] *************** CSIM finish ***************

@@ -107,6 +107,53 @@ def classify_consumers(raw_consumers, node_idx_by_conv_output_producer):
     return out
 
 
+# Hardware capability limits, read directly from mac_array.cpp/.h (2026-08-21,
+# ZHR-92) rather than assumed: this is the third time a descriptor field
+# turned out to be silently inexpressible by the hardware path it gets
+# dispatched to (MAX_K truncation, unread fpg, and now this) -- three
+# instances is a pattern, not a one-off, hence this check instead of a
+# fourth silent gap. Each limit below is cited from the actual code that
+# enforces (or fails to enforce) it, not inferred:
+#   - PWCONV (run_layer's PW_STAGE/PW_WSTAGE, mac_array.cpp ~264-336):
+#     stages input as pw_patch[ci][rr][cw] = in_base[(ci*H+oh)*W+ow] -- ONE
+#     pixel per channel at the SAME position as the output, and weights as
+#     flat [cout,cin] -- no kernel-window offset anywhere. Silently wrong
+#     for k!=1; also implicitly assumes stride=1, pad=0 (never read).
+#   - DWCONV (run_layer's dw_patch / DW_WT_STAGE): kernel taps bounded by
+#     MAX_K (mac_array.h, =7), sliding window bounded by MAX_STRIDE (=2).
+#   - any other op_type string (e.g. a plain full-channel-reduction conv
+#     with k>1, group=1): NOT dispatchable by ANY current hardware path.
+_MAX_K = 7
+_MAX_STRIDE = 2
+
+
+def check_hw_capability(layer):
+    problems = []
+    tag, op_type = layer["tag"], layer["op_type"]
+    k, stride, pad = layer["k"], layer["stride"], layer["pad"]
+
+    if op_type == "pwconv":
+        if not (k == 1 and stride == 1 and pad == 0):
+            problems.append(
+                f"{tag}: op_type=pwconv but k={k} stride={stride} pad={pad} -- "
+                f"PW_STAGE/PW_WSTAGE hardware ignores k/stride/pad entirely and "
+                f"reads one pixel per channel at the output position (mac_array.cpp "
+                f"~264-336); this is silently computed WRONG unless k=1,stride=1,pad=0"
+            )
+    elif op_type == "dwconv":
+        if k > _MAX_K:
+            problems.append(f"{tag}: op_type=dwconv k={k} > MAX_K={_MAX_K} (mac_array.h)")
+        if stride > _MAX_STRIDE:
+            problems.append(f"{tag}: op_type=dwconv stride={stride} > MAX_STRIDE={_MAX_STRIDE} (mac_array.h)")
+    else:
+        problems.append(
+            f"{tag}: op_type={op_type!r} has NO dispatchable hardware implementation "
+            f"at all (only 'dwconv' and 'pwconv' map to a working op_type in "
+            f"mac_array.cpp) -- k={k} stride={stride} pad={pad} cin={layer['cin']} cout={layer['cout']}"
+        )
+    return problems
+
+
 def main():
     args = parse_args()
 
@@ -136,6 +183,8 @@ def main():
         node_idx_by_conv_output_producer[node.name] = layer_idx
 
     dag_by_node_idx = {l["node_idx"]: l for l in dag_gt["layers"]}
+
+    hw_cap_violations = []
 
     descriptor = []
     for layer_idx, (tag, entry) in enumerate(layers_by_tag):
@@ -182,6 +231,20 @@ def main():
             "bias_file": entry["bias_file"],
             "consumers": consumers,
         })
+
+        hw_cap_violations.extend(check_hw_capability(descriptor[-1]))
+
+    if hw_cap_violations:
+        print(f"\n>>> {len(hw_cap_violations)} HARDWARE CAPABILITY VIOLATION(S) "
+              f"(descriptor declares a parameter the dispatched op cannot express):")
+        for v in hw_cap_violations:
+            print("   -", v)
+        raise AssertionError(
+            f"{len(hw_cap_violations)} layer(s) declare parameters outside what their "
+            f"dispatched hardware op can compute -- see list above. This descriptor was "
+            f"NOT written; fix the affected layers' dispatch (or the hardware) before "
+            f"regenerating."
+        )
 
     with open(args.out, "w") as f:
         json.dump(descriptor, f, indent=2)

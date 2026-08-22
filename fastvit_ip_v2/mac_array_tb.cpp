@@ -111,6 +111,30 @@ static void golden_pwconv(const LayerDescV2 &d, int h_out, int w_out,
     }
 }
 
+/* A2 per-channel out_shift (2026-08-21, ZHR-92): same as golden_pwconv,
+ * but shift comes from a per-output-channel table (shift[co]) instead of
+ * the scalar d.out_shift -- independent reference for use_shift_table=1. */
+static void golden_pwconv_shift_table(const LayerDescV2 &d, int h_out, int w_out,
+                                       const std::vector<int8_t> &in, const std::vector<int8_t> &w,
+                                       const std::vector<int32_t> &b, const std::vector<int8_t> &shift,
+                                       std::vector<int8_t> &out)
+{
+    for (int co = 0; co < d.cout; co++) {
+        for (int oh = 0; oh < h_out; oh++) {
+            for (int ow = 0; ow < w_out; ow++) {
+                int64_t acc = b[d.b_off + co];
+                for (int ci = 0; ci < d.cin; ci++) {
+                    int8_t x = in[d.in_off + (ci * d.h_in + oh) * d.w_in + ow];
+                    int8_t wv = w[d.w_off + co * d.cin + ci];
+                    acc += (int64_t)x * (int64_t)wv;
+                }
+                out[d.out_off + (co * h_out + oh) * w_out + ow] =
+                    (int8_t)g_clip_shift(acc, shift[co]);
+            }
+        }
+    }
+}
+
 /* Phase A1 (2026-08-20): elementwise residual add, two sources (op0=in_off,
  * op1=in2_off) both confirmed from tools/layer_dag_ground_truth.json's
  * multi_input_nodes -- every real Add reads a token_mixer/identity branch
@@ -193,21 +217,6 @@ static void golden_scale(const LayerDescV2 &d, const std::vector<int8_t> &in, st
     }
 }
 
-/* layer_scale: same shape as golden_scale, op1 read from the WEIGHT
- * buffer (w_off, cin values) instead of the activation buffer. */
-static void golden_lscale(const LayerDescV2 &d, const std::vector<int8_t> &in,
-                           const std::vector<int8_t> &w, std::vector<int8_t> &out)
-{
-    int HW = d.h_in * d.w_in;
-    for (int c = 0; c < d.cin; c++) {
-        int8_t gate = w[d.w_off + c];
-        for (int i = 0; i < HW; i++) {
-            int64_t prod = (int64_t)in[d.in_off + c * HW + i] * (int64_t)gate;
-            out[d.out_off + c * HW + i] = (int8_t)g_clip_shift(prod, d.out_shift);
-        }
-    }
-}
-
 /* independent, plain-int re-derivation matching mac_array.h's contract --
  * deliberately NOT calling derive_mac_array_params(), same spirit as the
  * Python cross-check but exercised here too so the dump reflects what an
@@ -238,7 +247,7 @@ int main()
      * itself (see mac_array.h). */
     for (int i = 0; i < 2; i++) {
         MacArrayParams p = derive_mac_array_params(desc[i]);
-        desc[i].h_out = p.h_out;         desc[i].w_out = p.w_out;
+        desc[i].h_out = p.h_out;         desc[i].w_out = p.w_out;         desc[i].in_ch_stride = p.in_ch_stride;         desc[i].out_ch_stride = p.out_ch_stride;
         desc[i].n_row_tiles = p.n_row_tiles;   desc[i].n_col_tiles = p.n_col_tiles;
         desc[i].n_ch_tiles = p.n_ch_tiles;
         desc[i].last_row_tile = p.last_row_tile; desc[i].last_col_tile = p.last_col_tile;
@@ -280,7 +289,7 @@ int main()
                                        /*k*/3, /*stride*/2, /*pad*/1, /*fpg*/1, /*out_shift*/6,
                                        /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/2601 /* 9*17*17 */ };
         MacArrayParams p = derive_mac_array_params(s2);
-        s2.h_out = p.h_out; s2.w_out = p.w_out;
+        s2.h_out = p.h_out; s2.w_out = p.w_out; s2.in_ch_stride = p.in_ch_stride; s2.out_ch_stride = p.out_ch_stride;
         s2.n_row_tiles = p.n_row_tiles; s2.n_col_tiles = p.n_col_tiles; s2.n_ch_tiles = p.n_ch_tiles;
         s2.last_row_tile = p.last_row_tile; s2.last_col_tile = p.last_col_tile; s2.last_ch_tile = p.last_ch_tile;
 
@@ -428,7 +437,7 @@ int main()
                                  /*in_off*/3744, /*w_off*/160, /*b_off*/10, /*out_off*/6219 };
         for (int i = 0; i < 2; i++) {
             MacArrayParams p = derive_mac_array_params(desc3[i]);
-            desc3[i].h_out = p.h_out; desc3[i].w_out = p.w_out;
+            desc3[i].h_out = p.h_out; desc3[i].w_out = p.w_out; desc3[i].in_ch_stride = p.in_ch_stride; desc3[i].out_ch_stride = p.out_ch_stride;
             desc3[i].n_row_tiles = p.n_row_tiles; desc3[i].n_col_tiles = p.n_col_tiles; desc3[i].n_ch_tiles = p.n_ch_tiles;
             desc3[i].last_row_tile = p.last_row_tile; desc3[i].last_col_tile = p.last_col_tile; desc3[i].last_ch_tile = p.last_ch_tile;
         }
@@ -493,7 +502,7 @@ int main()
                                  /*in_off*/7130, /*w_off*/273, /*b_off*/15, /*out_off*/7778 };
         for (int i = 0; i < 3; i++) {
             MacArrayParams p = derive_mac_array_params(desc4[i]);
-            desc4[i].h_out = p.h_out; desc4[i].w_out = p.w_out;
+            desc4[i].h_out = p.h_out; desc4[i].w_out = p.w_out; desc4[i].in_ch_stride = p.in_ch_stride; desc4[i].out_ch_stride = p.out_ch_stride;
             desc4[i].n_row_tiles = p.n_row_tiles; desc4[i].n_col_tiles = p.n_col_tiles; desc4[i].n_ch_tiles = p.n_ch_tiles;
             desc4[i].last_row_tile = p.last_row_tile; desc4[i].last_col_tile = p.last_col_tile; desc4[i].last_ch_tile = p.last_ch_tile;
         }
@@ -566,7 +575,7 @@ int main()
         desc5[2].in2_off = 4752;  /* op1 = PW's output; op0 (in_off) = DW's output */
         for (int i = 0; i < 3; i++) {
             MacArrayParams p = derive_mac_array_params(desc5[i]);
-            desc5[i].h_out = p.h_out; desc5[i].w_out = p.w_out;
+            desc5[i].h_out = p.h_out; desc5[i].w_out = p.w_out; desc5[i].in_ch_stride = p.in_ch_stride; desc5[i].out_ch_stride = p.out_ch_stride;
             desc5[i].n_row_tiles = p.n_row_tiles; desc5[i].n_col_tiles = p.n_col_tiles; desc5[i].n_ch_tiles = p.n_ch_tiles;
             desc5[i].last_row_tile = p.last_row_tile; desc5[i].last_col_tile = p.last_col_tile; desc5[i].last_ch_tile = p.last_ch_tile;
         }
@@ -672,7 +681,7 @@ int main()
                                    * GAP read -- final_conv's real fan_out=2 pattern */
         for (int i = 0; i < 6; i++) {
             MacArrayParams p = derive_mac_array_params(desc6[i]);
-            desc6[i].h_out = p.h_out; desc6[i].w_out = p.w_out;
+            desc6[i].h_out = p.h_out; desc6[i].w_out = p.w_out; desc6[i].in_ch_stride = p.in_ch_stride; desc6[i].out_ch_stride = p.out_ch_stride;
             desc6[i].n_row_tiles = p.n_row_tiles; desc6[i].n_col_tiles = p.n_col_tiles; desc6[i].n_ch_tiles = p.n_ch_tiles;
             desc6[i].last_row_tile = p.last_row_tile; desc6[i].last_col_tile = p.last_col_tile; desc6[i].last_ch_tile = p.last_ch_tile;
         }
@@ -731,7 +740,7 @@ int main()
                                  /*in_off*/800, /*w_off*/0, /*b_off*/0, /*out_off*/1600 };
         for (int i = 0; i < 2; i++) {
             MacArrayParams p = derive_mac_array_params(desc7[i]);
-            desc7[i].h_out = p.h_out; desc7[i].w_out = p.w_out;
+            desc7[i].h_out = p.h_out; desc7[i].w_out = p.w_out; desc7[i].in_ch_stride = p.in_ch_stride; desc7[i].out_ch_stride = p.out_ch_stride;
             desc7[i].n_row_tiles = p.n_row_tiles; desc7[i].n_col_tiles = p.n_col_tiles; desc7[i].n_ch_tiles = p.n_ch_tiles;
             desc7[i].last_row_tile = p.last_row_tile; desc7[i].last_col_tile = p.last_col_tile; desc7[i].last_ch_tile = p.last_ch_tile;
         }
@@ -789,7 +798,7 @@ int main()
                                            /*k*/7, /*stride*/1, /*pad*/3, /*fpg*/1, /*out_shift*/6,
                                            /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/1176 };
         MacArrayParams p8a = derive_mac_array_params(desc8a);
-        desc8a.h_out = p8a.h_out; desc8a.w_out = p8a.w_out;
+        desc8a.h_out = p8a.h_out; desc8a.w_out = p8a.w_out; desc8a.in_ch_stride = p8a.in_ch_stride; desc8a.out_ch_stride = p8a.out_ch_stride;
         desc8a.n_row_tiles = p8a.n_row_tiles; desc8a.n_col_tiles = p8a.n_col_tiles; desc8a.n_ch_tiles = p8a.n_ch_tiles;
         desc8a.last_row_tile = p8a.last_row_tile; desc8a.last_col_tile = p8a.last_col_tile; desc8a.last_ch_tile = p8a.last_ch_tile;
 
@@ -831,7 +840,7 @@ int main()
                                            /*k*/7, /*stride*/2, /*pad*/3, /*fpg*/1, /*out_shift*/6,
                                            /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/2000 };
         MacArrayParams p8b = derive_mac_array_params(desc8b);
-        desc8b.h_out = p8b.h_out; desc8b.w_out = p8b.w_out;
+        desc8b.h_out = p8b.h_out; desc8b.w_out = p8b.w_out; desc8b.in_ch_stride = p8b.in_ch_stride; desc8b.out_ch_stride = p8b.out_ch_stride;
         desc8b.n_row_tiles = p8b.n_row_tiles; desc8b.n_col_tiles = p8b.n_col_tiles; desc8b.n_ch_tiles = p8b.n_ch_tiles;
         desc8b.last_row_tile = p8b.last_row_tile; desc8b.last_col_tile = p8b.last_col_tile; desc8b.last_ch_tile = p8b.last_ch_tile;
 
@@ -887,7 +896,7 @@ int main()
                                           /*k*/7, /*stride*/2, /*pad*/3, /*fpg*/2, /*out_shift*/6,
                                           /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/1024 };
         MacArrayParams p9 = derive_mac_array_params(desc9);
-        desc9.h_out = p9.h_out; desc9.w_out = p9.w_out;
+        desc9.h_out = p9.h_out; desc9.w_out = p9.w_out; desc9.in_ch_stride = p9.in_ch_stride; desc9.out_ch_stride = p9.out_ch_stride;
         desc9.n_row_tiles = p9.n_row_tiles; desc9.n_col_tiles = p9.n_col_tiles; desc9.n_ch_tiles = p9.n_ch_tiles;
         desc9.last_row_tile = p9.last_row_tile; desc9.last_col_tile = p9.last_col_tile; desc9.last_ch_tile = p9.last_ch_tile;
 
@@ -926,38 +935,46 @@ int main()
                "%s (%d/%d mismatches)\n", phase9_ok ? "PASS" : "FAIL", mismatches_9, S9_TOTAL);
     }
 
-    /* ================= PHASE 10: layer_scale (A2, real block pattern) =================
-     * DW(token_mixer, identity branch) + PW(stands in for mlp/fc2 output)
-     * -> LSCALE(applied to the PW/fc2 output, gate from w_base) ->
-     * Add(op0=DW's raw output, op1=LSCALE's output) -- the exact real
-     * FastViT-T8 block pattern (token_mixer -> [mlp branch -> fc2 ->
-     * layer_scale] -> Add with the identity branch), confirmed from
-     * layer_dag_ground_truth.json's multi_input_nodes. */
+    /* ================= PHASE 10: gamma-folded block pattern (A2) =================
+     * DW(token_mixer, identity branch) + PW(stands in for mlp/fc2, weight
+     * ALREADY gamma-scaled per tools/fold_layer_scale.py -- Route A,
+     * confirmed 2026-08-21 on ZHR-92: layer_scale.gamma is folded into
+     * fc2's weight+bias at export time, validated to ~1e-16, so the real
+     * hardware sequence never dispatches a separate layer_scale op) ->
+     * Add(op0=DW's raw output, op1=PW's own output, no intermediate
+     * scaling step). Originally this phase exercised a standalone
+     * LDESC_OP_LSCALE op between PW and Add; that op was removed from
+     * mac_array.cpp the same day once Route A was confirmed (dead code
+     * once the real 83-entry sequence never emits it -- recoverable from
+     * git commit e5e1246 if a future quantization scheme needs it back).
+     * This phase now validates the actual deployed data flow: a PW
+     * output goes straight into Add, with no operator-level distinction
+     * between "gamma folded into the weight" and "weight was never
+     * scaled" -- from the hardware's point of view they're identical,
+     * which is the whole point of folding at export time instead of
+     * runtime. */
     bool phase10_ok = false;
     {
-        LayerDescV2 desc10[4];
+        LayerDescV2 desc10[3];
         desc10[0] = LayerDescV2{ LDESC_OP_DWCONV, /*cin*/6, /*cout*/6, /*h_in*/10, /*w_in*/10,
                                   /*k*/3, /*stride*/1, /*pad*/1, /*fpg*/1, /*out_shift*/6,
                                   /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/600 };
         desc10[1] = LayerDescV2{ LDESC_OP_PWCONV, /*cin*/8, /*cout*/6, /*h_in*/10, /*w_in*/10,
                                   /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/6,
                                   /*in_off*/1200, /*w_off*/54, /*b_off*/6, /*out_off*/2000 };
-        desc10[2] = LayerDescV2{ LDESC_OP_LSCALE, /*cin*/6, /*cout*/6, /*h_in*/10, /*w_in*/10,
-                                  /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/6,
-                                  /*in_off*/2000, /*w_off*/102, /*b_off*/0, /*out_off*/2600 };
-        desc10[3] = LayerDescV2{ LDESC_OP_ADD, /*cin*/6, /*cout*/6, /*h_in*/10, /*w_in*/10,
+        desc10[2] = LayerDescV2{ LDESC_OP_ADD, /*cin*/6, /*cout*/6, /*h_in*/10, /*w_in*/10,
                                   /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/0,
-                                  /*in_off*/600, /*w_off*/0, /*b_off*/0, /*out_off*/3200 };
-        desc10[3].in2_off = 2600;  /* op0=DW's raw output (identity branch), op1=LSCALE output */
-        for (int i = 0; i < 4; i++) {
+                                  /*in_off*/600, /*w_off*/0, /*b_off*/0, /*out_off*/2600 };
+        desc10[2].in2_off = 2000;  /* op0=DW's raw output (identity branch), op1=PW's own output */
+        for (int i = 0; i < 3; i++) {
             MacArrayParams p = derive_mac_array_params(desc10[i]);
-            desc10[i].h_out = p.h_out; desc10[i].w_out = p.w_out;
+            desc10[i].h_out = p.h_out; desc10[i].w_out = p.w_out; desc10[i].in_ch_stride = p.in_ch_stride; desc10[i].out_ch_stride = p.out_ch_stride;
             desc10[i].n_row_tiles = p.n_row_tiles; desc10[i].n_col_tiles = p.n_col_tiles; desc10[i].n_ch_tiles = p.n_ch_tiles;
             desc10[i].last_row_tile = p.last_row_tile; desc10[i].last_col_tile = p.last_col_tile; desc10[i].last_ch_tile = p.last_ch_tile;
         }
 
-        const int F10_TOTAL = 3800;  /* D_in(600)+D_out(600)+P_in(800)+P_out(600)+LSCALE_out(600)+Add_out(600) */
-        const int W10_TOTAL = 54 + 48 + 6;  /* D_w + P_w + lscale gate (cin=6) */
+        const int F10_TOTAL = 3200;  /* D_in(600)+D_out(600)+P_in(800)+P_out(600)+Add_out(600) */
+        const int W10_TOTAL = 54 + 48;  /* D_w + P_w (already gamma-scaled, no separate gate) */
         const int B10_TOTAL = 6 + 6;
 
         std::vector<int8_t>  f10_gold(F10_TOTAL, 0);
@@ -975,8 +992,7 @@ int main()
         std::vector<int8_t> f10_expected = f10_gold;
         golden_dwconv(desc10[0], h10d, w10d, f10_expected, w10_gold, b10_gold, f10_expected);
         golden_pwconv(desc10[1], h10p, w10p, f10_expected, w10_gold, b10_gold, f10_expected);
-        golden_lscale(desc10[2], f10_expected, w10_gold, f10_expected);
-        golden_add(desc10[3], f10_expected, f10_expected);
+        golden_add(desc10[2], f10_expected, f10_expected);
 
         std::vector<act_t> f10(F10_TOTAL, act_t(0));
         std::vector<wt_t>  w10buf(W10_TOTAL, wt_t(0));
@@ -985,15 +1001,259 @@ int main()
         for (int i = 0; i < W10_TOTAL; i++) w10buf[i] = wt_t(w10_gold[i]);
         for (int i = 0; i < B10_TOTAL; i++) b10buf[i] = acc_t(b10_gold[i]);
 
-        int w10ritten[4] = {0, 0, 0, 0};
-        mac_array_top(desc10, 4, f10.data(), w10buf.data(), b10buf.data(), f10.data(), w10ritten);
+        int w10ritten[3] = {0, 0, 0};
+        mac_array_top(desc10, 3, f10.data(), w10buf.data(), b10buf.data(), f10.data(), w10ritten);
 
         int mismatches_10 = 0;
         for (int i = 0; i < F10_TOTAL; i++)
             if ((int8_t)f10[i] != f10_expected[i]) mismatches_10++;
         phase10_ok = (mismatches_10 == 0);
-        printf("[Phase10] DW+PW->LSCALE->Add (real block pattern): %s (%d/%d mismatches)\n",
+        printf("[Phase10] DW+PW(gamma-folded weight)->Add (real block pattern): %s (%d/%d mismatches)\n",
                phase10_ok ? "PASS" : "FAIL", mismatches_10, F10_TOTAL);
+    }
+
+    /* ================= PHASE 11: DW fpg=48 feasibility (A2, route-B check) =================
+     * Not a real network layer -- checks whether the DW path's fpg
+     * mechanism (proven so far only at fpg=1 and fpg=2, Phase9) also
+     * works at fpg=48, cin=1: one real input channel expanding to a full
+     * 48-filter bank, the exact shape one branch of the proposed
+     * 3-way-split decomposition of the stem's plain conv (layer_idx=0,
+     * K=3 S=2, cin=3 cout=48 -- NOT computable by the PWCONV path, see
+     * ZHR-92 2026-08-21: PW_STAGE reads a single pixel per channel, no
+     * kernel window, so K>1 full-channel-reduction convs are silently
+     * wrong there) would need. Route B: 3x DW(cin=1,fpg=48) + 2x Add
+     * instead of extending PWCONV with im2col (rejected -- would
+     * reintroduce runtime K into per-lane addressing, exactly what
+     * rounds 12-14 spent 3 rounds removing). This phase answers ONLY
+     * "does fpg=48 work at all" -- code inspection (mac_array.cpp's f
+     * loop is a plain runtime-bounded `for(f<n_f)`, nothing sized by fpg
+     * as an array dimension) said yes; this is the empirical check
+     * against an independent golden reference, real Stem-branch shape
+     * (h_in=w_in=256, k=3, s=2, pad=1 -> h_out=w_out=128). */
+    bool phase11_ok = false;
+    {
+        LayerDescV2 desc11 = LayerDescV2{ LDESC_OP_DWCONV, /*cin*/1, /*cout*/48, /*h_in*/256, /*w_in*/256,
+                                           /*k*/3, /*stride*/2, /*pad*/1, /*fpg*/48, /*out_shift*/8,
+                                           /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/65536 };
+        MacArrayParams p11 = derive_mac_array_params(desc11);
+        desc11.h_out = p11.h_out; desc11.w_out = p11.w_out; desc11.in_ch_stride = p11.in_ch_stride; desc11.out_ch_stride = p11.out_ch_stride;
+        desc11.n_row_tiles = p11.n_row_tiles; desc11.n_col_tiles = p11.n_col_tiles; desc11.n_ch_tiles = p11.n_ch_tiles;
+        desc11.last_row_tile = p11.last_row_tile; desc11.last_col_tile = p11.last_col_tile; desc11.last_ch_tile = p11.last_ch_tile;
+
+        const int S11_IN  = 1 * 256 * 256;              /* 65536 */
+        const int S11_OUT = 48 * p11.h_out * p11.w_out;  /* 48*128*128 = 786432 */
+        const int S11_TOTAL = S11_IN + S11_OUT;
+        const int S11_W = 48 * 3 * 3;                    /* 432 */
+        const int S11_B = 48;
+
+        std::vector<int8_t>  s11_in(S11_TOTAL, 0);
+        std::vector<int8_t>  s11_w(S11_W, 0);
+        std::vector<int32_t> s11_b(S11_B, 0);
+        Lcg rng11(0xFF9948AB);
+        for (int i = 0; i < S11_IN; i++) s11_in[i] = rng11.next_i8();
+        for (int i = 0; i < S11_W; i++)  s11_w[i]  = rng11.next_i8();
+        for (int i = 0; i < S11_B; i++)  s11_b[i]  = (int32_t)rng11.next_i8() * 4;
+
+        std::vector<int8_t> s11_gold = s11_in;
+        golden_dwconv(desc11, p11.h_out, p11.w_out, s11_gold, s11_w, s11_b, s11_gold);
+
+        std::vector<act_t> s11_feat(S11_TOTAL, act_t(0));
+        std::vector<wt_t>  s11_wbuf(S11_W, wt_t(0));
+        std::vector<acc_t> s11_bbuf(S11_B, acc_t(0));
+        for (int i = 0; i < S11_IN; i++) s11_feat[i] = act_t(s11_in[i]);
+        for (int i = 0; i < S11_W; i++)  s11_wbuf[i] = wt_t(s11_w[i]);
+        for (int i = 0; i < S11_B; i++)  s11_bbuf[i] = acc_t(s11_b[i]);
+
+        int s11_written[1] = {0};
+        mac_array_top(&desc11, 1, s11_feat.data(), s11_wbuf.data(), s11_bbuf.data(), s11_feat.data(), s11_written);
+
+        int mismatches_11 = 0;
+        for (int i = 0; i < S11_TOTAL; i++)
+            if ((int8_t)s11_feat[i] != s11_gold[i]) mismatches_11++;
+        phase11_ok = (mismatches_11 == 0);
+        printf("[Phase11] DW fpg=48 feasibility (cin=1->cout=48, real Stem-branch shape): "
+               "%s (%d/%d mismatches)\n", phase11_ok ? "PASS" : "FAIL", mismatches_11, S11_TOTAL);
+    }
+
+    /* ================= PHASE 12: PW Cin-chunking fix (A2, ZHR-92 2026-08-21) =================
+     * Real layer_0044_pwconv shape (cin=1152, cout=384, h=w=8, k=1) --
+     * the LARGEST real Cin in the whole network, found while running the
+     * actual A2 exit measurement: PW_STAGE/PW_WSTAGE indexed pw_patch/
+     * pw_wtile (fixed at MAX_CIN_PW=32) by the raw, untiled Cin -- SIGSEGV
+     * in csim for EVERY real PWCONV layer (all 26 have cin>32). Fixed by
+     * chunking the Cin reduction into MAX_CIN_PW-sized pieces inside
+     * run_layer, accumulating into the same 32-bit acc[] across chunks,
+     * clip_shift only once at the end -- mathematically exact, not an
+     * approximation, since acc already had headroom (max possible
+     * |acc| ~=1.86e7 << 2**31) and the shift/clip was already only ever
+     * applied once per output pixel, not per chunk. This phase is the
+     * empirical proof of that exactness against an independent golden
+     * reference at the real shape that crashed the fix's absence. */
+    bool phase12_ok = false;
+    {
+        LayerDescV2 desc12 = LayerDescV2{ LDESC_OP_PWCONV, /*cin*/1152, /*cout*/384, /*h_in*/8, /*w_in*/8,
+                                           /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/8,
+                                           /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/73728 };
+        MacArrayParams p12 = derive_mac_array_params(desc12);
+        desc12.h_out = p12.h_out; desc12.w_out = p12.w_out; desc12.in_ch_stride = p12.in_ch_stride; desc12.out_ch_stride = p12.out_ch_stride;
+        desc12.n_row_tiles = p12.n_row_tiles; desc12.n_col_tiles = p12.n_col_tiles; desc12.n_ch_tiles = p12.n_ch_tiles;
+        desc12.last_row_tile = p12.last_row_tile; desc12.last_col_tile = p12.last_col_tile; desc12.last_ch_tile = p12.last_ch_tile;
+
+        const int S12_IN  = 1152 * 8 * 8;                 /* 73728 */
+        const int S12_OUT = 384 * p12.h_out * p12.w_out;  /* 384*8*8 = 24576 */
+        const int S12_TOTAL = S12_IN + S12_OUT;
+        const int S12_W = 384 * 1152;                     /* 442368 */
+        const int S12_B = 384;
+
+        std::vector<int8_t>  s12_in(S12_TOTAL, 0);
+        std::vector<int8_t>  s12_w(S12_W, 0);
+        std::vector<int32_t> s12_b(S12_B, 0);
+        Lcg rng12(0xC14EC14E);
+        for (int i = 0; i < S12_IN; i++) s12_in[i] = rng12.next_i8();
+        for (int i = 0; i < S12_W; i++)  s12_w[i]  = rng12.next_i8();
+        for (int i = 0; i < S12_B; i++)  s12_b[i]  = (int32_t)rng12.next_i8() * 4;
+
+        int h12, w12;
+        golden_out_dims(desc12, h12, w12);
+        std::vector<int8_t> s12_gold = s12_in;
+        golden_pwconv(desc12, h12, w12, s12_gold, s12_w, s12_b, s12_gold);
+
+        std::vector<act_t> s12_feat(S12_TOTAL, act_t(0));
+        std::vector<wt_t>  s12_wbuf(S12_W, wt_t(0));
+        std::vector<acc_t> s12_bbuf(S12_B, acc_t(0));
+        for (int i = 0; i < S12_IN; i++) s12_feat[i] = act_t(s12_in[i]);
+        for (int i = 0; i < S12_W; i++)  s12_wbuf[i] = wt_t(s12_w[i]);
+        for (int i = 0; i < S12_B; i++)  s12_bbuf[i] = acc_t(s12_b[i]);
+
+        int s12_written[1] = {0};
+        mac_array_top(&desc12, 1, s12_feat.data(), s12_wbuf.data(), s12_bbuf.data(), s12_feat.data(), s12_written);
+
+        int mismatches_12 = 0;
+        for (int i = 0; i < S12_TOTAL; i++)
+            if ((int8_t)s12_feat[i] != s12_gold[i]) mismatches_12++;
+        phase12_ok = (mismatches_12 == 0);
+        printf("[Phase12] PW Cin-chunking fix (cin=1152->cout=384, real layer_0044_pwconv shape): "
+               "%s (%d/%d mismatches)\n", phase12_ok ? "PASS" : "FAIL", mismatches_12, S12_TOTAL);
+    }
+
+    /* ================= PHASE 13: PW Cin-chunking tail case =================
+     * Phase12's cin=1152 = 36*MAX_CIN_PW divides evenly -- every chunk is
+     * a full 32, never exercising the zero-padded remainder chunk. This
+     * is layer_0006_pwconv, cin=144 = 4*32+16 -- the EXACT layer that
+     * originally crashed (entry 15 of the real hardware sequence,
+     * ZHR-92 2026-08-21), and its last chunk (16 of 32 slots real, 16
+     * zero-padded) exercises the tail-padding branch Phase12 doesn't. */
+    bool phase13_ok = false;
+    {
+        LayerDescV2 desc13 = LayerDescV2{ LDESC_OP_PWCONV, /*cin*/144, /*cout*/48, /*h_in*/64, /*w_in*/64,
+                                           /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/8,
+                                           /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/589824 };
+        MacArrayParams p13 = derive_mac_array_params(desc13);
+        desc13.h_out = p13.h_out; desc13.w_out = p13.w_out; desc13.in_ch_stride = p13.in_ch_stride; desc13.out_ch_stride = p13.out_ch_stride;
+        desc13.n_row_tiles = p13.n_row_tiles; desc13.n_col_tiles = p13.n_col_tiles; desc13.n_ch_tiles = p13.n_ch_tiles;
+        desc13.last_row_tile = p13.last_row_tile; desc13.last_col_tile = p13.last_col_tile; desc13.last_ch_tile = p13.last_ch_tile;
+
+        const int S13_IN  = 144 * 64 * 64;                /* 589824 */
+        const int S13_OUT = 48 * p13.h_out * p13.w_out;   /* 48*64*64 = 196608 */
+        const int S13_TOTAL = S13_IN + S13_OUT;
+        const int S13_W = 48 * 144;                       /* 6912 */
+        const int S13_B = 48;
+
+        std::vector<int8_t>  s13_in(S13_TOTAL, 0);
+        std::vector<int8_t>  s13_w(S13_W, 0);
+        std::vector<int32_t> s13_b(S13_B, 0);
+        Lcg rng13(0x144C144C);
+        for (int i = 0; i < S13_IN; i++) s13_in[i] = rng13.next_i8();
+        for (int i = 0; i < S13_W; i++)  s13_w[i]  = rng13.next_i8();
+        for (int i = 0; i < S13_B; i++)  s13_b[i]  = (int32_t)rng13.next_i8() * 4;
+
+        int h13, w13;
+        golden_out_dims(desc13, h13, w13);
+        std::vector<int8_t> s13_gold = s13_in;
+        golden_pwconv(desc13, h13, w13, s13_gold, s13_w, s13_b, s13_gold);
+
+        std::vector<act_t> s13_feat(S13_TOTAL, act_t(0));
+        std::vector<wt_t>  s13_wbuf(S13_W, wt_t(0));
+        std::vector<acc_t> s13_bbuf(S13_B, acc_t(0));
+        for (int i = 0; i < S13_IN; i++) s13_feat[i] = act_t(s13_in[i]);
+        for (int i = 0; i < S13_W; i++)  s13_wbuf[i] = wt_t(s13_w[i]);
+        for (int i = 0; i < S13_B; i++)  s13_bbuf[i] = acc_t(s13_b[i]);
+
+        int s13_written[1] = {0};
+        mac_array_top(&desc13, 1, s13_feat.data(), s13_wbuf.data(), s13_bbuf.data(), s13_feat.data(), s13_written);
+
+        int mismatches_13 = 0;
+        for (int i = 0; i < S13_TOTAL; i++)
+            if ((int8_t)s13_feat[i] != s13_gold[i]) mismatches_13++;
+        phase13_ok = (mismatches_13 == 0);
+        printf("[Phase13] PW Cin-chunking tail case (cin=144->cout=48, real layer_0006_pwconv, "
+               "the original crash site): %s (%d/%d mismatches)\n",
+               phase13_ok ? "PASS" : "FAIL", mismatches_13, S13_TOTAL);
+    }
+
+    /* ================= PHASE 14: per-channel out_shift table (A2, ZHR-92 2026-08-21) =================
+     * use_shift_table=1: WRITEOUT looks up w_base[shift_off+channel]
+     * instead of the scalar d.out_shift. shift_off/use_shift_table are
+     * appended at the very END of LayerDescV2 specifically so every
+     * earlier phase's positional brace-init (all of Phase0-13) keeps
+     * working unmodified -- zero-init on those unspecified trailing
+     * fields means use_shift_table=0 there, i.e. old scalar behavior,
+     * by construction not convention. This phase is the one place that
+     * actually exercises use_shift_table=1, with 8 DELIBERATELY
+     * different per-channel shifts (not a degenerate all-same-value
+     * test that could pass by accident) against an independent golden
+     * reference (golden_pwconv_shift_table). PW, cin=48/cout=8 -- small
+     * and fast, the mechanism doesn't depend on real network shape. */
+    bool phase14_ok = false;
+    {
+        const int8_t shifts[8] = {2, 5, 8, 11, 3, 14, 6, 9};
+        LayerDescV2 desc14 = LayerDescV2{ LDESC_OP_PWCONV, /*cin*/48, /*cout*/8, /*h_in*/10, /*w_in*/10,
+                                           /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/0,
+                                           /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/4800 };
+        desc14.use_shift_table = 1;
+        desc14.shift_off = 8 * 48;  /* right after the 8*48 weight table, in the SAME w_base buffer */
+        MacArrayParams p14 = derive_mac_array_params(desc14);
+        desc14.h_out = p14.h_out; desc14.w_out = p14.w_out; desc14.in_ch_stride = p14.in_ch_stride; desc14.out_ch_stride = p14.out_ch_stride;
+        desc14.n_row_tiles = p14.n_row_tiles; desc14.n_col_tiles = p14.n_col_tiles; desc14.n_ch_tiles = p14.n_ch_tiles;
+        desc14.last_row_tile = p14.last_row_tile; desc14.last_col_tile = p14.last_col_tile; desc14.last_ch_tile = p14.last_ch_tile;
+
+        const int S14_IN  = 48 * 10 * 10;   /* 4800 */
+        const int S14_OUT = 8 * 10 * 10;    /* 800 */
+        const int S14_TOTAL = S14_IN + S14_OUT;
+        const int S14_W_TOTAL = 8 * 48 + 8; /* weights (384) + shift table (8), same buffer */
+        const int S14_B = 8;
+
+        std::vector<int8_t>  s14_in(S14_TOTAL, 0);
+        std::vector<int8_t>  s14_w(S14_W_TOTAL, 0);
+        std::vector<int32_t> s14_b(S14_B, 0);
+        Lcg rng14(0x5417B175);
+        for (int i = 0; i < S14_IN; i++)      s14_in[i] = rng14.next_i8();
+        for (int i = 0; i < 8 * 48; i++)      s14_w[i]  = rng14.next_i8();
+        for (int i = 0; i < S14_B; i++)       s14_b[i]  = (int32_t)rng14.next_i8() * 4;
+        for (int i = 0; i < 8; i++)           s14_w[8 * 48 + i] = shifts[i];
+
+        std::vector<int8_t> s14_shift_vec(shifts, shifts + 8);
+        int h14, w14;
+        golden_out_dims(desc14, h14, w14);
+        std::vector<int8_t> s14_gold = s14_in;
+        golden_pwconv_shift_table(desc14, h14, w14, s14_gold, s14_w, s14_b, s14_shift_vec, s14_gold);
+
+        std::vector<act_t> s14_feat(S14_TOTAL, act_t(0));
+        std::vector<wt_t>  s14_wbuf(S14_W_TOTAL, wt_t(0));
+        std::vector<acc_t> s14_bbuf(S14_B, acc_t(0));
+        for (int i = 0; i < S14_TOTAL; i++)   s14_feat[i] = act_t(s14_in[i]);
+        for (int i = 0; i < S14_W_TOTAL; i++) s14_wbuf[i] = wt_t(s14_w[i]);
+        for (int i = 0; i < S14_B; i++)       s14_bbuf[i] = acc_t(s14_b[i]);
+
+        int s14_written[1] = {0};
+        mac_array_top(&desc14, 1, s14_feat.data(), s14_wbuf.data(), s14_bbuf.data(), s14_feat.data(), s14_written);
+
+        int mismatches_14 = 0;
+        for (int i = 0; i < S14_TOTAL; i++)
+            if ((int8_t)s14_feat[i] != s14_gold[i]) mismatches_14++;
+        phase14_ok = (mismatches_14 == 0);
+        printf("[Phase14] per-channel out_shift table (use_shift_table=1, 8 distinct shifts): "
+               "%s (%d/%d mismatches)\n", phase14_ok ? "PASS" : "FAIL", mismatches_14, S14_TOTAL);
     }
 
     printf("\n[Summary] Phase0 (stride=2 DW correctness): %s\n", phase0_ok ? "PASS" : "FAIL");
@@ -1006,7 +1266,11 @@ int main()
     printf("[Summary] Phase7 (GELU, A1 operator coverage complete): %s\n", phase7_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase8 (K=7 DW correctness, A2 pre-step): %s\n", phase8_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase9 (fpg=2 DW correctness, real stage-downsample shape): %s\n", phase9_ok ? "PASS" : "FAIL");
-    printf("[Summary] Phase10 (layer_scale, real block pattern): %s\n", phase10_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase10 (gamma-folded block pattern, DW+PW->Add): %s\n", phase10_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase11 (DW fpg=48 feasibility, route-B check): %s\n", phase11_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase12 (PW Cin-chunking fix, real cin=1152 shape): %s\n", phase12_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase13 (PW Cin-chunking tail case, real cin=144 crash site): %s\n", phase13_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase14 (per-channel out_shift table, use_shift_table=1): %s\n", phase14_ok ? "PASS" : "FAIL");
 
-    return (phase0_ok && phase1_ok && phase2_ok && phase3_ok && phase4_ok && phase5_ok && phase6_ok && phase7_ok && phase8_ok && phase9_ok && phase10_ok) ? 0 : 1;
+    return (phase0_ok && phase1_ok && phase2_ok && phase3_ok && phase4_ok && phase5_ok && phase6_ok && phase7_ok && phase8_ok && phase9_ok && phase10_ok && phase11_ok && phase12_ok && phase13_ok && phase14_ok) ? 0 : 1;
 }

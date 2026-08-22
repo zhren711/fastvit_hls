@@ -90,6 +90,19 @@ supposedly standing in for.
   invocations (route_design in one, then re-open the checkpoint for `phys_opt_design` with
   `set_param general.maxThreads 1` in a second) — this two-phase/single-threaded recipe is proven to
   work on the first try where multithreaded foreground attempts fail silently every time.
+- **`export_design` silently reuses cached HDL when called again in the same HLS solution, even if
+  `csynth_design` genuinely re-ran on changed source.** Same bug class as ZHR-5's original finding
+  ("Vitis HLS 2024.2's `export_design` silently fails to update the top-level RTL" — the fix then was
+  "rm -rf the whole project directory before export"). Symptom is the worst kind: two P&R runs on
+  *different* source produced bit-identical WNS and identical primitive counts down to the last DSP —
+  looked exactly like "the code change had no timing effect," and only grepping the exported HDL for a
+  string that should have disappeared (a removed array's name) exposed that P&R had synthesized stale
+  RTL both times. One rule, not two: **`export_design`'s target directory must be verifiably clean
+  before every export** — either `rm -rf` it first, or export into a brand-new solution name each
+  time. Do not reuse an HLS solution across more than one `csynth_design`+`export_design` cycle and
+  assume `export_design` picked up the latest source; confirm it did (e.g. grep the exported
+  `hdl/verilog` for a signature unique to the current change) before trusting any P&R number that comes
+  out of it.
 - All results — including negative ones — get written back to the relevant Linear issue as a
   comment, not just left in chat or local memory. Real numbers over assumptions: this project has
   been burned before by static-report/simulation readings that turned out wrong (ZHR-5's "140x
