@@ -305,12 +305,29 @@ static void run_layer(const LayerDescV2 &d,
              * (also costed, not implemented) to cap worst-case storage
              * instead of needing pw_patch_full's full width live at once. */
             if (d.op_type == LDESC_OP_PWCONV) {
+                /* A3 round (2026-08-22, ZHR-92, code-review followup):
+                 * rr/cw used to be bounded by the runtime r_sz/col_sz --
+                 * same class of hazard as the DW fix above (a loop trip
+                 * count, not just a data value, depending on a runtime
+                 * comparison), just never the one that happened to blow up:
+                 * pw_patch_full's dims 2/3 aren't ARRAY_PARTITIONed (plain
+                 * BRAM, not per-element registers), so this specific site
+                 * was never actually at risk -- but bounding it at the
+                 * compile-time MAC_PR/MAC_PC with a data-path `valid` closes
+                 * the pattern structurally instead of relying on that being
+                 * true forever. Address clamped to a known-in-range
+                 * constant (0) when invalid, matching the DW fix's
+                 * discipline. */
                 PW_PATCH_HOIST: for (int ci = 0; ci < Cin; ci++) {
-                    for (int rr = 0; rr < r_sz; rr++) {
-                        int oh = rt * MAC_PR + rr;
-                        for (int cw = 0; cw < col_sz; cw++) {
-                            int ow = colt * MAC_PC + cw;
-                            pw_patch_full[ci][rr][cw] = in_base[d.in_off + ci * d.in_ch_stride + oh * W + ow];
+                    for (int rr = 0; rr < MAC_PR; rr++) {
+                        bool r_valid = rr < r_sz;
+                        int oh = rt * MAC_PR + (r_valid ? rr : 0);
+                        for (int cw = 0; cw < MAC_PC; cw++) {
+                            bool valid = r_valid && (cw < col_sz);
+                            int ow = colt * MAC_PC + (valid ? cw : 0);
+                            pw_patch_full[ci][rr][cw] = valid
+                                ? in_base[d.in_off + ci * d.in_ch_stride + oh * W + ow]
+                                : (act_t)0;
                         }
                     }
                 }
@@ -383,12 +400,25 @@ static void run_layer(const LayerDescV2 &d,
                     DW_PATCH_STAGE: for (int cc = 0; cc < MAC_PD; cc++) {
                         bool valid = (cc < c_sz);
                         int c = ot * MAC_PD + (valid ? cc : 0);
-                        for (int pr = 0; pr < patch_r; pr++) {
+                        /* A3 round (2026-08-22, ZHR-92, code-review
+                         * followup): pr/pc bound moved from the runtime
+                         * patch_r/patch_c to the compile-time PATCH_R_MAX/
+                         * PATCH_C_MAX -- same fix class as DW_WT_STAGE
+                         * below. dw_patch IS complete-partitioned (dim=0),
+                         * so this site genuinely had the register-write
+                         * hazard; it just happened not to be the one that
+                         * blew up because GATHER_ALL_DW's own valid mask
+                         * (kh<dw_K && kw<dw_K) zeroes the matching weight,
+                         * making the product 0 regardless of dw_patch's
+                         * garbage. Not relying on that downstream masking
+                         * anymore. */
+                        for (int pr = 0; pr < PATCH_R_MAX; pr++) {
                             int ih = rt * MAC_PR * S - P + pr;
-                            for (int pc = 0; pc < patch_c; pc++) {
+                            for (int pc = 0; pc < PATCH_C_MAX; pc++) {
                                 int iw = colt * MAC_PC * S - P + pc;
                                 act_t v = 0;
-                                if (valid && ih >= 0 && ih < Hin && iw >= 0 && iw < Win)
+                                if (valid && pr < patch_r && pc < patch_c &&
+                                    ih >= 0 && ih < Hin && iw >= 0 && iw < Win)
                                     /* A3 (2026-08-21): (c*Hin+ih)*Win+iw ==
                                      * c*(Hin*Win)+ih*Win+iw exactly -- the
                                      * only difference is Hin*Win is now a
@@ -409,11 +439,23 @@ static void run_layer(const LayerDescV2 &d,
                             int oc = c * d.fpg + f;
                             int oc_safe = valid ? oc : 0;
                             dw_btile[cc] = valid ? b_base[d.b_off + oc_safe] : (acc_t)0;
-                            for (int kh = 0; kh < K; kh++)
-                                for (int kw = 0; kw < K; kw++)
-                                    dw_wtile[cc][kh][kw] = valid
+                            /* A3 round (2026-08-22, ZHR-92, code-review
+                             * followup): kh/kw bound moved from the runtime
+                             * K to the compile-time MAX_K -- dw_wtile is
+                             * complete-partitioned (dim=0), the same
+                             * register-write hazard as the DW loop-bound fix
+                             * this round already closed for cc. This site
+                             * was safe only because GATHER_ALL_DW's own
+                             * valid=(kh<dw_K)&&(kw<dw_K) mask discards
+                             * whatever cc's write left behind -- not because
+                             * this loop was itself correct. */
+                            for (int kh = 0; kh < MAX_K; kh++)
+                                for (int kw = 0; kw < MAX_K; kw++) {
+                                    bool k_valid = valid && (kh < K) && (kw < K);
+                                    dw_wtile[cc][kh][kw] = k_valid
                                         ? w_base[d.w_off + (oc_safe * K + kh) * K + kw]
                                         : (wt_t)0;
+                                }
                         }
                     }
 
@@ -453,8 +495,19 @@ static void run_layer(const LayerDescV2 &d,
                             int c0 = cbase * MAX_CIN_PW;
                             PW_STAGE: for (int ci = 0; ci < MAX_CIN_PW; ci++) {
                                 bool valid = (c0 + ci) < Cin;
-                                for (int rr = 0; rr < r_sz; rr++) {
-                                    for (int cw = 0; cw < col_sz; cw++) {
+                                /* A3 round (2026-08-22, ZHR-92, code-review
+                                 * followup): rr/cw bound moved from the
+                                 * runtime r_sz/col_sz to the compile-time
+                                 * MAC_PR/MAC_PC -- pw_patch IS
+                                 * complete-partitioned (dims 2,3), so this
+                                 * site genuinely had the register-write
+                                 * hazard; it was safe only because
+                                 * WRITEOUT_PW's own rr<r_sz check discards
+                                 * whatever garbage landed past the real
+                                 * tile edge. */
+                                for (int rr = 0; rr < MAC_PR; rr++) {
+                                    for (int cw = 0; cw < MAC_PC; cw++) {
+                                        bool rc_valid = valid && (rr < r_sz) && (cw < col_sz);
                                         /* A3 round 2: was a DRAM read
                                          * (in_base[d.in_off + (c0+ci)*d.in_ch_stride
                                          * + oh*W + ow]), re-issued once per
@@ -462,7 +515,7 @@ static void run_layer(const LayerDescV2 &d,
                                          * on-chip cache read, populated once
                                          * per (rt,colt) by PW_PATCH_HOIST
                                          * above. */
-                                        pw_patch[ci][rr][cw] = valid
+                                        pw_patch[ci][rr][cw] = rc_valid
                                             ? pw_patch_full[c0 + ci][rr][cw]
                                             : (act_t)0;
                                     }
@@ -712,6 +765,22 @@ void mac_array_top(
 #pragma HLS INTERFACE s_axilite port=out_base bundle=control
 #pragma HLS INTERFACE s_axilite port=out_written bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
+    /* A3 round (2026-08-22, ZHR-92): option D (read desc[i] into a local
+     * on-chip copy once per layer, on the theory that gmem_meta's critical
+     * path was caused by scattered per-field AXI reads/high fan-out) was
+     * ATTEMPTED AND REVERTED -- placement failed outright (real LUT 66,317
+     * vs 53,200 available, 25% over capacity; the whole-struct assignment
+     * synthesized real burst-FIFO/decode logic, visible even at csynth as
+     * a BRAM_18K jump from 31 to 141). More importantly the diagnosis
+     * behind it was wrong: the first P&R run's own record already said
+     * "zero logic levels, 74% routing delay, fanout=70" -- fanout=70 is
+     * not high for a 704-bit bus reaching all of run_layer (expected
+     * hundreds+), and "zero logic levels + 74% routing" describes a
+     * PLACEMENT DISTANCE problem (gmem_meta's AXI interface logic placed
+     * physically far from run_layer's registers), not a fan-out problem.
+     * That record was available and cited before option D was designed,
+     * just not read carefully enough. See option E (pblock) for the actual
+     * distance-targeted fix. */
     for (int i = 0; i < n_layers; i++) {
         switch (desc[i].op_type) {
             case LDESC_OP_ADD:     run_add(desc[i], in_base, out_base); break;

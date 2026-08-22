@@ -68,7 +68,16 @@ supposedly standing in for.
 
 - No more 200MHz P&R on the **old** architecture (op_code+shared-m_axi) — exhausted across dozens of
   rounds (ZHR-11 Tier A x10, ZHR-12 Tier B x4 granularities, ZHR-16 x6 rounds).
-- No more placement/phys_opt directive rotation as a timing lever — falsified 4 separate times.
+- No more placement/phys_opt directive rotation as a timing lever — falsified 4 separate times. **A
+  targeted `pblock` is not the same lever and is not covered by this ban** (confirmed working
+  2026-08-22, ZHR-92 option E): the 4 falsified rounds were blind strategy-swapping (`place_design`/
+  `phys_opt_design` directive rotation) with no specific physical target. A `pblock` constraining a
+  known, diagnosed hierarchy to a compact region — used once, targeting a critical path whose own P&R
+  record already showed "zero logic levels, high routing-delay share" (a placement-distance signature,
+  not a fan-out or density signature) — took `route_design` from -0.345ns (needing `phys_opt` to limp
+  to +0.004ns) to +0.165ns alone, no `phys_opt` needed, at zero LUT cost. The difference is a specific
+  diagnosed target vs. blind rotation, not "pblocks are magic" — don't reach for one without a P&R
+  record that actually shows a distance signature first.
 - No P&R for ZHR-16's PATCH_GROUP "scheme 3" — csim-clean is the finish line; the shape gap it covers
   doesn't occur in real FastVIT-T8.
 - DSP-packing is deferred, not rejected — old rejections assumed an LUT-bound chip, true only because
@@ -103,6 +112,14 @@ supposedly standing in for.
   assume `export_design` picked up the latest source; confirm it did (e.g. grep the exported
   `hdl/verilog` for a signature unique to the current change) before trusting any P&R number that comes
   out of it.
+- **A runtime-derived expression used as a loop bound becomes real hardware arithmetic (often a
+  multiplier), not just a comparator.** Confirmed by direct measurement, not inference: converting
+  four staging loops from runtime bounds (`patch_r`/`patch_c` = `(MAC_PR-1)*S+K`, `K` itself) to
+  compile-time constants predicted a DSP drop from csynth (90→63, -27) that real P&R matched exactly
+  (63). The loop-bound expressions themselves — not just the write-enable logic those bounds gated —
+  were being synthesized into hardware every time they appeared in a loop's exit condition. Any
+  derived-bound expression (`(dim-1)*stride+k`-shaped or similar) sitting in a loop bound is a
+  candidate for this, independent of whether the loop body writes into a partitioned register array.
 - All results — including negative ones — get written back to the relevant Linear issue as a
   comment, not just left in chat or local memory. Real numbers over assumptions: this project has
   been burned before by static-report/simulation readings that turned out wrong (ZHR-5's "140x
