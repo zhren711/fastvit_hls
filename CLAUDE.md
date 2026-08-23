@@ -86,7 +86,19 @@ supposedly standing in for.
   region let the placer spread them out more, lengthening exactly the routes the pblock exists to
   shorten — widening it again (X0-96→X0-120) fixed it on the first try both times, confirming this
   isn't a fluke. Rule: any round that materially changes LUT occupancy re-checks pblock sizing as
-  part of that round, not as an afterthought once timing already fails.
+  part of that round, not as an afterthought once timing already fails. **Confirmed a third time,
+  2026-08-23 (ZHR-92, accumulator-rewrite round): design shrank 59.09%→57.26% inside the unchanged
+  X0-120 pblock, WNS went from -0.122ns to -0.451ns (route-delay share 40.4%→51.4%) — TIGHTENING
+  to X0-96 (not widening) fixed it (WNS +0.112ns, route-delay share back to 38.3%).** This refines,
+  not contradicts, the two rounds above: the direction (widen vs. tighten) isn't determined by
+  grow-vs-shrink alone, it's determined by whether the pblock has become too tight (routing failure
+  — widen) or too loose for the design's current footprint (cells spread out, routes lengthen —
+  tighten). Self-violation caught the same day: the VERY NEXT round's pre-registration carried
+  forward "pblock 保持 X0-96" by default from the round that had just shrunk, without checking that
+  the next round's own code change (an outer-hoisted lookup table) GREW the design instead — P&R
+  failed to route (83 unroutable pins) at X0-96. Check the actual LUT direction of THIS round's
+  change against the pblock size already in place; never carry a prior round's pblock size forward
+  by default just because it worked last time.
 - No P&R for ZHR-16's PATCH_GROUP "scheme 3" — csim-clean is the finish line; the shape gap it covers
   doesn't occur in real FastVIT-T8.
 - DSP-packing is deferred, not rejected — old rejections assumed an LUT-bound chip, true only because
@@ -129,6 +141,35 @@ supposedly standing in for.
   were being synthesized into hardware every time they appeared in a loop's exit condition. Any
   derived-bound expression (`(dim-1)*stride+k`-shaped or similar) sitting in a loop bound is a
   candidate for this, independent of whether the loop body writes into a partitioned register array.
+- **`csynth`'s Performance Estimates only report cycle counts for named `PIPELINE`/`UNROLL` regions
+  — a function's own sequential glue code between those regions has no report of its own, and may be
+  the dominant real cost.** Confirmed 2026-08-23 (ZHR-92): `run_layer`'s per-tile board time grew
+  70.08ms→96.00ms (+37%, +421.9 cycles/tile, uniform across all 6,144 real tiles) after a change that
+  touched only address-arithmetic in `DW_PATCH_STAGE`/`DW_WT_STAGE`/`WRITEOUT_DW` — but every one of
+  those NAMED regions' own csynth report showed identical or *improved* per-call latency between the
+  two versions (`DW_WT_STAGE` even got faster, 20→15 cycles). The +422 cycles/tile is real (board-
+  measured) but invisible in every per-region report checked — it has to be in the plain sequential
+  code connecting the regions (here: two new outer-scope seed-multiply computations, each a new
+  distinct call site for a resource this design already binds to one shared physical multiplier via
+  FSM-state muxing — see the DSP-sharing finding below). This is the specific mechanism behind three
+  separate failed pre-registrations on the same line (gmem_act widening: predicted PW≈83ms, got
+  171.76ms; PW_STAGE elimination: predicted PW≈50ms, got 133.74ms; DW whole-block-burst: predicted
+  ~66ms, got a 21% regression) — not three unrelated misses. A csynth region-level prediction's
+  *direction* ("which region is relatively more expensive") has held up every time; its *magnitude*
+  has not, because it silently omits whatever cost lives in the glue. Don't pre-register a specific
+  ms/cycle target from csynth region numbers alone — say the direction, flag the magnitude as
+  unverified, and let real P&R + board measurement supply the number.
+- **This design binds multiple distinct `index * runtime-stride` address computations across
+  `run_layer` (DW_PATCH_STAGE, DW_WT_STAGE, WRITEOUT_DW, WRITEOUT_PW, PW_PATCH_HOIST) to ONE shared
+  physical 32-bit multiplier, arbitrated by FSM state** (confirmed via P&R critical path across three
+  independent rounds: `ap_CS_fsm_reg[...] → mul_32s_32s_32_2_1`'s cascade register, logic levels
+  climbing 4→4→5 as more call sites were added, `mul_32s_32s_32_2_1`'s instance count in `run_layer`
+  staying at exactly 1 even after an accumulator rewrite reduced how many times each site's multiply
+  gets *evaluated*). Reducing a call site's own evaluation count (loop-invariant hoisting) does not
+  by itself reduce how many *distinct* call sites are competing for the shared multiplier — it can
+  even add new ones (an outer-scope seed multiply is a new site). Each additional site is suspected
+  (not yet confirmed via RTL cosim — unused anywhere in this project so far) to cost real FSM
+  arbitration overhead per invocation, independent of the multiply's own 3-4 cycle latency.
 - All results — including negative ones — get written back to the relevant Linear issue as a
   comment, not just left in chat or local memory. Real numbers over assumptions: this project has
   been burned before by static-report/simulation readings that turned out wrong (ZHR-5's "140x

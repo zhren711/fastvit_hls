@@ -197,6 +197,24 @@ typedef ap_int<32>  acc_t;   /* accumulator / bias */
  * within that. */
 #define MAX_STEPS (MAX_K * MAX_K)
 
+/* A3 round (2026-08-23, ZHR-92): the outer-hoisted oc_tbl_all/oc_ch_tbl_all
+ * table (one entry per (ot,f,dd), computed once per run_layer call) was
+ * ATTEMPTED AND REVERTED the same day -- csim 16/16 clean, but the table
+ * (up to 2,304 entries x2 arrays, real network's fpg=2 worst case) grew
+ * the design enough that P&R failed to ROUTE inside the X0-96 pblock (83
+ * unroutable pins), and the underlying premise it was testing ("two
+ * 32-bit multiplies costing 422 cycles/tile") didn't survive scrutiny
+ * either -- two DSP-level 32x32 multiplies cost 3-4 cycles each, nowhere
+ * near 422, even serialized with arbitration overhead. Reverted back to
+ * WRITEOUT_DW's own per-(rt,colt,ot,f) local oc_tbl[MAC_PD]/
+ * oc_ch_tbl[MAC_PD] (solution21's form) while the real +422 cycles/tile
+ * source gets re-investigated (leading candidate: WRITEOUT_DW's own
+ * Interval=33 multiplied by however many times it's actually called per
+ * tile, not the precompute block itself -- see ZHR-92 for the live
+ * investigation). MAX_OC_TBL is no longer used; kept here as a comment,
+ * not a dangling #define, in case this direction is revisited once the
+ * real cause is confirmed. */
+
 #define LDESC_OP_DWCONV  0
 #define LDESC_OP_PWCONV  1
 #define LDESC_OP_ADD     2   /* elementwise residual add, two sources */
