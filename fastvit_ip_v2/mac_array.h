@@ -189,13 +189,12 @@ typedef ap_int<32>  acc_t;   /* accumulator / bias */
  * risk profile the weight hoist already proved out. */
 #define MAX_CIN  1152
 
-/* A3 round 3 (2026-08-21, ZHR-92): bound for the DW/PW reduction
- * functions' per-step gather buffers (lane_in_all/lane_w_all -- DW's in
- * run_reduce_dw, PW's in pw_gather/pw_unified since the DATAFLOW-at-ot
- * round split them out, 2026-08-23), see mac_array.cpp's header comment
- * on the drive_mac removal for the full rationale. Must cover DW's real
- * step count (MAX_K*MAX_K=49 taps) -- PW's per-cbase step count
- * (ceil(MAX_CIN_PW/MAC_PD)=16) always fits comfortably within that. */
+/* A3 round 3 (2026-08-21, ZHR-92): bound for run_reduce_unified's
+ * per-step gather buffers (lane_in_all/lane_w_all), see mac_array.cpp's
+ * header comment on the drive_mac removal for the full rationale. Must
+ * cover DW's real step count (MAX_K*MAX_K=49 taps) -- PW's per-cbase
+ * step count (ceil(MAX_CIN_PW/MAC_PD)=16) always fits comfortably
+ * within that. */
 #define MAX_STEPS (MAX_K * MAX_K)
 
 /* A3 round (2026-08-23, ZHR-92): the outer-hoisted oc_tbl_all/oc_ch_tbl_all
