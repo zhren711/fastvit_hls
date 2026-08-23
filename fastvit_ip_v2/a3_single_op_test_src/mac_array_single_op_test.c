@@ -43,14 +43,21 @@
  * per region) to hold anything up to ~1MB, which comfortably covers
  * every real single-op shape in the network (the largest, entry[0]'s
  * GELU, is 786,432 bytes). */
-#define FV_MAP_SIZE   0x300000UL   /* 3MB window */
+/* A3 round (2026-08-23, ZHR-92): widened again, W region 64KB->1MB. The
+ * glue-decomposition experiment needs a cin=1152 (real network max)
+ * weight blob -- cout*cin*k*k up to ~576,000 bytes for this round's own
+ * shape, and the real network's largest PW weight blob is 442,368 bytes
+ * (MAX_PW_WEIGHT_CACHE) -- both blow well past the old 64KB W region.
+ * DESC/B/OUT_WRITTEN stay small (their real sizes are all a few KB at
+ * most); only IN/W/OUT need to be large. */
+#define FV_MAP_SIZE   0x400000UL   /* 4MB window */
 
 #define DESC_OFF          0x000000UL
 #define IN_OFF            0x010000UL
 #define W_OFF             0x110000UL
-#define B_OFF             0x120000UL
-#define OUT_OFF           0x130000UL
-#define OUT_WRITTEN_OFF   0x230000UL
+#define B_OFF             0x210000UL
+#define OUT_OFF           0x220000UL
+#define OUT_WRITTEN_OFF   0x320000UL
 
 static size_t file_size(const char *path) {
     FILE *f = fopen(path, "rb");
