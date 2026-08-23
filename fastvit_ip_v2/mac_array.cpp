@@ -873,120 +873,70 @@ static void run_layer(const LayerDescV2 &d,
                                 ch_val += ch_step;
                             }
                         }
-                        /* A3 round (2026-08-23, ZHR-92, WRITEOUT burst fix):
-                         * fast/slow dual path -- burst.xml confirmed the
-                         * `if (dd>=c_sz||rr>=r_sz||cw>=col_sz) continue;`
-                         * guard itself (not address regularity, not out_base's
-                         * bit width) is what blocks HLS's burst inferencer
-                         * ("Access store is in the conditional branch",
-                         * AccessInCondBranchMissed). Unlike every prior
-                         * runtime-decision-in-critical-region fix on this
-                         * file, the store here can't just be made
-                         * unconditional-with-zero-fill -- writing outside the
-                         * real tile would corrupt DRAM, not just compute a
-                         * discarded value (see CLAUDE.md's generalized
-                         * lesson). Real network coverage: every real w_out
-                         * (128/64/32/16/8/4) is a multiple of MAC_PC=4 except
-                         * layers 50/51 (w_out=1) -- the fast path covers
-                         * effectively the whole network; the slow path only
-                         * exists for the two SE-block 1x1 layers and any
-                         * genuine last-row/col/channel-tile remainder. */
-                        if (c_sz == MAC_PD && r_sz == MAC_PR && col_sz == MAC_PC) {
-                            /* A3 round (2026-08-23, ZHR-92, WRITEOUT burst fix
-                             * followup): FOUND AND FIXED via csynth's burst.xml,
-                             * not assumed sufficient -- removing the boundary
-                             * `continue` alone did NOT make this burst; a
-                             * SECOND conditional was still inside the loop
-                             * body (`d.use_shift_table ? w_base[...] : ...`),
-                             * and HLS's burst analyzer bailed on the whole
-                             * loop with a different diagnostic
-                             * (CouldNotAnalyzePatternMissed, not
-                             * AccessInCondBranchMissed) even though that
-                             * ternary doesn't gate the store itself. Fix:
-                             * shift only takes MAC_PD distinct values across
-                             * this loop (one per dd) -- precompute them into
-                             * a small partitioned table BEFORE the loop
-                             * (same technique as oc_tbl/oc_ch_tbl above), so
-                             * the loop body does a plain array read instead
-                             * of a branch. */
-                            int shift_tbl[MAC_PD];
-                            #pragma HLS ARRAY_PARTITION variable=shift_tbl complete dim=0
-                            for (int dd0 = 0; dd0 < MAC_PD; dd0++) {
-                                #pragma HLS UNROLL
-                                shift_tbl[dd0] = d.use_shift_table
-                                    ? (int)w_base[d.shift_off + oc_tbl[dd0]] : d.out_shift;
-                            }
-                            WRITEOUT_DW_FAST: for (int idx = 0; idx < MAC_PD * MAC_PR * MAC_PC; idx++) {
-                                #pragma HLS PIPELINE II=1
-                                int dd = idx / (MAC_PR * MAC_PC);
-                                int rr = (idx / MAC_PC) % MAC_PR;
-                                int cw = idx % MAC_PC;
-                                int oh = rt * MAC_PR + rr;
-                                int ow = colt * MAC_PC + cw;
-                                out_base[d.out_off + oc_ch_tbl[dd] + oh * d.w_out + ow] =
-                                    (act_t)clip_shift(acc[dd][rr][cw] + dw_btile[dd], shift_tbl[dd]);
-                            }
-                        } else {
-                            WRITEOUT_DW: for (int idx = 0; idx < MAC_PD * MAC_PR * MAC_PC; idx++) {
-                                #pragma HLS PIPELINE II=1
-                                int dd = idx / (MAC_PR * MAC_PC);
-                                int rr = (idx / MAC_PC) % MAC_PR;
-                                int cw = idx % MAC_PC;
-                                if (dd >= c_sz || rr >= r_sz || cw >= col_sz) continue;
-                                int oc = oc_tbl[dd];
-                                int oh = rt * MAC_PR + rr;
-                                int ow = colt * MAC_PC + cw;
-                                int shift = d.use_shift_table ? (int)w_base[d.shift_off + oc] : d.out_shift;
-                                out_base[d.out_off + oc_ch_tbl[dd] + oh * d.w_out + ow] =
-                                    (act_t)clip_shift(acc[dd][rr][cw] + dw_btile[dd], shift);
-                            }
+                        /* A3 round (2026-08-23, ZHR-92, WRITEOUT burst fix,
+                         * REVERTED to single-path): the fast/slow dual path
+                         * (see git history, commit 8f7856e) removed the
+                         * per-element boundary `continue` and DID get past
+                         * that specific diagnostic (AccessInCondBranchMissed
+                         * gone from burst.xml), but a second, unnamed
+                         * blocker remained (CouldNotAnalyzePatternMissed) --
+                         * burst inference never actually fired, while the
+                         * duplication itself cost +2,660 LUT (98%->103%,
+                         * over budget). Paid the cost, didn't get the
+                         * benefit -- reverted back to one guarded loop
+                         * (2026-08-23, ZHR-92, decision to pursue a
+                         * run_layer rewrite instead of chasing burst
+                         * further). The genuinely independent win from that
+                         * round is KEPT: shift no longer gets recomputed
+                         * (or re-branched) every iteration -- it only takes
+                         * MAC_PD distinct values across this whole call, so
+                         * it's precomputed into a small partitioned table
+                         * once, same technique as oc_tbl/oc_ch_tbl already
+                         * use, before the (still guarded, non-bursting)
+                         * loop runs. This is a real loop-invariant-hoist,
+                         * not tied to the fast/slow split at all. */
+                        int shift_tbl[MAC_PD];
+                        #pragma HLS ARRAY_PARTITION variable=shift_tbl complete dim=0
+                        for (int dd0 = 0; dd0 < MAC_PD; dd0++) {
+                            #pragma HLS UNROLL
+                            shift_tbl[dd0] = d.use_shift_table
+                                ? (int)w_base[d.shift_off + oc_tbl[dd0]] : d.out_shift;
+                        }
+                        WRITEOUT_DW: for (int idx = 0; idx < MAC_PD * MAC_PR * MAC_PC; idx++) {
+                            #pragma HLS PIPELINE II=1
+                            int dd = idx / (MAC_PR * MAC_PC);
+                            int rr = (idx / MAC_PC) % MAC_PR;
+                            int cw = idx % MAC_PC;
+                            if (dd >= c_sz || rr >= r_sz || cw >= col_sz) continue;
+                            int oh = rt * MAC_PR + rr;
+                            int ow = colt * MAC_PC + cw;
+                            out_base[d.out_off + oc_ch_tbl[dd] + oh * d.w_out + ow] =
+                                (act_t)clip_shift(acc[dd][rr][cw] + dw_btile[dd], shift_tbl[dd]);
                         }
                     } else {
-                        /* A3 round (2026-08-23, ZHR-92, WRITEOUT burst fix):
-                         * same fast/slow split as WRITEOUT_DW above -- see
-                         * its comment for the full rationale. PW's guard has
-                         * only rr/cw (no channel-tile dimension), so the
-                         * fast-path condition is just the two spatial ones. */
-                        if (r_sz == MAC_PR && col_sz == MAC_PC) {
-                            /* A3 round (2026-08-23, ZHR-92, WRITEOUT burst fix
-                             * followup): same second-conditional finding as
-                             * WRITEOUT_DW_FAST above (see its comment) --
-                             * here shift depends only on `ot`, genuinely
-                             * loop-invariant across the whole call, so it's
-                             * hoisted out entirely rather than tabled. */
-                            int shift_fast = d.use_shift_table ? (int)w_base[d.shift_off + ot] : d.out_shift;
-                            WRITEOUT_PW_FAST: for (int idx = 0; idx < MAC_PR * MAC_PC; idx++) {
-                                #pragma HLS PIPELINE II=1
-                                int rr = idx / MAC_PC, cw = idx % MAC_PC;
-                                int oh = rt * MAC_PR + rr, ow = colt * MAC_PC + cw;
-                                acc_t total = 0;
-                                COMBINE_FAST: for (int dd = 0; dd < MAC_PD; dd++) {
-                                    #pragma HLS UNROLL
-                                    total += acc[dd][rr][cw];
-                                }
-                                out_base[d.out_off + ot_out_ch_base + oh * d.w_out + ow] =
-                                    (act_t)clip_shift(total + pw_bias_val, shift_fast);
+                        /* A3 round (2026-08-23, ZHR-92, WRITEOUT burst fix,
+                         * REVERTED to single-path): see WRITEOUT_DW's
+                         * comment above for the full rationale. shift is
+                         * genuinely loop-invariant here (depends only on
+                         * `ot`), hoisted out entirely rather than tabled. */
+                        int shift_hoisted = d.use_shift_table ? (int)w_base[d.shift_off + ot] : d.out_shift;
+                        WRITEOUT_PW: for (int idx = 0; idx < MAC_PR * MAC_PC; idx++) {
+                            #pragma HLS PIPELINE II=1
+                            int rr = idx / MAC_PC, cw = idx % MAC_PC;
+                            if (rr >= r_sz || cw >= col_sz) continue;
+                            int oh = rt * MAC_PR + rr, ow = colt * MAC_PC + cw;
+                            /* round 15: generic MAC_PD-wide combine (was
+                             * hardcoded to 8 terms when MAC_PD was fixed at
+                             * 8 -- now a compile-time-bounded unrolled sum so
+                             * it stays correct at MAC_PD=2 and any other
+                             * future width). */
+                            acc_t total = 0;
+                            COMBINE: for (int dd = 0; dd < MAC_PD; dd++) {
+                                #pragma HLS UNROLL
+                                total += acc[dd][rr][cw];
                             }
-                        } else {
-                            WRITEOUT_PW: for (int idx = 0; idx < MAC_PR * MAC_PC; idx++) {
-                                #pragma HLS PIPELINE II=1
-                                int rr = idx / MAC_PC, cw = idx % MAC_PC;
-                                if (rr >= r_sz || cw >= col_sz) continue;
-                                int oh = rt * MAC_PR + rr, ow = colt * MAC_PC + cw;
-                                /* round 15: generic MAC_PD-wide combine (was
-                                 * hardcoded to 8 terms when MAC_PD was fixed at
-                                 * 8 -- now a compile-time-bounded unrolled sum so
-                                 * it stays correct at MAC_PD=2 and any other
-                                 * future width). */
-                                acc_t total = 0;
-                                COMBINE: for (int dd = 0; dd < MAC_PD; dd++) {
-                                    #pragma HLS UNROLL
-                                    total += acc[dd][rr][cw];
-                                }
-                                int shift = d.use_shift_table ? (int)w_base[d.shift_off + ot] : d.out_shift;
-                                out_base[d.out_off + ot_out_ch_base + oh * d.w_out + ow] =
-                                    (act_t)clip_shift(total + pw_bias_val, shift);
-                            }
+                            out_base[d.out_off + ot_out_ch_base + oh * d.w_out + ow] =
+                                (act_t)clip_shift(total + pw_bias_val, shift_hoisted);
                         }
                     }
                 }
