@@ -34,6 +34,7 @@
 #include <cstdlib>
 #include <vector>
 #include <cstring>
+#include <cassert>
 
 /* Small deterministic LCG -- no <random> so the exact byte sequence is
  * reproducible across platforms/compilers without relying on library
@@ -318,7 +319,7 @@ int main()
         for (int i = 0; i < S2_B; i++)  s2_bbuf[i] = acc_t(s2_b_gold[i]);
 
         int s2_written[1] = {0};
-        mac_array_top(&s2, 1, s2_feat.data(), s2_wbuf.data(), s2_bbuf.data(), s2_feat.data(), s2_written);
+        mac_array_top(&s2, 1, s2_feat.data(), s2_wbuf.data(), s2_bbuf.data(), s2_feat.data(), s2_written, reinterpret_cast<const ap_uint<32>*>(s2_feat.data()));
 
         int mismatches_s2 = 0;
         for (int i = 0; i < S2_TOTAL; i++)
@@ -363,7 +364,7 @@ int main()
     std::vector<acc_t> bbuf_snapshot = bbuf;
     int out_written[2] = {0, 0};
 
-    mac_array_top(desc, 2, feat.data(), wbuf.data(), bbuf.data(), feat.data(), out_written);
+    mac_array_top(desc, 2, feat.data(), wbuf.data(), bbuf.data(), feat.data(), out_written, reinterpret_cast<const ap_uint<32>*>(feat.data()));
 
     bool weights_untouched = (wbuf == wbuf_snapshot) && (bbuf == bbuf_snapshot);
     bool both_written = out_written[0] == 1 && out_written[1] == 1;
@@ -392,7 +393,7 @@ int main()
     std::vector<act_t> pre_call_snapshot = feat2;
 
     int out_written2[2] = {0, 0};
-    mac_array_top(desc, 2, feat2.data(), wbuf.data(), bbuf.data(), feat2.data(), out_written2);
+    mac_array_top(desc, 2, feat2.data(), wbuf.data(), bbuf.data(), feat2.data(), out_written2, reinterpret_cast<const ap_uint<32>*>(feat2.data()));
 
     /* fault injection: layer 1's output region [16000, 16000+5200) reverts
      * to its pre-call contents (all zero, since region C was never
@@ -470,7 +471,7 @@ int main()
         for (int i = 0; i < B3_TOTAL; i++) b3buf[i] = acc_t(b3_gold[i]);
 
         int w3ritten[2] = {0, 0};
-        mac_array_top(desc3, 2, f3.data(), w3buf.data(), b3buf.data(), f3.data(), w3ritten);
+        mac_array_top(desc3, 2, f3.data(), w3buf.data(), b3buf.data(), f3.data(), w3ritten, reinterpret_cast<const ap_uint<32>*>(f3.data()));
 
         int mismatches_p3 = 0;
         for (int i = 0; i < F3_TOTAL; i++)
@@ -538,7 +539,7 @@ int main()
         for (int i = 0; i < B4_TOTAL; i++) b4buf[i] = acc_t(b4_gold[i]);
 
         int w4ritten[3] = {0, 0, 0};
-        mac_array_top(desc4, 3, f4.data(), w4buf.data(), b4buf.data(), f4.data(), w4ritten);
+        mac_array_top(desc4, 3, f4.data(), w4buf.data(), b4buf.data(), f4.data(), w4ritten, reinterpret_cast<const ap_uint<32>*>(f4.data()));
 
         int mismatches_p4 = 0;
         for (int i = 0; i < F4_TOTAL; i++)
@@ -609,7 +610,7 @@ int main()
         for (int i = 0; i < B5_TOTAL; i++) b5buf[i] = acc_t(b5_gold[i]);
 
         int w5ritten[3] = {0, 0, 0};
-        mac_array_top(desc5, 3, f5.data(), w5buf.data(), b5buf.data(), f5.data(), w5ritten);
+        mac_array_top(desc5, 3, f5.data(), w5buf.data(), b5buf.data(), f5.data(), w5ritten, reinterpret_cast<const ap_uint<32>*>(f5.data()));
 
         int mismatches_p5a = 0;
         for (int i = 0; i < F5_TOTAL; i++)
@@ -628,7 +629,7 @@ int main()
         std::vector<act_t> pre_call_snapshot5 = f5b;
 
         int w5ritten_b[3] = {0, 0, 0};
-        mac_array_top(desc5, 3, f5b.data(), w5buf.data(), b5buf.data(), f5b.data(), w5ritten_b);
+        mac_array_top(desc5, 3, f5b.data(), w5buf.data(), b5buf.data(), f5b.data(), w5ritten_b, reinterpret_cast<const ap_uint<32>*>(f5b.data()));
 
         for (int i = desc5[2].out_off; i < F5_TOTAL; i++) f5b[i] = pre_call_snapshot5[i];
 
@@ -714,7 +715,7 @@ int main()
         for (int i = 0; i < B6_TOTAL; i++) b6buf[i] = acc_t(b6_gold[i]);
 
         int w6ritten[6] = {0, 0, 0, 0, 0, 0};
-        mac_array_top(desc6, 6, f6.data(), w6buf.data(), b6buf.data(), f6.data(), w6ritten);
+        mac_array_top(desc6, 6, f6.data(), w6buf.data(), b6buf.data(), f6.data(), w6ritten, reinterpret_cast<const ap_uint<32>*>(f6.data()));
 
         int mismatches_p6 = 0;
         for (int i = 0; i < F6_TOTAL; i++)
@@ -771,7 +772,7 @@ int main()
         for (int i = 0; i < B7_TOTAL; i++) b7buf[i] = acc_t(b7_gold[i]);
 
         int w7ritten[2] = {0, 0};
-        mac_array_top(desc7, 2, f7.data(), w7buf.data(), b7buf.data(), f7.data(), w7ritten);
+        mac_array_top(desc7, 2, f7.data(), w7buf.data(), b7buf.data(), f7.data(), w7ritten, reinterpret_cast<const ap_uint<32>*>(f7.data()));
 
         int mismatches_p7 = 0;
         for (int i = 0; i < F7_TOTAL; i++)
@@ -827,7 +828,7 @@ int main()
         for (int i = 0; i < S8A_B; i++)  s8a_bbuf[i] = acc_t(s8a_b[i]);
 
         int s8a_written[1] = {0};
-        mac_array_top(&desc8a, 1, s8a_feat.data(), s8a_wbuf.data(), s8a_bbuf.data(), s8a_feat.data(), s8a_written);
+        mac_array_top(&desc8a, 1, s8a_feat.data(), s8a_wbuf.data(), s8a_bbuf.data(), s8a_feat.data(), s8a_written, reinterpret_cast<const ap_uint<32>*>(s8a_feat.data()));
 
         int mismatches_8a = 0;
         for (int i = 0; i < S8A_TOTAL; i++)
@@ -869,7 +870,7 @@ int main()
         for (int i = 0; i < S8B_B; i++)  s8b_bbuf[i] = acc_t(s8b_b[i]);
 
         int s8b_written[1] = {0};
-        mac_array_top(&desc8b, 1, s8b_feat.data(), s8b_wbuf.data(), s8b_bbuf.data(), s8b_feat.data(), s8b_written);
+        mac_array_top(&desc8b, 1, s8b_feat.data(), s8b_wbuf.data(), s8b_bbuf.data(), s8b_feat.data(), s8b_written, reinterpret_cast<const ap_uint<32>*>(s8b_feat.data()));
 
         int mismatches_8b = 0;
         for (int i = 0; i < S8B_TOTAL; i++)
@@ -925,7 +926,7 @@ int main()
         for (int i = 0; i < S9_B; i++)  s9_bbuf[i] = acc_t(s9_b[i]);
 
         int s9_written[1] = {0};
-        mac_array_top(&desc9, 1, s9_feat.data(), s9_wbuf.data(), s9_bbuf.data(), s9_feat.data(), s9_written);
+        mac_array_top(&desc9, 1, s9_feat.data(), s9_wbuf.data(), s9_bbuf.data(), s9_feat.data(), s9_written, reinterpret_cast<const ap_uint<32>*>(s9_feat.data()));
 
         int mismatches_9 = 0;
         for (int i = 0; i < S9_TOTAL; i++)
@@ -1002,7 +1003,7 @@ int main()
         for (int i = 0; i < B10_TOTAL; i++) b10buf[i] = acc_t(b10_gold[i]);
 
         int w10ritten[3] = {0, 0, 0};
-        mac_array_top(desc10, 3, f10.data(), w10buf.data(), b10buf.data(), f10.data(), w10ritten);
+        mac_array_top(desc10, 3, f10.data(), w10buf.data(), b10buf.data(), f10.data(), w10ritten, reinterpret_cast<const ap_uint<32>*>(f10.data()));
 
         int mismatches_10 = 0;
         for (int i = 0; i < F10_TOTAL; i++)
@@ -1065,7 +1066,7 @@ int main()
         for (int i = 0; i < S11_B; i++)  s11_bbuf[i] = acc_t(s11_b[i]);
 
         int s11_written[1] = {0};
-        mac_array_top(&desc11, 1, s11_feat.data(), s11_wbuf.data(), s11_bbuf.data(), s11_feat.data(), s11_written);
+        mac_array_top(&desc11, 1, s11_feat.data(), s11_wbuf.data(), s11_bbuf.data(), s11_feat.data(), s11_written, reinterpret_cast<const ap_uint<32>*>(s11_feat.data()));
 
         int mismatches_11 = 0;
         for (int i = 0; i < S11_TOTAL; i++)
@@ -1126,7 +1127,7 @@ int main()
         for (int i = 0; i < S12_B; i++)  s12_bbuf[i] = acc_t(s12_b[i]);
 
         int s12_written[1] = {0};
-        mac_array_top(&desc12, 1, s12_feat.data(), s12_wbuf.data(), s12_bbuf.data(), s12_feat.data(), s12_written);
+        mac_array_top(&desc12, 1, s12_feat.data(), s12_wbuf.data(), s12_bbuf.data(), s12_feat.data(), s12_written, reinterpret_cast<const ap_uint<32>*>(s12_feat.data()));
 
         int mismatches_12 = 0;
         for (int i = 0; i < S12_TOTAL; i++)
@@ -1180,7 +1181,7 @@ int main()
         for (int i = 0; i < S13_B; i++)  s13_bbuf[i] = acc_t(s13_b[i]);
 
         int s13_written[1] = {0};
-        mac_array_top(&desc13, 1, s13_feat.data(), s13_wbuf.data(), s13_bbuf.data(), s13_feat.data(), s13_written);
+        mac_array_top(&desc13, 1, s13_feat.data(), s13_wbuf.data(), s13_bbuf.data(), s13_feat.data(), s13_written, reinterpret_cast<const ap_uint<32>*>(s13_feat.data()));
 
         int mismatches_13 = 0;
         for (int i = 0; i < S13_TOTAL; i++)
@@ -1246,7 +1247,7 @@ int main()
         for (int i = 0; i < S14_B; i++)       s14_bbuf[i] = acc_t(s14_b[i]);
 
         int s14_written[1] = {0};
-        mac_array_top(&desc14, 1, s14_feat.data(), s14_wbuf.data(), s14_bbuf.data(), s14_feat.data(), s14_written);
+        mac_array_top(&desc14, 1, s14_feat.data(), s14_wbuf.data(), s14_bbuf.data(), s14_feat.data(), s14_written, reinterpret_cast<const ap_uint<32>*>(s14_feat.data()));
 
         int mismatches_14 = 0;
         for (int i = 0; i < S14_TOTAL; i++)
@@ -1254,6 +1255,72 @@ int main()
         phase14_ok = (mismatches_14 == 0);
         printf("[Phase14] per-channel out_shift table (use_shift_table=1, 8 distinct shifts): "
                "%s (%d/%d mismatches)\n", phase14_ok ? "PASS" : "FAIL", mismatches_14, S14_TOTAL);
+    }
+
+    /* ================= PHASE 15: gmem_act wide-path read, PW_PATCH_HOIST (A3, ZHR-92 2026-08-23) =================
+     * use_wide_path=1: PW_PATCH_HOIST reads one 32-bit packed word per
+     * (ci,rr) instead of 4 separate 8-bit reads. This is the ONLY phase
+     * that exercises this branch at all -- every earlier phase (0-14)
+     * zero-inits use_wide_path=0 via the same trailing-field convention
+     * as use_shift_table, so csim passing on those never touched this
+     * code path or validated the byte-order assumption in the unpack
+     * (packed.range(cw*8+7, cw*8) assumes little-endian: byte cw sits in
+     * bit range [cw*8+7 : cw*8], lowest address = lowest bits -- would
+     * silently transpose column order if wrong, a "csim never even ran
+     * this branch" bug, not a "csim ran it and got it wrong" bug, so this
+     * phase is the whole reason to trust the wide path exists at all).
+     * cin=48/cout=8/h_in=w_in=12 -> h_out=w_out=12 (k=1,s=1,p=0): exactly
+     * 3x3 = 9 full 4x4 tiles, no partial tile anywhere (matches the real
+     * invariant use_wide_path=1 depends on -- verified against the real
+     * 82-entry network, not assumed here either), so every PW_PATCH_HOIST
+     * call in this phase takes the wide branch on every (rt,colt,ot). */
+    bool phase15_ok = false;
+    {
+        LayerDescV2 desc15 = LayerDescV2{ LDESC_OP_PWCONV, /*cin*/48, /*cout*/8, /*h_in*/12, /*w_in*/12,
+                                           /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/6,
+                                           /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/6912 };
+        desc15.use_wide_path = 1;
+        MacArrayParams p15 = derive_mac_array_params(desc15);
+        desc15.h_out = p15.h_out; desc15.w_out = p15.w_out; desc15.in_ch_stride = p15.in_ch_stride; desc15.out_ch_stride = p15.out_ch_stride;
+        desc15.n_row_tiles = p15.n_row_tiles; desc15.n_col_tiles = p15.n_col_tiles; desc15.n_ch_tiles = p15.n_ch_tiles;
+        desc15.last_row_tile = p15.last_row_tile; desc15.last_col_tile = p15.last_col_tile; desc15.last_ch_tile = p15.last_ch_tile;
+        assert(desc15.h_out == 12 && desc15.w_out == 12 && desc15.h_out % MAC_PR == 0 && desc15.w_out % MAC_PC == 0);
+
+        const int S15_IN  = 48 * 12 * 12;  /* 6912 */
+        const int S15_OUT = 8 * 12 * 12;   /* 1152 */
+        const int S15_TOTAL = S15_IN + S15_OUT;
+        const int S15_W = 8 * 48;          /* 384 */
+        const int S15_B = 8;
+
+        std::vector<int8_t>  s15_in(S15_TOTAL, 0);
+        std::vector<int8_t>  s15_w(S15_W, 0);
+        std::vector<int32_t> s15_b(S15_B, 0);
+        Lcg rng15(0x715DEAD1);
+        for (int i = 0; i < S15_IN; i++) s15_in[i] = rng15.next_i8();
+        for (int i = 0; i < S15_W; i++)  s15_w[i]  = rng15.next_i8();
+        for (int i = 0; i < S15_B; i++)  s15_b[i]  = (int32_t)rng15.next_i8() * 4;
+
+        int h15, w15;
+        golden_out_dims(desc15, h15, w15);
+        std::vector<int8_t> s15_gold = s15_in;
+        golden_pwconv(desc15, h15, w15, s15_in, s15_w, s15_b, s15_gold);
+
+        std::vector<act_t> s15_feat(S15_TOTAL, act_t(0));
+        std::vector<wt_t>  s15_wbuf(S15_W, wt_t(0));
+        std::vector<acc_t> s15_bbuf(S15_B, acc_t(0));
+        for (int i = 0; i < S15_IN; i++)  s15_feat[i] = act_t(s15_in[i]);
+        for (int i = 0; i < S15_W; i++)   s15_wbuf[i] = wt_t(s15_w[i]);
+        for (int i = 0; i < S15_B; i++)   s15_bbuf[i] = acc_t(s15_b[i]);
+
+        int s15_written[1] = {0};
+        mac_array_top(&desc15, 1, s15_feat.data(), s15_wbuf.data(), s15_bbuf.data(), s15_feat.data(), s15_written, reinterpret_cast<const ap_uint<32>*>(s15_feat.data()));
+
+        int mismatches_15 = 0;
+        for (int i = 0; i < S15_TOTAL; i++)
+            if ((int8_t)s15_feat[i] != s15_gold[i]) mismatches_15++;
+        phase15_ok = (mismatches_15 == 0);
+        printf("[Phase15] gmem_act wide-path read (use_wide_path=1, PW_PATCH_HOIST, real 4x4-tile shape): "
+               "%s (%d/%d mismatches)\n", phase15_ok ? "PASS" : "FAIL", mismatches_15, S15_TOTAL);
     }
 
     printf("\n[Summary] Phase0 (stride=2 DW correctness): %s\n", phase0_ok ? "PASS" : "FAIL");
@@ -1271,6 +1338,7 @@ int main()
     printf("[Summary] Phase12 (PW Cin-chunking fix, real cin=1152 shape): %s\n", phase12_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase13 (PW Cin-chunking tail case, real cin=144 crash site): %s\n", phase13_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase14 (per-channel out_shift table, use_shift_table=1): %s\n", phase14_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase15 (gmem_act wide-path read, use_wide_path=1): %s\n", phase15_ok ? "PASS" : "FAIL");
 
     return (phase0_ok && phase1_ok && phase2_ok && phase3_ok && phase4_ok && phase5_ok && phase6_ok && phase7_ok && phase8_ok && phase9_ok && phase10_ok && phase11_ok && phase12_ok && phase13_ok && phase14_ok) ? 0 : 1;
 }

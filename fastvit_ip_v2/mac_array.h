@@ -297,6 +297,36 @@ struct LayerDescV2 {
      * h_out*w_out multiply from run_layer's per-lane address arithmetic
      * entirely; hardware reads these fields instead. */
     int in_ch_stride, out_ch_stride;
+
+    /* A3 round (2026-08-23, ZHR-92): gmem_act port-widening, PW read side
+     * first. Same append-at-the-end / zero-init-is-safe convention as
+     * use_shift_table above -- use_wide_path=0 is "use the old narrow
+     * per-element path", so every existing csim case (none of which
+     * mention this field) keeps working unmodified.
+     * Generator-computed (gen_hw_sequence.py), not hardware-computed:
+     * "generator decides, hardware executes" -- computed once from
+     * w_out>=4, checked against the real 82-entry network, not assumed:
+     * every real conv/pwconv layer has w_out either exactly 1 (layers 50,
+     * 51 -- the SE block's 1x1 fc1/fc2, h_in=w_in=1) or a multiple of 4
+     * (every other layer, col_sz=MAC_PC=4 on every tile, no partial-last-
+     * tile case exists in the real network at all). Layers 50/51 need the
+     * narrow path: PW_PATCH_HOIST's read address is
+     * in_off + ci*in_ch_stride + oh*W+ow -- for these two layers
+     * in_ch_stride=h_in*w_in=1, so channels ARE contiguous in DRAM, but
+     * the loop's innermost (burst-eligible) axis is spatial (ow), which
+     * only has 1 element here; widening as currently structured would
+     * read 4 bytes and use 1, the same failure mode that made the DW
+     * whole-block-burst attempt regress 21% earlier this line.
+     *
+     * A3 round (2026-08-23, ZHR-92, MERGE): NO LONGER READ by
+     * PW_PATCH_HOIST -- that code merged the wide/narrow branches into
+     * one unconditional word-read path (general mod-4 byte-lane
+     * decomposition handles both cases without needing to know which one
+     * it is). Field kept declared (harmless, zero-init-safe, avoids
+     * touching every existing csim call site and the generator stub) in
+     * case a future call site needs the distinction again -- not
+     * currently wired to anything. */
+    int use_wide_path;
 };
 
 /* Host-side utility (stands in for the real descriptor generator). NOT
@@ -341,7 +371,8 @@ void mac_array_top(
     const wt_t   w_base[],
     const acc_t  b_base[],
     act_t        out_base[],
-    int          out_written[]
+    int          out_written[],
+    const ap_uint<32> in_base_wide[]
 );
 
 #endif // __MAC_ARRAY_H__

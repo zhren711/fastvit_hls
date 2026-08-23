@@ -210,7 +210,7 @@ static void run_reduce_unified(
  * and the single call into run_reduce_unified. */
 static void run_layer(const LayerDescV2 &d,
                        const act_t in_base[], const wt_t w_base[], const acc_t b_base[],
-                       act_t out_base[])
+                       act_t out_base[], const ap_uint<32> in_base_wide[])
 {
     const int Hin = d.h_in, Win = d.w_in;
     const int K = d.k, S = d.stride, P = d.pad;
@@ -318,15 +318,83 @@ static void run_layer(const LayerDescV2 &d,
                  * true forever. Address clamped to a known-in-range
                  * constant (0) when invalid, matching the DW fix's
                  * discipline. */
+                /* A3 round (2026-08-23, ZHR-92, MERGE): the wide/narrow
+                 * branch split (see git history for the pre-merge form) is
+                 * GONE -- both cases now go through ONE word read via
+                 * in_base_wide, unconditionally, regardless of
+                 * d.use_wide_path (that field is no longer read here; see
+                 * its header comment). Motivation, from the P&R round that
+                 * added the 5th master (solution18, WNS -0.292ns): the
+                 * critical path was NOT gmem_meta-related (Option E's old
+                 * "zero logic levels, 74% routing delay" signature) but
+                 * entirely internal to run_layer -- an FSM state bit
+                 * driving a 32x32 multiplier's DSP cascade register (4
+                 * logic levels, 58% logic delay). Prime suspect: the wide
+                 * and narrow branches each computed their own
+                 * `ci * d.in_ch_stride` product, and being mutually
+                 * exclusive (only one runs per call), HLS's resource
+                 * binding pass plausibly shared ONE physical multiplier
+                 * between them, gated by an FSM-state mux feeding its
+                 * operand register -- matching the observed path exactly.
+                 * Supporting (not conclusive) evidence: DSP only rose
+                 * 63->73 (+10) adding the wide path, not the ~35-70 a
+                 * second independent 32x32 multiply chain would cost if
+                 * unshared. This merge removes the second branch's
+                 * multiply entirely (one `ci * d.in_ch_stride` site, not
+                 * two) AND removes the separate gmem_act_wide master
+                 * (folded back onto bundle=gmem_act, below) -- both changes
+                 * follow from the same root decision (one unified read
+                 * path), tested together as this round's one variable; the
+                 * causal claim that this fixes the FSM->DSP path is NOT
+                 * verified yet, only P&R can confirm it (see round report).
+                 * Byte addressing is a general mod-4 decomposition of the
+                 * SAME address the old narrow path used (d.in_off +
+                 * ci*d.in_ch_stride + oh*W + colt*MAC_PC + cw), not an
+                 * alignment assumption -- see the followup comment below
+                 * for why a naive single-word-read version of this wasn't
+                 * actually correct in general, and the fix. Csim coverage:
+                 * Phase6 (desc6[1]/desc6[3], cin=10/4, h_in=w_in=1,
+                 * in_off=360/374 -- 374 is NOT 4-aligned) covers the
+                 * layer-50/51 narrow shape; Phase4 (desc4[1], cin=32,
+                 * w_out=10, genuine partial last column tile col_sz=2)
+                 * covers the wide-with-partial-tile case. No new phase
+                 * needed -- both were pre-existing tests. */
+                /* A3 round (2026-08-23, ZHR-92, MERGE followup): FOUND AND
+                 * FIXED via csim, not assumed correct -- the first version
+                 * of this loop (one word read per (ci,rr), lane=base_lane+cw)
+                 * crashed csim ("Hi(39) out of bound(32) in range()") on
+                 * Phase4's desc4[1] (PW, cin=32, w_out=10 -> a genuine
+                 * PARTIAL last column tile, col_sz=2, at a non-4-aligned
+                 * offset -- a pre-existing round-9 synthetic shape, never
+                 * designed with word-alignment in mind). The "wide layers
+                 * are always 4-aligned" invariant only holds for the real
+                 * 82-entry network (verified there), not for arbitrary
+                 * csim shapes -- and csim has to pass on ALL of them, not
+                 * just the production-relevant ones. Fix: general 2-word
+                 * read, second word fetched ONLY when a valid cw's byte
+                 * would actually fall in it (need_word1) -- for the
+                 * aligned/full-tile case (every real wide-eligible layer)
+                 * need_word1 is always false, so this costs zero extra
+                 * reads versus the original single-word design; the extra
+                 * read only happens for misaligned/partial tiles like
+                 * Phase4's, which is correctness insurance, not something
+                 * the real network pays for. */
                 PW_PATCH_HOIST: for (int ci = 0; ci < Cin; ci++) {
                     for (int rr = 0; rr < MAC_PR; rr++) {
                         bool r_valid = rr < r_sz;
                         int oh = rt * MAC_PR + (r_valid ? rr : 0);
+                        int base_idx = d.in_off + ci * d.in_ch_stride + oh * W + colt * MAC_PC;
+                        int word_addr0 = base_idx >> 2;
+                        bool need_word1 = r_valid && (((base_idx & 3) + col_sz) > 4);
+                        ap_uint<32> packed0 = r_valid   ? in_base_wide[word_addr0]     : (ap_uint<32>)0;
+                        ap_uint<32> packed1 = need_word1 ? in_base_wide[word_addr0 + 1] : (ap_uint<32>)0;
                         for (int cw = 0; cw < MAC_PC; cw++) {
                             bool valid = r_valid && (cw < col_sz);
-                            int ow = colt * MAC_PC + (valid ? cw : 0);
+                            int elem_idx = base_idx + cw;
+                            int lane = elem_idx & 3;
+                            bool second = (elem_idx >> 2) != word_addr0;
                             pw_patch_full[ci][rr][cw] = valid
-                                ? in_base[d.in_off + ci * d.in_ch_stride + oh * W + ow]
+                                ? (act_t)(second ? packed1 : packed0).range(lane * 8 + 7, lane * 8)
                                 : (act_t)0;
                         }
                     }
@@ -807,7 +875,8 @@ void mac_array_top(
     const wt_t   w_base[],
     const acc_t  b_base[],
     act_t        out_base[],
-    int          out_written[])
+    int          out_written[],
+    const ap_uint<32> in_base_wide[])
 {
 #pragma HLS INTERFACE m_axi port=desc         offset=slave bundle=gmem_meta
 #pragma HLS INTERFACE m_axi port=in_base      offset=slave bundle=gmem_act
@@ -815,6 +884,27 @@ void mac_array_top(
 #pragma HLS INTERFACE m_axi port=b_base       offset=slave bundle=gmem_b
 #pragma HLS INTERFACE m_axi port=out_base     offset=slave bundle=gmem_act
 #pragma HLS INTERFACE m_axi port=out_written  offset=slave bundle=gmem_meta
+/* A3 round (2026-08-23, ZHR-92, MERGE): back on bundle=gmem_act, sharing
+ * the SAME physical master as in_base/out_base -- the standalone
+ * gmem_act_wide master (previous round, solution18) is gone. That
+ * earlier round's justification for a SEPARATE bundle no longer applies:
+ * the "limited memory ports" II violation it was avoiding happened when
+ * TWO DIFFERENT bundles were both accessed inside ONE pipelined loop
+ * region (wide/narrow branch INSIDE the loop, both statically scheduled
+ * even though only one runs). That branch is gone now too (see
+ * PW_PATCH_HOIST above) -- in_base_wide is PW_PATCH_HOIST's ONLY
+ * accessor, in its own loop region, so this is architecturally the same
+ * "one bundle, multiple ports, never contended within one region" shape
+ * run_add already uses today (in_base x2 + out_base, all bundle=gmem_act,
+ * inside ONE pipelined ADD loop, uncontested) -- not a new pattern, reusing
+ * a load-bearing one already proven in this file. Motivation: the
+ * standalone master's own HLS-side adapter cost 657 LUT/671 FF/2 BRAM18K
+ * by itself (~30% of that round's total LUT growth), before counting the
+ * BD-level SmartConnect's added crossbar port -- removing it is expected
+ * to both shrink LUT and return the AXI master count to 4. Whether it
+ * also resolves the FSM->DSP critical path (see PW_PATCH_HOIST's comment)
+ * is the thing THIS round's P&R actually tests, not assumed here. */
+#pragma HLS INTERFACE m_axi port=in_base_wide offset=slave bundle=gmem_act
 #pragma HLS INTERFACE s_axilite port=n_layers bundle=control
 #pragma HLS INTERFACE s_axilite port=desc bundle=control
 #pragma HLS INTERFACE s_axilite port=in_base bundle=control
@@ -822,6 +912,7 @@ void mac_array_top(
 #pragma HLS INTERFACE s_axilite port=b_base bundle=control
 #pragma HLS INTERFACE s_axilite port=out_base bundle=control
 #pragma HLS INTERFACE s_axilite port=out_written bundle=control
+#pragma HLS INTERFACE s_axilite port=in_base_wide bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
     /* A3 round (2026-08-22, ZHR-92): option D (read desc[i] into a local
      * on-chip copy once per layer, on the theory that gmem_meta's critical
@@ -847,7 +938,7 @@ void mac_array_top(
             case LDESC_OP_SIGMOID: run_sigmoid(desc[i], in_base, out_base); break;
             case LDESC_OP_SCALE:   run_scale(desc[i], in_base, out_base); break;
             case LDESC_OP_GELU:    run_gelu(desc[i], in_base, out_base); break;
-            default:                run_layer(desc[i], in_base, w_base, b_base, out_base); break;
+            default:                run_layer(desc[i], in_base, w_base, b_base, out_base, in_base_wide); break;
         }
         out_written[i] = 1;
     }
