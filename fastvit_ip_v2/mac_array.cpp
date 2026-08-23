@@ -397,27 +397,48 @@ static void run_layer(const LayerDescV2 &d,
                      * (0, not min(oc,cout-1)) when invalid, so no runtime
                      * comparison is needed to keep the read in-bounds --
                      * the read result itself is discarded either way. */
+                    /* A3 round (2026-08-22, ZHR-92, followup): pr/pc bound
+                     * reverted from the compile-time PATCH_R_MAX/
+                     * PATCH_C_MAX back to the runtime patch_r/patch_c --
+                     * same recoverable-cost pattern as DW_WT_STAGE's
+                     * MAX_K->K revert just below/above: at PATCH_R_MAX x
+                     * PATCH_C_MAX=13x13=169/channel this loop iterates the
+                     * worst-case (K=7,S=2) grid regardless of this layer's
+                     * real K/S, measured 352 cycles for entry5 (K=3,S=1,
+                     * real 6x6=36/channel) -- 338 of 338 total iterations
+                     * run, only 72 needed.
+                     * Protection mechanism verified term-by-term, not
+                     * assumed (this is what makes reverting safe, same as
+                     * DW_WT_STAGE's dd case): GATHER_ALL_DW's
+                     * valid=(kh<dw_K)&&(kw<dw_K) mask sits on the WEIGHT
+                     * side only --
+                     *   lane_w_all[step][dd]  = valid ? dw_wtile[...] : 0;
+                     *   lane_in_all[step][dd][rr][cw] = dw_patch[dd][rr*S+kh][cw*S+kw];  // no valid check here
+                     * -- so for any kh>=dw_K (equivalently pr=rr*S+kh
+                     * beyond this layer's real patch_r), the corresponding
+                     * weight is forced to 0 and acc += lane_in*0 stays 0
+                     * regardless of what dw_patch holds there. The read
+                     * index's own upper bound is (MAC_PR-1)*S+(MAX_K-1),
+                     * i.e. up to PATCH_R_MAX-1 -- for K=3/S=1 that's index
+                     * 9, while this loop now only WRITES up to index
+                     * patch_r-1=5; indices 6..9 stay uninitialized
+                     * registers, but every step that reads them has
+                     * kh>=K=3, so its weight is 0 and the read value never
+                     * reaches acc. Holds BECAUSE dw_patch's declared size
+                     * stays PATCH_R_MAX x PATCH_C_MAX (only the loop bound
+                     * changed, not the array) -- shrinking the declaration
+                     * itself would make those same reads genuinely
+                     * out-of-bounds instead of merely unwritten. DO NOT
+                     * shrink dw_patch's declared dimensions. */
                     DW_PATCH_STAGE: for (int cc = 0; cc < MAC_PD; cc++) {
                         bool valid = (cc < c_sz);
                         int c = ot * MAC_PD + (valid ? cc : 0);
-                        /* A3 round (2026-08-22, ZHR-92, code-review
-                         * followup): pr/pc bound moved from the runtime
-                         * patch_r/patch_c to the compile-time PATCH_R_MAX/
-                         * PATCH_C_MAX -- same fix class as DW_WT_STAGE
-                         * below. dw_patch IS complete-partitioned (dim=0),
-                         * so this site genuinely had the register-write
-                         * hazard; it just happened not to be the one that
-                         * blew up because GATHER_ALL_DW's own valid mask
-                         * (kh<dw_K && kw<dw_K) zeroes the matching weight,
-                         * making the product 0 regardless of dw_patch's
-                         * garbage. Not relying on that downstream masking
-                         * anymore. */
-                        for (int pr = 0; pr < PATCH_R_MAX; pr++) {
+                        for (int pr = 0; pr < patch_r; pr++) {
                             int ih = rt * MAC_PR * S - P + pr;
-                            for (int pc = 0; pc < PATCH_C_MAX; pc++) {
+                            for (int pc = 0; pc < patch_c; pc++) {
                                 int iw = colt * MAC_PC * S - P + pc;
                                 act_t v = 0;
-                                if (valid && pr < patch_r && pc < patch_c &&
+                                if (valid &&
                                     ih >= 0 && ih < Hin && iw >= 0 && iw < Win)
                                     /* A3 (2026-08-21): (c*Hin+ih)*Win+iw ==
                                      * c*(Hin*Win)+ih*Win+iw exactly -- the
@@ -433,26 +454,63 @@ static void run_layer(const LayerDescV2 &d,
 
                 for (int f = 0; f < n_f; f++) {
                     if (d.op_type == LDESC_OP_DWCONV) {
-                        DW_WT_STAGE: for (int cc = 0; cc < MAC_PD; cc++) {
+                        /* A3 round (2026-08-22, ZHR-92): split from one
+                         * combined cc/kh/kw loop into two single-master
+                         * loops. Root cause (confirmed via the exact
+                         * csynth log message, not inferred): DW_WT_STAGE
+                         * used to read BOTH gmem_b (dw_btile, at the cc
+                         * level) and gmem_w (dw_wtile, at the kh/kw level)
+                         * inside the same pipelined region. HLS's
+                         * scheduler couldn't build a continuous request
+                         * stream for gmem_w across that misaligned nesting
+                         * -- it degraded to one full round-trip per
+                         * access ("Unable to schedule bus request
+                         * operation ... due to limited memory ports",
+                         * achieved II=49, not the target 1). gmem_act's
+                         * structurally-identical read pattern (kw-innermost,
+                         * monotonic) bursts fine because it's never sharing
+                         * a pipelined region with a second bundle; PW_WSTAGE
+                         * (gmem_w alone, no second master) reaches II=1 as
+                         * the natural control -- same read shape, same
+                         * bundle, single-master loop. */
+                        DW_BT_STAGE: for (int cc = 0; cc < MAC_PD; cc++) {
                             bool valid = (cc < c_sz);
                             int c  = ot * MAC_PD + cc;
                             int oc = c * d.fpg + f;
                             int oc_safe = valid ? oc : 0;
                             dw_btile[cc] = valid ? b_base[d.b_off + oc_safe] : (acc_t)0;
-                            /* A3 round (2026-08-22, ZHR-92, code-review
-                             * followup): kh/kw bound moved from the runtime
-                             * K to the compile-time MAX_K -- dw_wtile is
-                             * complete-partitioned (dim=0), the same
-                             * register-write hazard as the DW loop-bound fix
-                             * this round already closed for cc. This site
-                             * was safe only because GATHER_ALL_DW's own
-                             * valid=(kh<dw_K)&&(kw<dw_K) mask discards
-                             * whatever cc's write left behind -- not because
-                             * this loop was itself correct. */
-                            for (int kh = 0; kh < MAX_K; kh++)
-                                for (int kw = 0; kw < MAX_K; kw++) {
-                                    bool k_valid = valid && (kh < K) && (kw < K);
-                                    dw_wtile[cc][kh][kw] = k_valid
+                        }
+                        /* A3 round (2026-08-22, ZHR-92, followup): kh/kw
+                         * bound reverted from the compile-time MAX_K back
+                         * to the runtime K -- MAX_K's own justification
+                         * ("burst inference needs a compile-time trip
+                         * count") stopped holding once this round confirmed
+                         * gmem_w never actually bursts even as a
+                         * single-master loop at II=1. At MAX_K, this loop
+                         * does 2*49=98 iterations (measured 116 cycles);
+                         * at K, it's 2*K*K -- 18 for this layer's K=3,
+                         * measured ~36 cycles -- saving ~80 cycles/tile
+                         * (11.5% of the 694-cycle tile total) for a
+                         * property (burst eligibility) that was never
+                         * actually achieved. This DOES reopen the
+                         * "runtime bound into a complete-partitioned
+                         * array" pattern the code review flagged -- but
+                         * this specific instance was already identified as
+                         * one of the four sites that were "accidentally
+                         * safe": GATHER_ALL_DW's own
+                         * valid=(kh<dw_K)&&(kw<dw_K) mask zeroes any
+                         * kh>=K/kw>=K garbage this loop leaves in
+                         * dw_wtile before it can reach the reduction.
+                         * DO NOT remove that mask without re-closing this
+                         * loop bound at the same time. */
+                        DW_WT_STAGE: for (int cc = 0; cc < MAC_PD; cc++) {
+                            bool valid = (cc < c_sz);
+                            int c  = ot * MAC_PD + cc;
+                            int oc = c * d.fpg + f;
+                            int oc_safe = valid ? oc : 0;
+                            for (int kh = 0; kh < K; kh++)
+                                for (int kw = 0; kw < K; kw++) {
+                                    dw_wtile[cc][kh][kw] = valid
                                         ? w_base[d.w_off + (oc_safe * K + kh) * K + kw]
                                         : (wt_t)0;
                                 }

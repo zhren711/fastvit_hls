@@ -77,7 +77,16 @@ supposedly standing in for.
   not a fan-out or density signature) — took `route_design` from -0.345ns (needing `phys_opt` to limp
   to +0.004ns) to +0.165ns alone, no `phys_opt` needed, at zero LUT cost. The difference is a specific
   diagnosed target vs. blind rotation, not "pblocks are magic" — don't reach for one without a P&R
-  record that actually shows a distance signature first.
+  record that actually shows a distance signature first. **A pblock is not a one-time constraint —
+  its size must be re-evaluated after any change that materially shifts LUT usage, not set once and
+  forgotten.** Confirmed costly twice, not once: a design that grew (a later DW whole-block-burst
+  attempt) failed to *route* inside a pblock sized for the smaller pre-growth design (170+ unroutable
+  pins); a design that later *shrank* (66.53%→55.07% LUT from further DW staging fixes) still failed
+  to close timing (-0.003ns) inside that same unchanged pblock, because fewer cells in a fixed-size
+  region let the placer spread them out more, lengthening exactly the routes the pblock exists to
+  shorten — widening it again (X0-96→X0-120) fixed it on the first try both times, confirming this
+  isn't a fluke. Rule: any round that materially changes LUT occupancy re-checks pblock sizing as
+  part of that round, not as an afterthought once timing already fails.
 - No P&R for ZHR-16's PATCH_GROUP "scheme 3" — csim-clean is the finish line; the shape gap it covers
   doesn't occur in real FastVIT-T8.
 - DSP-packing is deferred, not rejected — old rejections assumed an LUT-bound chip, true only because
