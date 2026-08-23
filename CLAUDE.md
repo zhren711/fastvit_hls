@@ -141,6 +141,40 @@ supposedly standing in for.
   were being synthesized into hardware every time they appeared in a loop's exit condition. Any
   derived-bound expression (`(dim-1)*stride+k`-shaped or similar) sitting in a loop bound is a
   candidate for this, independent of whether the loop body writes into a partitioned register array.
+- **A runtime value gating entry to a critical hardware region costs real hardware every time,
+  regardless of which *form* the gate takes.** This is one principle, confirmed via six independently
+  discovered, differently-shaped instances on this codebase — don't search for just "loop bounds";
+  search for *any* runtime decision sitting between a descriptor field and a resource-sensitive
+  region:
+    - round 5: `for (ci < Cin)` as a loop's own exit condition → `PIPELINE` silently dropped entirely
+      ("Cannot unroll loop ... variable trip count").
+    - round 8: `if (dd >= chunk_sz) continue` guarding a write into an unrolled array → 16,840 LUT of
+      Expression/Multiplexer logic (one mux tree per lane).
+    - round 12: `dw_patch[rr*dw_S+kh][...]` — a runtime stride folded into an index feeding a 512-wide
+      unrolled read → ~3,000+ sparsemux cores just to hold II=1.
+    - round 13: `kh = step / MAX_K` — an induction variable *derived* from a flat runtime counter,
+      feeding the same kind of unrolled read → the same sparsemux fan-out, different surface syntax.
+    - DW fpg fix (2026-08-22): `for (cc < c_sz)` as a loop's own trip count (not just a body guard) →
+      not a resource cost this time but a *correctness* one — csim can't see it, only real P&R timing
+      exposed the board-measured 46% mismatch (the razor-thin `c_sz` timing path failing to reach a
+      2nd real iteration in silicon).
+    - WRITEOUT burst-miss (2026-08-23, ZHR-92): `if (rr >= r_sz || cw >= col_sz) continue` wrapping a
+      store → HLS's burst inferencer refuses categorically ("Access store is in the conditional
+      branch", confirmed via `burst.xml`'s own `AccessInCondBranchMissed` diagnostic, not inferred
+      from cycle counts) — independent of how regular the underlying address pattern is.
+  Six different syntactic shapes (a loop's own bound, an `if...continue` guard, a dynamic array index,
+  a derived induction variable, a loop bound again in a different context, a guard around a store
+  instead of a compute), same single mechanism, same single fix every time: hoist the runtime decision
+  to a **compile-time-bounded loop with the decision pushed into a data-path `valid`/select**, not left
+  in control flow. The two known exceptions to "just zero-fill the invalid case," both from real
+  instances above: (1) a *store* can't be zero-filled the way a *read* can — writing unconditionally
+  would corrupt memory outside the valid region, not just compute a discarded value, so the fix needs
+  an actual fast/slow dual path (full-region fast path unconditional, partial-region slow path keeps
+  the guard) rather than a single always-valid rewrite; (2) a loop bound that's also a genuine trip
+  count (not just a body-level guard) can produce silently wrong results in real silicon that csim
+  never sees, not just a resource-cost regression — treat any "the loop's own iteration count depends
+  on a runtime value" case as a correctness risk to verify on real hardware, not just an efficiency one
+  to optimize later.
 - **`csynth`'s Performance Estimates only report cycle counts for named `PIPELINE`/`UNROLL` regions
   — a function's own sequential glue code between those regions has no report of its own, and may be
   the dominant real cost.** Confirmed 2026-08-23 (ZHR-92): `run_layer`'s per-tile board time grew
