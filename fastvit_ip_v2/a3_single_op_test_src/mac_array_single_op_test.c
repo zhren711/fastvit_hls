@@ -29,14 +29,28 @@
 #include <time.h>
 
 #define FV_DDR_BASE   0x10000000UL
-#define FV_MAP_SIZE   0x100000UL   /* 1MB window, generous vs the ~720KB actually used */
+/* A3 round (2026-08-23, ZHR-92): widened 1MB->3MB and the region offsets
+ * spread out accordingly -- the original 1MB layout's IN/OUT regions were
+ * only ~0xC0000 (786,432 bytes) apart from the NEXT region, which fit
+ * every single-op bundle tested so far (entry3/entry5_dw/entry10_add, all
+ * <=196,608 bytes) but segfaulted (SIGSEGV, exit 139) the first time a
+ * bundle needed the full 786,432 bytes both in AND out (entry[0]'s real
+ * GELU shape, cin=48/h=w=128) -- OUT_OFF+ref_size overran W_OFF/B_OFF/
+ * OUT_WRITTEN_OFF, all of which sat inside what should have been the IN
+ * region's own space, and OUT's own write extended past the 1MB mmap
+ * window entirely. Purely additive: same relative DESC/IN/W/B/OUT/
+ * OUT_WRITTEN structure, just spaced far enough apart (0x100000 = 1MB
+ * per region) to hold anything up to ~1MB, which comfortably covers
+ * every real single-op shape in the network (the largest, entry[0]'s
+ * GELU, is 786,432 bytes). */
+#define FV_MAP_SIZE   0x300000UL   /* 3MB window */
 
-#define DESC_OFF          0x00000UL
-#define IN_OFF            0x10000UL
-#define W_OFF             0x50000UL
-#define B_OFF             0x60000UL
-#define OUT_OFF           0x70000UL
-#define OUT_WRITTEN_OFF   0xB0000UL
+#define DESC_OFF          0x000000UL
+#define IN_OFF            0x010000UL
+#define W_OFF             0x110000UL
+#define B_OFF             0x120000UL
+#define OUT_OFF           0x130000UL
+#define OUT_WRITTEN_OFF   0x230000UL
 
 static size_t file_size(const char *path) {
     FILE *f = fopen(path, "rb");

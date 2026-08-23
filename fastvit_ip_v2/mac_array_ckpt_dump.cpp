@@ -90,15 +90,45 @@ int main() {
                i, g_hw_seq[i].op_type, g_hw_seq[i].cin, g_hw_seq[i].cout, g_hw_seq[i].h_in, g_hw_seq[i].w_in,
                g_hw_seq[i].k, g_hw_seq[i].in_off, g_hw_seq[i].w_off, g_hw_seq[i].b_off, g_hw_seq[i].out_off, g_hw_seq[i].in2_off);
         int written[1] = {0};
-        mac_array_top(&g_hw_seq[i], 1, act_buf.data(), w_buf.data(), b_buf.data(), act_buf.data(), written);
+        mac_array_top(&g_hw_seq[i], 1, act_buf.data(), w_buf.data(), b_buf.data(), act_buf.data(), written,
+                      reinterpret_cast<const ap_uint<32>*>(act_buf.data()));
 
         // A2 Phase C diagnostic (2026-08-21, ZHR-92): dump EVERY entry's
         // full output in the stem.1..stage1 span (entries 0-16) for a
         // layer-by-layer paired comparison against a bit-exact Python
         // simulator -- localizes exactly where the 26pp gap between the
         // idealized Python quantization model and real hardware starts.
-        if (i <= 16) {
-            int size = g_hw_seq[i].cout * g_hw_seq[i].h_out * g_hw_seq[i].w_out;
+        // A3 round (2026-08-23, ZHR-92): also dump 74-80 (the SE gating
+        // span: entry 74's real output feeds GAP's real input, then
+        // gap/fc1/relu/fc2/sigmoid/scale) -- needed to build real-data
+        // board test bundles for the three ops (GAP/RELU/SIGMOID/SCALE via
+        // the SE flow, GELU already covered by entries 0-16) never board-
+        // tested on this architecture.
+        if (i <= 16 || (i >= 74 && i <= 80)) {
+            /* A3 round (2026-08-23, ZHR-92): real output size differs by
+             * op_type -- the original cout*h_out*w_out formula is only
+             * correct for DWCONV/PWCONV. GAP collapses spatial entirely
+             * (cin values, one per channel, NOT cin*h_out*w_out); RELU/
+             * SIGMOID/SCALE/GELU/ADD are elementwise over the INPUT shape
+             * (cin*h_in*w_in -- h_out/w_out aren't even meaningful for
+             * these, derive_mac_array_params still fills them in as if it
+             * were a same-shape conv, which happens to equal h_in/w_in for
+             * k=1/stride=1/pad=0 but that's incidental, not a rule). Sizes
+             * mirror each op's own run_* function in mac_array.cpp exactly. */
+            int size;
+            switch (g_hw_seq[i].op_type) {
+                case LDESC_OP_GAP: size = g_hw_seq[i].cin; break;
+                case LDESC_OP_ADD:
+                case LDESC_OP_RELU:
+                case LDESC_OP_SIGMOID:
+                case LDESC_OP_SCALE:
+                case LDESC_OP_GELU:
+                    size = g_hw_seq[i].cin * g_hw_seq[i].h_in * g_hw_seq[i].w_in;
+                    break;
+                default:  // DWCONV / PWCONV
+                    size = g_hw_seq[i].cout * g_hw_seq[i].h_out * g_hw_seq[i].w_out;
+                    break;
+            }
             char path[256];
             snprintf(path, sizeof(path),
                      "E:\\codes\\microzed\\fastvit_hls\\accuracy_test_imgs_256\\entry_%02d.bin", i);
