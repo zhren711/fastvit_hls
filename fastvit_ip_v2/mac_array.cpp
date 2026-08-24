@@ -33,18 +33,147 @@ static acc_t clip_shift(acc_t acc, int shift)
     return v;
 }
 
-/* A3 round (2026-08-24, ZHR-92, run_layer rewrite stage 4): the old
- * run_reduce_dw (itself renamed from run_reduce_unified in stage 2, its
- * own history preserved in git log -- drive_mac's removal in round 3,
- * the round 9-14 shared-instance/fan-out lessons that shaped its
- * GATHER+UNIFIED split) is GONE. dw_one_ot_flat (below run_layer) folds
- * the same compute directly into its own flat pipeline instead of
- * calling out to a separate reduction function -- there is no longer
- * any call site left for a standalone DW reduction function at all.
- * The lessons that comment block documented (don't branch on op_type
- * inside a pipelined region; don't let a runtime-derived index feed an
- * unrolled read) still hold and are applied fresh in dw_one_ot_flat's
- * own header comment, not restated here. */
+/* ---- A3 round 3 (2026-08-21, ZHR-92): drive_mac is GONE, its body
+ * folded directly into UNIFIED's loop. Round 14's drive_mac existed as a
+ * SEPARATE function specifically so HLS's resource sharing across this
+ * function's two mutually-exclusive (op_type-gated) call sites kept it
+ * to one physical 512-wide instance -- confirmed working ever since (DSP
+ * stayed ~110-118 across every round, never doubled to ~1024). But that
+ * same function-call boundary is exactly what prevented DW_TAP_H/W and
+ * UNIFIED_PW from ever carrying their own #pragma HLS PIPELINE --
+ * putting PIPELINE on either CALLER loop was round 9/10's original
+ * mistake (duplicated the shared instance, DSP 512->1024), since a
+ * pipelined caller loop demands its own dedicated per-cycle-available
+ * copy of whatever it calls. Measured cost of leaving it this way (A3
+ * round 2, ZHR-92, board-measured): ~61 cycles per drive_mac invocation
+ * for one pipeline step's worth of real 512-wide work -- call/return
+ * handshake (`INLINE off`), lane_in/lane_w parameter marshalling, and
+ * acc round-tripping through the function interface, paid EVERY step.
+ *
+ * Fix: checked first (not assumed) that drive_mac really did have two
+ * textual call sites (grep confirmed: one in the DW branch, one in the
+ * PW branch, both below) -- inlining drive_mac directly would remove the
+ * function boundary the shared-instance property depends on, almost
+ * certainly reintroducing round 9/10's DSP doubling. Instead: gather
+ * EVERY step's lane_in/lane_w BEFORE the reduction, into
+ * lane_in_all/lane_w_all (indexed by step -- cheap on-chip copying, not
+ * unrolled, not the throughput-critical path), then run ONE single
+ * pipelined loop (UNIFIED) that reads a step at a time and does the
+ * 512-wide accumulate directly, inline, with no function call inside the
+ * pipelined region at all. There is exactly ONE 512-wide unrolled
+ * accumulate region in the whole design -- same "only one physical
+ * instance" property round 14 achieved, just enforced by there being
+ * only one copy of the code, not by a function boundary.
+ *
+ * Two pitfalls this deliberately avoids (both already paid for once, in
+ * round 12/13's history):
+ *   - op_type branching INSIDE the pipelined region: not done here --
+ *     UNIFIED only ever indexes by `step`, a plain induction variable;
+ *     op_type only selects which GATHER code fills lane_in_all/
+ *     lane_w_all beforehand, outside the pipelined loop entirely.
+ *   - runtime-derived indices (kh/kw from a flat step counter, dw_S-
+ *     dependent strides) INSIDE the pipelined region: round 12's actual
+ *     failure was `dw_patch[dd][rr*dw_S+kh][cw*dw_S+kw]` evaluated
+ *     per-lane inside the 512-way unroll, which fanned into ~3000+
+ *     sparsemux cores just to hold II=1. That same stride-dependent
+ *     gather still exists here, but ONLY in the GATHER phase (ordinary
+ *     loop, not unrolled, not throughput-critical) -- the exact same
+ *     dw_S==1/dw_S==2 branch technique GATHER_DW_D_S1/S2 already used is
+ *     reused verbatim so the multiply stays compile-time-resolvable.
+ *     UNIFIED itself reads lane_in_all[step][dd][rr][cw] -- a clean,
+ *     compile-time-shaped index into an already-gathered buffer, with
+ *     nothing runtime-derived left to fan out. */
+/* A3 round (2026-08-23, ZHR-92, run_layer rewrite stage 2): renamed from
+ * run_reduce_unified -- PW no longer calls this at all (see
+ * pw_flat_pipeline, above run_layer), so op_type and every PW-only
+ * parameter (pw_patch_full/pw_c0/pw_wtile) were dead weight left in a
+ * runtime-int-gated branch HLS couldn't prove unreachable on its own,
+ * same lesson already applied once before in the (reverted) pw_one_ot
+ * round. Removed along with the branch; DW's own gather logic
+ * (dw_S==1/dw_S==2, round 13's fix) and UNIFIED are unchanged. */
+static void run_reduce_dw(
+    int n_steps,
+    const act_t dw_patch[MAC_PD][PATCH_R_MAX][PATCH_C_MAX],
+    const wt_t  dw_wtile[MAC_PD][MAX_K][MAX_K],
+    int dw_K, int dw_S,
+    acc_t acc[MAC_PD][MAC_PR][MAC_PC])
+{
+    /* round 15: cyclic factor was hardcoded to 8 (matching the old fixed
+     * MAC_PD=8) at all four sites in this file; caught while dropping
+     * MAC_PD to 2 -- with a hardcoded 8, bank=(cib+dd) mod 8 stops being
+     * compile-time-known for unrolled dd once cib=step*MAC_PD's stride no
+     * longer equals the partition factor, reopening a runtime bank-select
+     * cost round 5/8 already eliminated. Must always equal MAC_PD. */
+    #pragma HLS ARRAY_PARTITION variable=dw_patch complete dim=0
+    #pragma HLS ARRAY_PARTITION variable=dw_wtile complete dim=0
+    #pragma HLS ARRAY_PARTITION variable=acc      complete dim=0
+
+    /* Per-step gather buffers -- dim=1 (step) is deliberately NOT
+     * partitioned/unrolled (UNIFIED below accesses one step at a time,
+     * sequentially; only dims 2-4, the 512-wide lane shape, need to be
+     * fully parallel-addressable). */
+    act_t lane_in_all[MAX_STEPS][MAC_PD][MAC_PR][MAC_PC];
+    wt_t  lane_w_all[MAX_STEPS][MAC_PD];
+    #pragma HLS ARRAY_PARTITION variable=lane_in_all complete dim=2
+    #pragma HLS ARRAY_PARTITION variable=lane_in_all complete dim=3
+    #pragma HLS ARRAY_PARTITION variable=lane_in_all complete dim=4
+    #pragma HLS ARRAY_PARTITION variable=lane_w_all  complete dim=2
+
+    /* round 13's fix retained verbatim: DW gets its own doubly-nested
+     * compile-time loop (kh, kw each 0..MAX_K-1, both literal bounds) so
+     * kh/kw are genuine loop induction variables of directly-bounded
+     * loops, not arithmetic derived from a shared flat counter. This
+     * phase is NOT the pipelined/unrolled region (that's UNIFIED, below)
+     * so a runtime-valued `step = kh*MAX_K+kw` write-index here is cheap
+     * ordinary address-counter hardware, not the round-12 fan-out
+     * problem (that was specifically about a runtime index feeding a
+     * 512-way UNROLLED read). */
+    if (dw_S == 1) {
+        GATHER_ALL_DW_S1: for (int kh = 0; kh < MAX_K; kh++) {
+            for (int kw = 0; kw < MAX_K; kw++) {
+                int step = kh * MAX_K + kw;
+                bool valid = (kh < dw_K) && (kw < dw_K);
+                for (int dd = 0; dd < MAC_PD; dd++) {
+                    lane_w_all[step][dd] = valid ? dw_wtile[dd][kh][kw] : (wt_t)0;
+                    for (int rr = 0; rr < MAC_PR; rr++) {
+                        for (int cw = 0; cw < MAC_PC; cw++) {
+                            lane_in_all[step][dd][rr][cw] = dw_patch[dd][rr * 1 + kh][cw * 1 + kw];
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        GATHER_ALL_DW_S2: for (int kh = 0; kh < MAX_K; kh++) {
+            for (int kw = 0; kw < MAX_K; kw++) {
+                int step = kh * MAX_K + kw;
+                bool valid = (kh < dw_K) && (kw < dw_K);
+                for (int dd = 0; dd < MAC_PD; dd++) {
+                    lane_w_all[step][dd] = valid ? dw_wtile[dd][kh][kw] : (wt_t)0;
+                    for (int rr = 0; rr < MAC_PR; rr++) {
+                        for (int cw = 0; cw < MAC_PC; cw++) {
+                            lane_in_all[step][dd][rr][cw] = dw_patch[dd][rr * 2 + kh][cw * 2 + kw];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    UNIFIED: for (int step = 0; step < n_steps; step++) {
+        #pragma HLS PIPELINE II=1
+        LANE_D: for (int dd = 0; dd < MAC_PD; dd++) {
+            #pragma HLS UNROLL
+            LANE_R: for (int rr = 0; rr < MAC_PR; rr++) {
+                #pragma HLS UNROLL
+                LANE_C: for (int cw = 0; cw < MAC_PC; cw++) {
+                    #pragma HLS UNROLL
+                    acc[dd][rr][cw] += (acc_t)lane_in_all[step][dd][rr][cw] * (acc_t)lane_w_all[step][dd];
+                }
+            }
+        }
+    }
+}
 
 /* A3 round (2026-08-23, ZHR-92, run_layer rewrite stage 2): PW's flat
  * pipeline. Replaces PW's entire per-(rt,colt) (ot,cbase) loop +
@@ -220,173 +349,6 @@ static void pw_flat_pipeline(
             } else {
                 if (wr_col == MAC_PC - 1) { wr_col = 0; wr_row++; }
                 else { wr_col++; }
-            }
-        }
-    }
-}
-
-/* A3 round (2026-08-24, ZHR-92, run_layer rewrite stage 4): DW's flat
- * pipeline, same technique as pw_flat_pipeline (stage 2/3), applied one
- * level shallower. DW's patch depends on `ot` itself (not just the
- * tile, unlike PW's disjoint Cin banking), so DW_PATCH_STAGE stays a
- * separate per-ot staging call in run_layer, UNCHANGED -- reverting it
- * to a compile-time bound was already tried and found ~5x more
- * expensive for K=3 layers (338 vs 72 real cycles, see its own header
- * comment), not reopened here. dw_one_ot_flat only replaces the
- * (f, tap, writeout) portion: what used to be DW_BT_STAGE + DW_WT_STAGE
- * + RESET + run_reduce_dw + WRITEOUT_DW as separate named regions per
- * (ot,f) becomes one counter-driven PIPELINE loop per ot, covering
- * every f internally (fpg is usually 1; 4 real layers need fpg=2).
- *
- * Compute-phase trip count is compile-time fixed at MAX_K*MAX_K=49 taps
- * regardless of real K (weight zero-filled for kh>=K||kw>=K, the same
- * established GATHER_ALL_DW zero-fill pattern -- this read pattern's
- * safety was already verified term-by-term for the un-flattened code
- * and carries over unchanged here) -- unlike DW_WT_STAGE's own
- * already-reverted MAX_K attempt, this is not optional: the flat
- * pipeline's counter needs a compile-time wrap bound to avoid a
- * runtime-derived loop bound (round 13's `kh = step / MAX_K` mistake).
- * Real board cost of this for K<7 layers (most of the network) is
- * unmeasured before this round -- flagging honestly, not assumed
- * cheap, since the analogous MAX_K choice already cost ~3x when tried
- * for DW_WT_STAGE specifically (98 vs 36 measured cycles at K=3).
- *
- * WRITEOUT keeps its boundary guard (c_sz/r_sz/col_sz) -- burst
- * inference stays explicitly out of scope this round (see
- * pw_flat_pipeline's own note): the same conditional-store shape
- * already failed to burst three times on the old WRITEOUT_DW. */
-static void dw_one_ot_flat(
-    const LayerDescV2 &d,
-    const wt_t w_base[], const acc_t b_base[],
-    const act_t dw_patch[MAC_PD][PATCH_R_MAX][PATCH_C_MAX],
-    act_t out_base[],
-    int rt, int colt, int ot, int c_sz, int r_sz, int col_sz)
-{
-    #pragma HLS ARRAY_PARTITION variable=dw_patch complete dim=0
-
-    const int K = d.k, S = d.stride;
-    const int n_f = d.fpg;
-    const int total_iters = n_f * (MAX_K * MAX_K + MAC_PD * MAC_PR * MAC_PC);
-
-    acc_t acc[MAC_PD][MAC_PR][MAC_PC];
-    #pragma HLS ARRAY_PARTITION variable=acc complete dim=0
-
-    int f_idx = 0;
-    bool in_writeout = false;
-    int kh = 0, kw = 0;
-    int wr_dd = 0, wr_rr = 0, wr_cw = 0;
-
-    /* per-f registers -- only MAC_PD (2) distinct values each, same
-     * precompute-into-a-small-table technique as pw_flat_pipeline's
-     * shift_reg / run_layer's existing oc_tbl/oc_ch_tbl/shift_tbl. */
-    acc_t bias_reg[MAC_PD];
-    int   wt_base_reg[MAC_PD];
-    int   oc_ch_reg[MAC_PD];
-    int   shift_reg[MAC_PD];
-    #pragma HLS ARRAY_PARTITION variable=bias_reg complete dim=0
-    #pragma HLS ARRAY_PARTITION variable=wt_base_reg complete dim=0
-    #pragma HLS ARRAY_PARTITION variable=oc_ch_reg complete dim=0
-    #pragma HLS ARRAY_PARTITION variable=shift_reg complete dim=0
-
-    /* seed f=0's registers before the loop starts -- compute reads them
-     * immediately at i==0, a cycle before the mid-loop reseed (below)
-     * would first fire. */
-    {
-        int oc_val = ot * MAC_PD * d.fpg + 0;
-        int ch_val = oc_val * d.out_ch_stride;
-        int wtb    = oc_val * K * K;
-        for (int dd0 = 0; dd0 < MAC_PD; dd0++) {
-            #pragma HLS UNROLL
-            bool v = (dd0 < c_sz);
-            int oc_safe = v ? oc_val : 0;
-            bias_reg[dd0]    = v ? b_base[d.b_off + oc_safe] : (acc_t)0;
-            wt_base_reg[dd0] = wtb;
-            oc_ch_reg[dd0]   = ch_val;
-            shift_reg[dd0]   = d.use_shift_table ? (int)w_base[d.shift_off + oc_val] : d.out_shift;
-            oc_val += d.fpg;
-            ch_val += d.fpg * d.out_ch_stride;
-            wtb    += d.fpg * K * K;
-        }
-    }
-
-    DW_FLAT: for (int i = 0; i < total_iters; i++) {
-        #pragma HLS PIPELINE II=1
-        bool reset_acc = (!in_writeout) && (kh == 0) && (kw == 0);
-
-        if (!in_writeout) {
-            for (int dd = 0; dd < MAC_PD; dd++) {
-                #pragma HLS UNROLL
-                bool valid = (kh < K) && (kw < K) && (dd < c_sz);
-                wt_t wv = valid ? w_base[d.w_off + wt_base_reg[dd] + kh * K + kw] : (wt_t)0;
-                for (int rr = 0; rr < MAC_PR; rr++) {
-                    #pragma HLS UNROLL
-                    for (int cw = 0; cw < MAC_PC; cw++) {
-                        #pragma HLS UNROLL
-                        act_t iv = (S == 1)
-                            ? dw_patch[dd][rr * 1 + kh][cw * 1 + kw]
-                            : dw_patch[dd][rr * 2 + kh][cw * 2 + kw];
-                        acc_t prod = (acc_t)iv * (acc_t)wv;
-                        acc[dd][rr][cw] = reset_acc ? prod : (acc_t)(acc[dd][rr][cw] + prod);
-                    }
-                }
-            }
-        } else {
-            if (wr_dd < c_sz && wr_rr < r_sz && wr_cw < col_sz) {
-                int oh = rt * MAC_PR + wr_rr;
-                int ow = colt * MAC_PC + wr_cw;
-                out_base[d.out_off + oc_ch_reg[wr_dd] + oh * d.w_out + ow] =
-                    (act_t)clip_shift(acc[wr_dd][wr_rr][wr_cw] + bias_reg[wr_dd], shift_reg[wr_dd]);
-            }
-        }
-
-        /* counter update -- no division/modulo anywhere */
-        if (!in_writeout) {
-            if (kw == MAX_K - 1) {
-                kw = 0;
-                if (kh == MAX_K - 1) {
-                    kh = 0;
-                    in_writeout = true;
-                } else {
-                    kh++;
-                }
-            } else {
-                kw++;
-            }
-        } else {
-            if (wr_cw == MAC_PC - 1) {
-                wr_cw = 0;
-                if (wr_rr == MAC_PR - 1) {
-                    wr_rr = 0;
-                    if (wr_dd == MAC_PD - 1) {
-                        wr_dd = 0;
-                        in_writeout = false;
-                        f_idx++;
-                        /* reseed next f's registers -- harmless when
-                         * f_idx==n_f (the loop's own last iteration);
-                         * that result is never read. */
-                        int oc_val = ot * MAC_PD * d.fpg + f_idx;
-                        int ch_val = oc_val * d.out_ch_stride;
-                        int wtb    = oc_val * K * K;
-                        for (int dd0 = 0; dd0 < MAC_PD; dd0++) {
-                            #pragma HLS UNROLL
-                            bool v = (dd0 < c_sz);
-                            int oc_safe = v ? oc_val : 0;
-                            bias_reg[dd0]    = v ? b_base[d.b_off + oc_safe] : (acc_t)0;
-                            wt_base_reg[dd0] = wtb;
-                            oc_ch_reg[dd0]   = ch_val;
-                            shift_reg[dd0]   = d.use_shift_table ? (int)w_base[d.shift_off + oc_val] : d.out_shift;
-                            oc_val += d.fpg;
-                            ch_val += d.fpg * d.out_ch_stride;
-                            wtb    += d.fpg * K * K;
-                        }
-                    } else {
-                        wr_dd++;
-                    }
-                } else {
-                    wr_rr++;
-                }
-            } else {
-                wr_cw++;
             }
         }
     }
@@ -650,9 +612,14 @@ static void run_layer(const LayerDescV2 &d,
                  * `complete` (register-file, correct but not necessarily
                  * cheap). */
                 act_t dw_patch[MAC_PD][PATCH_R_MAX][PATCH_C_MAX];
+                wt_t  dw_wtile[MAC_PD][MAX_K][MAX_K];
+                acc_t dw_btile[MAC_PD];
                 #pragma HLS ARRAY_PARTITION variable=dw_patch complete dim=0
+                #pragma HLS ARRAY_PARTITION variable=dw_wtile complete dim=0
+                #pragma HLS ARRAY_PARTITION variable=dw_btile complete dim=0
 
                 int c_sz = MAC_PD;
+                int n_f = 1;
 
                 /* A2 pre-step (2026-08-21): fpg (filters-per-group) was
                  * carried in LayerDescV2 but never read anywhere in this
@@ -668,12 +635,14 @@ static void run_layer(const LayerDescV2 &d,
                  * those 4 layers today, no crash. Fix: patch staging
                  * (reads the input, doesn't depend on which output filter)
                  * stays a single per-ot step; weight/bias staging, RESET,
-                 * the MAC reduction, and WRITEOUT now repeat for f=0..fpg-1
-                 * -- since stage 4 (2026-08-24), that repetition lives
-                 * entirely inside dw_one_ot_flat (it reads d.fpg directly),
-                 * not as a `for(f...)` loop here. */
+                 * the MAC reduction, and WRITEOUT now repeat for f=0..fpg-1,
+                 * each producing output channel oc = c*fpg+f from the SAME
+                 * staged patch with a DIFFERENT weight set. n_f=1 for PW
+                 * (fpg always 1 there) makes this loop a no-op wrapper for
+                 * the PW path -- unchanged behavior. */
                 if (d.op_type == LDESC_OP_DWCONV) {
                     c_sz = (ot == d.n_ch_tiles - 1) ? d.last_ch_tile : MAC_PD;
+                    n_f = d.fpg;
                     /* A3 round (2026-08-22, ZHR-92): c_sz is a runtime value
                      * (derived from d.n_ch_tiles/d.last_ch_tile, both read
                      * off the gmem_meta AXI path -- P&R's own critical path,
@@ -765,16 +734,228 @@ static void run_layer(const LayerDescV2 &d,
                     }
                 }
 
-                /* A3 round (2026-08-24, ZHR-92, run_layer rewrite stage 4):
-                 * DW_BT_STAGE + DW_WT_STAGE + RESET + run_reduce_dw +
-                 * oc_tbl/oc_ch_tbl/shift_tbl + WRITEOUT_DW (previously a
-                 * `for(f...) {...}` loop with all of the above repeated
-                 * per f) replaced by one call -- see dw_one_ot_flat's own
-                 * header comment above run_layer for the full rationale.
-                 * dw_wtile/dw_btile (declared above, alongside dw_patch)
-                 * are no longer used -- the flat pipeline reads weight/
-                 * bias directly, no separate staging arrays. */
-                dw_one_ot_flat(d, w_base, b_base, dw_patch, out_base, rt, colt, ot, c_sz, r_sz, col_sz);
+                for (int f = 0; f < n_f; f++) {
+                    if (d.op_type == LDESC_OP_DWCONV) {
+                        /* A3 round (2026-08-22, ZHR-92): split from one
+                         * combined cc/kh/kw loop into two single-master
+                         * loops. Root cause (confirmed via the exact
+                         * csynth log message, not inferred): DW_WT_STAGE
+                         * used to read BOTH gmem_b (dw_btile, at the cc
+                         * level) and gmem_w (dw_wtile, at the kh/kw level)
+                         * inside the same pipelined region. HLS's
+                         * scheduler couldn't build a continuous request
+                         * stream for gmem_w across that misaligned nesting
+                         * -- it degraded to one full round-trip per
+                         * access ("Unable to schedule bus request
+                         * operation ... due to limited memory ports",
+                         * achieved II=49, not the target 1). gmem_act's
+                         * structurally-identical read pattern (kw-innermost,
+                         * monotonic) bursts fine because it's never sharing
+                         * a pipelined region with a second bundle; PW_WSTAGE
+                         * (gmem_w alone, no second master) reaches II=1 as
+                         * the natural control -- same read shape, same
+                         * bundle, single-master loop. */
+                        DW_BT_STAGE: for (int cc = 0; cc < MAC_PD; cc++) {
+                            bool valid = (cc < c_sz);
+                            int c  = ot * MAC_PD + cc;
+                            int oc = c * d.fpg + f;
+                            int oc_safe = valid ? oc : 0;
+                            dw_btile[cc] = valid ? b_base[d.b_off + oc_safe] : (acc_t)0;
+                        }
+                        /* A3 round (2026-08-22, ZHR-92, followup): kh/kw
+                         * bound reverted from the compile-time MAX_K back
+                         * to the runtime K -- MAX_K's own justification
+                         * ("burst inference needs a compile-time trip
+                         * count") stopped holding once this round confirmed
+                         * gmem_w never actually bursts even as a
+                         * single-master loop at II=1. At MAX_K, this loop
+                         * does 2*49=98 iterations (measured 116 cycles);
+                         * at K, it's 2*K*K -- 18 for this layer's K=3,
+                         * measured ~36 cycles -- saving ~80 cycles/tile
+                         * (11.5% of the 694-cycle tile total) for a
+                         * property (burst eligibility) that was never
+                         * actually achieved. This DOES reopen the
+                         * "runtime bound into a complete-partitioned
+                         * array" pattern the code review flagged -- but
+                         * this specific instance was already identified as
+                         * one of the four sites that were "accidentally
+                         * safe": GATHER_ALL_DW's own
+                         * valid=(kh<dw_K)&&(kw<dw_K) mask zeroes any
+                         * kh>=K/kw>=K garbage this loop leaves in
+                         * dw_wtile before it can reach the reduction.
+                         * DO NOT remove that mask without re-closing this
+                         * loop bound at the same time. */
+                        /* A3 round (2026-08-23, ZHR-92, accumulator
+                         * rewrite): same technique as DW_PATCH_STAGE just
+                         * above -- wt_base replaces `oc_safe * K * K`
+                         * (the outer, channel-indexed component of
+                         * `(oc_safe*K+kh)*K+kw`; the kh*K+kw inner term is
+                         * unrelated to this round's diagnosis -- a
+                         * different multiply, by K not by a channel index,
+                         * left as-is). Seeded once per (ot,f) at cc=0's
+                         * value, advanced by the loop-invariant step
+                         * d.fpg*K*K per cc. Same invalid-cc reasoning as
+                         * DW_PATCH_STAGE: the read is gated by `valid`, so
+                         * wt_base's un-clamped value when invalid is never
+                         * actually dereferenced. */
+                        int wt_base = (ot * MAC_PD * d.fpg + f) * K * K;
+                        int wt_step = d.fpg * K * K;
+                        DW_WT_STAGE: for (int cc = 0; cc < MAC_PD; cc++) {
+                            bool valid = (cc < c_sz);
+                            for (int kh = 0; kh < K; kh++)
+                                for (int kw = 0; kw < K; kw++) {
+                                    dw_wtile[cc][kh][kw] = valid
+                                        ? w_base[d.w_off + wt_base + kh * K + kw]
+                                        : (wt_t)0;
+                                }
+                            wt_base += wt_step;
+                        }
+                    }
+
+                    acc_t acc[MAC_PD][MAC_PR][MAC_PC];
+                    #pragma HLS ARRAY_PARTITION variable=acc complete dim=0
+                    RESET: for (int d0 = 0; d0 < MAC_PD; d0++)
+                        for (int r0 = 0; r0 < MAC_PR; r0++)
+                            for (int c0 = 0; c0 < MAC_PC; c0++) {
+                                #pragma HLS UNROLL
+                                acc[d0][r0][c0] = 0;
+                            }
+
+                    if (d.op_type == LDESC_OP_DWCONV) {
+                        /* A3 round (2026-08-23, ZHR-92, run_layer rewrite
+                         * stage 2): pw_wtile_dummy and the PW-shaped call
+                         * args are GONE -- run_reduce_dw (renamed from
+                         * run_reduce_unified) no longer takes op_type or
+                         * any PW parameter at all, since PW no longer
+                         * shares this function (see its own header
+                         * comment for why -- pw_flat_pipeline handles PW
+                         * entirely separately now). */
+                        run_reduce_dw(MAX_K * MAX_K, dw_patch, dw_wtile, K, S, acc);
+                    }
+                    /* A3 round (2026-08-23, ZHR-92, run_layer rewrite stage
+                     * 2): PW's cbase loop (PW_WSTAGE + run_reduce_unified,
+                     * chunking Cin into MAX_CIN_PW pieces) that used to live
+                     * in an `else` here is GONE -- this whole (ot,f) loop
+                     * is now DW-only (see the outer `if (op_type==DWCONV)`
+                     * wrap around the (rt,colt)-level ot loop). PW's
+                     * equivalent logic lives in pw_flat_pipeline now,
+                     * called once per (rt,colt) tile, not once per (ot,f).
+                     * Leaving PW's old branch here would have been
+                     * unreachable dead code -- op_type is guaranteed
+                     * DWCONV at this point by the outer wrap, but HLS
+                     * cannot prove that across the branch boundary on its
+                     * own, so it would still have synthesized real,
+                     * permanently-unused hardware for it (the exact
+                     * "op_type is a runtime int at the call site even
+                     * though this caller always passes one value" lesson
+                     * already applied to run_reduce_unified's own PW
+                     * branch in the earlier pw_one_ot round). */
+
+                    /* A3 round 2 (2026-08-21, ZHR-92): a second attempt at
+                     * hoisting/lookup-table-izing the WRITEOUT address
+                     * arithmetic was TRIED and MEASURED WORSE (DSP
+                     * 113->118, LUT 42616->42863) -- reverted to this
+                     * simpler form, which is the actual measured-better
+                     * state. Left as a cautionary note, not silently
+                     * dropped: the lookup-table machinery's own cost
+                     * (extra adders/registers building rr_row_off/dd_off
+                     * each WRITEOUT call) exceeded whatever it saved,
+                     * meaning HLS was likely already sharing/reusing the
+                     * original per-idx multiply hardware across pipeline
+                     * iterations reasonably well -- confirms this is where
+                     * the address-arithmetic optimization line stops
+                     * being worth pursuing further (per the round's own
+                     * stop-loss criterion), not a bug in the attempt. */
+                    if (d.op_type == LDESC_OP_DWCONV) {
+                        /* A3 round (2026-08-23, ZHR-92, accumulator
+                         * rewrite): WRITEOUT_DW is PIPELINE II=1 with dd
+                         * flattened into idx (idx = dd*MAC_PR*MAC_PC + ...),
+                         * so a simple "add once per outer-loop step"
+                         * accumulator doesn't apply directly the same way
+                         * as DW_PATCH_STAGE/DW_WT_STAGE's real nested
+                         * loops -- dd only takes MAC_PD (2) distinct values
+                         * across the whole pipelined loop, so instead
+                         * precompute both values into small complete-
+                         * partitioned tables BEFORE the pipelined loop
+                         * (built via the same accumulator technique, just
+                         * unrolled over MAC_PD steps instead of a real
+                         * sequential loop), then the pipelined body does a
+                         * table lookup (a mux) instead of a multiply.
+                         * oc_tbl replaces `c*d.fpg+f`; oc_ch_tbl replaces
+                         * `oc*d.out_ch_stride`.
+                         *
+                         * An outer-hoisted version of this (one table for
+                         * ALL (ot,f), computed once per run_layer call
+                         * instead of once per (rt,colt,ot,f)) was tried
+                         * and reverted the same day -- grew the design
+                         * enough to fail P&R routing, and the underlying
+                         * "256x redundant multiply" premise it was
+                         * chasing didn't hold up under scrutiny (two
+                         * 32-bit multiplies cost 3-4 cycles, not the
+                         * measured +422 cycles/tile). This per-call form
+                         * is the last known-working state (96.00ms board,
+                         * P&R routes) while the real +422 cycles/tile
+                         * source is investigated properly -- current
+                         * leading candidate is WRITEOUT_DW's own
+                         * Interval=33 multiplied by its real per-tile call
+                         * count, not this precompute block. */
+                        int oc_tbl[MAC_PD], oc_ch_tbl[MAC_PD];
+                        #pragma HLS ARRAY_PARTITION variable=oc_tbl complete dim=0
+                        #pragma HLS ARRAY_PARTITION variable=oc_ch_tbl complete dim=0
+                        {
+                            int oc_val   = ot * MAC_PD * d.fpg + f;
+                            int ch_val   = oc_val * d.out_ch_stride;
+                            int ch_step  = d.fpg * d.out_ch_stride;
+                            for (int dd0 = 0; dd0 < MAC_PD; dd0++) {
+                                #pragma HLS UNROLL
+                                oc_tbl[dd0]    = oc_val;
+                                oc_ch_tbl[dd0] = ch_val;
+                                oc_val += d.fpg;
+                                ch_val += ch_step;
+                            }
+                        }
+                        /* A3 round (2026-08-23, ZHR-92, WRITEOUT burst fix,
+                         * REVERTED to single-path): the fast/slow dual path
+                         * (see git history, commit 8f7856e) removed the
+                         * per-element boundary `continue` and DID get past
+                         * that specific diagnostic (AccessInCondBranchMissed
+                         * gone from burst.xml), but a second, unnamed
+                         * blocker remained (CouldNotAnalyzePatternMissed) --
+                         * burst inference never actually fired, while the
+                         * duplication itself cost +2,660 LUT (98%->103%,
+                         * over budget). Paid the cost, didn't get the
+                         * benefit -- reverted back to one guarded loop
+                         * (2026-08-23, ZHR-92, decision to pursue a
+                         * run_layer rewrite instead of chasing burst
+                         * further). The genuinely independent win from that
+                         * round is KEPT: shift no longer gets recomputed
+                         * (or re-branched) every iteration -- it only takes
+                         * MAC_PD distinct values across this whole call, so
+                         * it's precomputed into a small partitioned table
+                         * once, same technique as oc_tbl/oc_ch_tbl already
+                         * use, before the (still guarded, non-bursting)
+                         * loop runs. This is a real loop-invariant-hoist,
+                         * not tied to the fast/slow split at all. */
+                        int shift_tbl[MAC_PD];
+                        #pragma HLS ARRAY_PARTITION variable=shift_tbl complete dim=0
+                        for (int dd0 = 0; dd0 < MAC_PD; dd0++) {
+                            #pragma HLS UNROLL
+                            shift_tbl[dd0] = d.use_shift_table
+                                ? (int)w_base[d.shift_off + oc_tbl[dd0]] : d.out_shift;
+                        }
+                        WRITEOUT_DW: for (int idx = 0; idx < MAC_PD * MAC_PR * MAC_PC; idx++) {
+                            #pragma HLS PIPELINE II=1
+                            int dd = idx / (MAC_PR * MAC_PC);
+                            int rr = (idx / MAC_PC) % MAC_PR;
+                            int cw = idx % MAC_PC;
+                            if (dd >= c_sz || rr >= r_sz || cw >= col_sz) continue;
+                            int oh = rt * MAC_PR + rr;
+                            int ow = colt * MAC_PC + cw;
+                            out_base[d.out_off + oc_ch_tbl[dd] + oh * d.w_out + ow] =
+                                (act_t)clip_shift(acc[dd][rr][cw] + dw_btile[dd], shift_tbl[dd]);
+                        }
+                    }
+                }
             }
             } else {
                 /* A3 round (2026-08-23, ZHR-92, run_layer rewrite stage 2):
