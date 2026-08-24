@@ -209,6 +209,11 @@ int main(int argc, char **argv) {
      * Same physical region as in_base -- already flushed above via
      * mac_cache_flush(in_phys, in_size). */
     W64(MAC_IN_BASE_WIDE_LO, MAC_IN_BASE_WIDE_HI, in_phys);
+    /* ZHR-92 angle-B (2026-08-24): out_burst -- WRITEOUT's fast path
+     * writes through this port, same physical region as out_base (see
+     * MAC_OUT_BURST_LO/HI's own comment in the driver header). Every PW
+     * dispatch needs it set to the same address as MAC_OUT_BASE_*. */
+    W64(MAC_OUT_BURST_LO, MAC_OUT_BURST_HI, out_phys);
 
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);

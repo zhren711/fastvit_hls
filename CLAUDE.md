@@ -240,6 +240,15 @@ supposedly standing in for.
 - Board safety: the currently-deployed bitstream is the golden rollback image — never overwrite it
   without being told to. Any new binary/bitstream gets a small isolated test before a full-network
   run (ZHR-10: a change that was "HLS/Vivado all-green" hung the real board).
+- **Vivado's own `write_bitstream -bin_file` output is NOT the byte-swapped format the Zynq-7000
+  devcfg FPGA manager driver requires.** Confirmed 2026-08-24 (ZHR-92): loading it directly failed
+  with "Invalid bitstream, could not find a sync word. Bitstream must be a byte swapped .bin file"
+  (from `dmesg`, not guessed). The actual required conversion is `fpga_overlay.py`'s own `bit_to_bin()`
+  function (word-swaps the `.bit` file's payload) — every previously-archived bitstream's
+  `_swapped.bin` file already went through this; Vivado's `-bin_file` flag output was never the
+  deployable artifact on its own. Always convert via `bit_to_bin()` (or pull the swapped `.bin` back
+  off the board after a successful load, as this project's archived bitstreams already do) before
+  copying anything into `/lib/firmware` — never assume Vivado's raw `-bin_file` output is load-ready.
 - When the code itself contains an admitted placeholder/TODO (a hardcoded stand-in value, a comment
   saying "not yet calibrated"/"not yet implemented", etc.) and the observed symptom is consistent with
   that placeholder being the cause, verify the placeholder first — before chasing a more interesting

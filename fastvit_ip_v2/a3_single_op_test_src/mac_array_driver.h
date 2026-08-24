@@ -56,6 +56,16 @@
  * separate cache-flush range needed since in_flush_size already covers it. */
 #define MAC_IN_BASE_WIDE_LO   0x60
 #define MAC_IN_BASE_WIDE_HI   0x64
+/* ZHR-92 angle-B (2026-08-24): out_burst, the 9th s_axi_control pointer,
+ * appended by HLS after in_base_wide -- offset read directly from
+ * solution35's generated xmac_array_top_hw.h (0x6c/0x70), not guessed.
+ * Same physical DRAM region as out_base (WRITEOUT's fast path and slow
+ * path both target the same output buffer, just via two different views
+ * on the same bundle=gmem_act master) -- host must write the SAME
+ * address into both MAC_OUT_BASE_* and MAC_OUT_BURST_*, or the fast
+ * path's writes go to whatever this register defaults to. */
+#define MAC_OUT_BURST_LO      0x6c
+#define MAC_OUT_BURST_HI      0x70
 
 /* Must stay byte-layout-identical to fastvit_ip_v2/mac_array.h's
  * LayerDescV2 (int fields, same order) -- this is what actually gets DMA'd
