@@ -319,7 +319,7 @@ int main()
         for (int i = 0; i < S2_B; i++)  s2_bbuf[i] = acc_t(s2_b_gold[i]);
 
         int s2_written[1] = {0};
-        mac_array_top(&s2, 1, s2_feat.data(), s2_wbuf.data(), s2_bbuf.data(), s2_feat.data(), s2_written, reinterpret_cast<const ap_uint<32>*>(s2_feat.data()));
+        mac_array_top(&s2, 1, s2_feat.data(), s2_wbuf.data(), s2_bbuf.data(), s2_feat.data(), s2_written, reinterpret_cast<const ap_uint<32>*>(s2_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s2_feat.data())));
 
         int mismatches_s2 = 0;
         for (int i = 0; i < S2_TOTAL; i++)
@@ -364,7 +364,7 @@ int main()
     std::vector<acc_t> bbuf_snapshot = bbuf;
     int out_written[2] = {0, 0};
 
-    mac_array_top(desc, 2, feat.data(), wbuf.data(), bbuf.data(), feat.data(), out_written, reinterpret_cast<const ap_uint<32>*>(feat.data()));
+    mac_array_top(desc, 2, feat.data(), wbuf.data(), bbuf.data(), feat.data(), out_written, reinterpret_cast<const ap_uint<32>*>(feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())));
 
     bool weights_untouched = (wbuf == wbuf_snapshot) && (bbuf == bbuf_snapshot);
     bool both_written = out_written[0] == 1 && out_written[1] == 1;
@@ -393,7 +393,7 @@ int main()
     std::vector<act_t> pre_call_snapshot = feat2;
 
     int out_written2[2] = {0, 0};
-    mac_array_top(desc, 2, feat2.data(), wbuf.data(), bbuf.data(), feat2.data(), out_written2, reinterpret_cast<const ap_uint<32>*>(feat2.data()));
+    mac_array_top(desc, 2, feat2.data(), wbuf.data(), bbuf.data(), feat2.data(), out_written2, reinterpret_cast<const ap_uint<32>*>(feat2.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat2.data())));
 
     /* fault injection: layer 1's output region [16000, 16000+5200) reverts
      * to its pre-call contents (all zero, since region C was never
@@ -471,7 +471,7 @@ int main()
         for (int i = 0; i < B3_TOTAL; i++) b3buf[i] = acc_t(b3_gold[i]);
 
         int w3ritten[2] = {0, 0};
-        mac_array_top(desc3, 2, f3.data(), w3buf.data(), b3buf.data(), f3.data(), w3ritten, reinterpret_cast<const ap_uint<32>*>(f3.data()));
+        mac_array_top(desc3, 2, f3.data(), w3buf.data(), b3buf.data(), f3.data(), w3ritten, reinterpret_cast<const ap_uint<32>*>(f3.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f3.data())));
 
         int mismatches_p3 = 0;
         for (int i = 0; i < F3_TOTAL; i++)
@@ -539,7 +539,7 @@ int main()
         for (int i = 0; i < B4_TOTAL; i++) b4buf[i] = acc_t(b4_gold[i]);
 
         int w4ritten[3] = {0, 0, 0};
-        mac_array_top(desc4, 3, f4.data(), w4buf.data(), b4buf.data(), f4.data(), w4ritten, reinterpret_cast<const ap_uint<32>*>(f4.data()));
+        mac_array_top(desc4, 3, f4.data(), w4buf.data(), b4buf.data(), f4.data(), w4ritten, reinterpret_cast<const ap_uint<32>*>(f4.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f4.data())));
 
         int mismatches_p4 = 0;
         for (int i = 0; i < F4_TOTAL; i++)
@@ -610,7 +610,7 @@ int main()
         for (int i = 0; i < B5_TOTAL; i++) b5buf[i] = acc_t(b5_gold[i]);
 
         int w5ritten[3] = {0, 0, 0};
-        mac_array_top(desc5, 3, f5.data(), w5buf.data(), b5buf.data(), f5.data(), w5ritten, reinterpret_cast<const ap_uint<32>*>(f5.data()));
+        mac_array_top(desc5, 3, f5.data(), w5buf.data(), b5buf.data(), f5.data(), w5ritten, reinterpret_cast<const ap_uint<32>*>(f5.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f5.data())));
 
         int mismatches_p5a = 0;
         for (int i = 0; i < F5_TOTAL; i++)
@@ -629,7 +629,7 @@ int main()
         std::vector<act_t> pre_call_snapshot5 = f5b;
 
         int w5ritten_b[3] = {0, 0, 0};
-        mac_array_top(desc5, 3, f5b.data(), w5buf.data(), b5buf.data(), f5b.data(), w5ritten_b, reinterpret_cast<const ap_uint<32>*>(f5b.data()));
+        mac_array_top(desc5, 3, f5b.data(), w5buf.data(), b5buf.data(), f5b.data(), w5ritten_b, reinterpret_cast<const ap_uint<32>*>(f5b.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f5b.data())));
 
         for (int i = desc5[2].out_off; i < F5_TOTAL; i++) f5b[i] = pre_call_snapshot5[i];
 
@@ -715,7 +715,7 @@ int main()
         for (int i = 0; i < B6_TOTAL; i++) b6buf[i] = acc_t(b6_gold[i]);
 
         int w6ritten[6] = {0, 0, 0, 0, 0, 0};
-        mac_array_top(desc6, 6, f6.data(), w6buf.data(), b6buf.data(), f6.data(), w6ritten, reinterpret_cast<const ap_uint<32>*>(f6.data()));
+        mac_array_top(desc6, 6, f6.data(), w6buf.data(), b6buf.data(), f6.data(), w6ritten, reinterpret_cast<const ap_uint<32>*>(f6.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f6.data())));
 
         int mismatches_p6 = 0;
         for (int i = 0; i < F6_TOTAL; i++)
@@ -772,7 +772,7 @@ int main()
         for (int i = 0; i < B7_TOTAL; i++) b7buf[i] = acc_t(b7_gold[i]);
 
         int w7ritten[2] = {0, 0};
-        mac_array_top(desc7, 2, f7.data(), w7buf.data(), b7buf.data(), f7.data(), w7ritten, reinterpret_cast<const ap_uint<32>*>(f7.data()));
+        mac_array_top(desc7, 2, f7.data(), w7buf.data(), b7buf.data(), f7.data(), w7ritten, reinterpret_cast<const ap_uint<32>*>(f7.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f7.data())));
 
         int mismatches_p7 = 0;
         for (int i = 0; i < F7_TOTAL; i++)
@@ -828,7 +828,7 @@ int main()
         for (int i = 0; i < S8A_B; i++)  s8a_bbuf[i] = acc_t(s8a_b[i]);
 
         int s8a_written[1] = {0};
-        mac_array_top(&desc8a, 1, s8a_feat.data(), s8a_wbuf.data(), s8a_bbuf.data(), s8a_feat.data(), s8a_written, reinterpret_cast<const ap_uint<32>*>(s8a_feat.data()));
+        mac_array_top(&desc8a, 1, s8a_feat.data(), s8a_wbuf.data(), s8a_bbuf.data(), s8a_feat.data(), s8a_written, reinterpret_cast<const ap_uint<32>*>(s8a_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s8a_feat.data())));
 
         int mismatches_8a = 0;
         for (int i = 0; i < S8A_TOTAL; i++)
@@ -870,7 +870,7 @@ int main()
         for (int i = 0; i < S8B_B; i++)  s8b_bbuf[i] = acc_t(s8b_b[i]);
 
         int s8b_written[1] = {0};
-        mac_array_top(&desc8b, 1, s8b_feat.data(), s8b_wbuf.data(), s8b_bbuf.data(), s8b_feat.data(), s8b_written, reinterpret_cast<const ap_uint<32>*>(s8b_feat.data()));
+        mac_array_top(&desc8b, 1, s8b_feat.data(), s8b_wbuf.data(), s8b_bbuf.data(), s8b_feat.data(), s8b_written, reinterpret_cast<const ap_uint<32>*>(s8b_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s8b_feat.data())));
 
         int mismatches_8b = 0;
         for (int i = 0; i < S8B_TOTAL; i++)
@@ -926,7 +926,7 @@ int main()
         for (int i = 0; i < S9_B; i++)  s9_bbuf[i] = acc_t(s9_b[i]);
 
         int s9_written[1] = {0};
-        mac_array_top(&desc9, 1, s9_feat.data(), s9_wbuf.data(), s9_bbuf.data(), s9_feat.data(), s9_written, reinterpret_cast<const ap_uint<32>*>(s9_feat.data()));
+        mac_array_top(&desc9, 1, s9_feat.data(), s9_wbuf.data(), s9_bbuf.data(), s9_feat.data(), s9_written, reinterpret_cast<const ap_uint<32>*>(s9_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s9_feat.data())));
 
         int mismatches_9 = 0;
         for (int i = 0; i < S9_TOTAL; i++)
@@ -1003,7 +1003,7 @@ int main()
         for (int i = 0; i < B10_TOTAL; i++) b10buf[i] = acc_t(b10_gold[i]);
 
         int w10ritten[3] = {0, 0, 0};
-        mac_array_top(desc10, 3, f10.data(), w10buf.data(), b10buf.data(), f10.data(), w10ritten, reinterpret_cast<const ap_uint<32>*>(f10.data()));
+        mac_array_top(desc10, 3, f10.data(), w10buf.data(), b10buf.data(), f10.data(), w10ritten, reinterpret_cast<const ap_uint<32>*>(f10.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f10.data())));
 
         int mismatches_10 = 0;
         for (int i = 0; i < F10_TOTAL; i++)
@@ -1066,7 +1066,7 @@ int main()
         for (int i = 0; i < S11_B; i++)  s11_bbuf[i] = acc_t(s11_b[i]);
 
         int s11_written[1] = {0};
-        mac_array_top(&desc11, 1, s11_feat.data(), s11_wbuf.data(), s11_bbuf.data(), s11_feat.data(), s11_written, reinterpret_cast<const ap_uint<32>*>(s11_feat.data()));
+        mac_array_top(&desc11, 1, s11_feat.data(), s11_wbuf.data(), s11_bbuf.data(), s11_feat.data(), s11_written, reinterpret_cast<const ap_uint<32>*>(s11_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s11_feat.data())));
 
         int mismatches_11 = 0;
         for (int i = 0; i < S11_TOTAL; i++)
@@ -1127,7 +1127,7 @@ int main()
         for (int i = 0; i < S12_B; i++)  s12_bbuf[i] = acc_t(s12_b[i]);
 
         int s12_written[1] = {0};
-        mac_array_top(&desc12, 1, s12_feat.data(), s12_wbuf.data(), s12_bbuf.data(), s12_feat.data(), s12_written, reinterpret_cast<const ap_uint<32>*>(s12_feat.data()));
+        mac_array_top(&desc12, 1, s12_feat.data(), s12_wbuf.data(), s12_bbuf.data(), s12_feat.data(), s12_written, reinterpret_cast<const ap_uint<32>*>(s12_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s12_feat.data())));
 
         int mismatches_12 = 0;
         for (int i = 0; i < S12_TOTAL; i++)
@@ -1181,7 +1181,7 @@ int main()
         for (int i = 0; i < S13_B; i++)  s13_bbuf[i] = acc_t(s13_b[i]);
 
         int s13_written[1] = {0};
-        mac_array_top(&desc13, 1, s13_feat.data(), s13_wbuf.data(), s13_bbuf.data(), s13_feat.data(), s13_written, reinterpret_cast<const ap_uint<32>*>(s13_feat.data()));
+        mac_array_top(&desc13, 1, s13_feat.data(), s13_wbuf.data(), s13_bbuf.data(), s13_feat.data(), s13_written, reinterpret_cast<const ap_uint<32>*>(s13_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s13_feat.data())));
 
         int mismatches_13 = 0;
         for (int i = 0; i < S13_TOTAL; i++)
@@ -1247,7 +1247,7 @@ int main()
         for (int i = 0; i < S14_B; i++)       s14_bbuf[i] = acc_t(s14_b[i]);
 
         int s14_written[1] = {0};
-        mac_array_top(&desc14, 1, s14_feat.data(), s14_wbuf.data(), s14_bbuf.data(), s14_feat.data(), s14_written, reinterpret_cast<const ap_uint<32>*>(s14_feat.data()));
+        mac_array_top(&desc14, 1, s14_feat.data(), s14_wbuf.data(), s14_bbuf.data(), s14_feat.data(), s14_written, reinterpret_cast<const ap_uint<32>*>(s14_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s14_feat.data())));
 
         int mismatches_14 = 0;
         for (int i = 0; i < S14_TOTAL; i++)
@@ -1313,7 +1313,7 @@ int main()
         for (int i = 0; i < S15_B; i++)   s15_bbuf[i] = acc_t(s15_b[i]);
 
         int s15_written[1] = {0};
-        mac_array_top(&desc15, 1, s15_feat.data(), s15_wbuf.data(), s15_bbuf.data(), s15_feat.data(), s15_written, reinterpret_cast<const ap_uint<32>*>(s15_feat.data()));
+        mac_array_top(&desc15, 1, s15_feat.data(), s15_wbuf.data(), s15_bbuf.data(), s15_feat.data(), s15_written, reinterpret_cast<const ap_uint<32>*>(s15_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s15_feat.data())));
 
         int mismatches_15 = 0;
         for (int i = 0; i < S15_TOTAL; i++)

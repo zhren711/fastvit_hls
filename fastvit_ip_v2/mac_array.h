@@ -62,6 +62,7 @@
 
 #include "ap_int.h"
 #include <cstdint>
+#include <hls_burst_maxi.h>
 
 typedef ap_int<8>   act_t;   /* activation, matches fastvit_ip's act_t */
 typedef ap_int<8>   wt_t;    /* weight */
@@ -343,7 +344,19 @@ struct LayerDescV2 {
      * it is). Field kept declared (harmless, zero-init-safe, avoids
      * touching every existing csim call site and the generator stub) in
      * case a future call site needs the distinction again -- not
-     * currently wired to anything. */
+     * currently wired to anything.
+     *
+     * DEPRECATED (2026-08-24, ZHR-92): confirmed dead, not just unread by
+     * PW_PATCH_HOIST specifically -- grepped tools/gen_hw_sequence.py and
+     * every other tools/*.py builder, none set this field at all (always
+     * implicit-zero). No code anywhere in mac_array.cpp reads it either
+     * (grep-confirmed). There is no "narrow path" left in this design for
+     * it to select -- do not read this comment's OWN history above as
+     * evidence one still exists somewhere; it doesn't. If a future round
+     * needs a real narrow/wide distinction again, don't repurpose this
+     * field blind -- re-derive the need first, since its last real
+     * semantics (PW_PATCH_HOIST's now-removed branch) may not match what
+     * a new use would need. */
     int use_wide_path;
 };
 
@@ -390,7 +403,8 @@ void mac_array_top(
     const acc_t  b_base[],
     act_t        out_base[],
     int          out_written[],
-    const ap_uint<32> in_base_wide[]
+    const ap_uint<32> in_base_wide[],
+    hls::burst_maxi<ap_uint<32> > out_burst
 );
 
 #endif // __MAC_ARRAY_H__

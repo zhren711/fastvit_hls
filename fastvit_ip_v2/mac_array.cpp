@@ -1,4 +1,15 @@
 #include "mac_array.h"
+/* ZHR-92 angle-B step (2026-08-24, final): explicit-API burst for
+ * WRITEOUT (PW's own write, inside pw_flat_pipeline). Fast path
+ * (hls::burst_maxi<ap_uint<32>>, out_burst) requires BOTH col_sz==MAC_PC
+ * AND the row's byte address 4-aligned -- col_sz alone isn't sufficient,
+ * confirmed by real csim failures (Phase4/10/14, all w_out=10) when only
+ * col_sz was checked. Slow path (plain out_base store) otherwise. See
+ * out_burst's own comment at mac_array_top's signature for why this
+ * costs nothing on the real network (every real PW layer's w_out is a
+ * multiple of MAC_PC or exactly 1, which already fails col_sz==MAC_PC
+ * anyway) but is a real, resolution/MAC_PC-coupled constraint, not an
+ * implementation footnote -- see mac_array.h's own note on this too. */
 #include <hls_burst_maxi.h>
 /* ZHR-92 angle-B step (2026-08-24): explicit-API burst probe for WRITEOUT
  * (PW's own write, inside pw_flat_pipeline). out_burst is
@@ -243,6 +254,7 @@ static void pw_flat_pipeline(
     const wt_t w_base[],
     const act_t pw_patch_full[MAX_CIN][MAC_PR][MAC_PC],
     const acc_t pw_bias_cache[MAX_PW_BIAS_CACHE],
+    act_t out_base[],
     hls::burst_maxi<ap_uint<32> > &out_burst,
     int rt, int colt, int r_sz, int col_sz)
 {
@@ -310,11 +322,21 @@ static void pw_flat_pipeline(
                 }
             }
         } else {
-            /* ZHR-92 angle-B step (2026-08-24): pack one row (MAC_PC=4
-             * act_t) into row_word a byte/cycle, flush as a single
-             * 32-bit-word burst_maxi write when the row completes
-             * (wr_col==MAC_PC-1) -- avoids the previous attempt's 8-bit
-             * view on an already-32-bit-widened bundle. */
+            /* ZHR-92 angle-B step (2026-08-24, final -- dual path): a
+             * single 32-bit burst_maxi write is atomic, so the fast path
+             * needs BOTH the row full (col_sz==MAC_PC) AND the row's own
+             * byte address 4-aligned -- col_sz alone is NOT sufficient
+             * (csim-confirmed: Phase4/10/14, all w_out=10, corrupted data
+             * even on col_sz==MAC_PC rows, because (rt*MAC_PR+wr_row)*
+             * d.w_out isn't guaranteed 4-aligned unless d.w_out itself
+             * is). Real network cost: zero -- every real PW layer's
+             * w_out is a multiple of MAC_PC or exactly 1 (entry76/78,
+             * SE block fc1/fc2), and w_out=1 already fails col_sz==MAC_PC
+             * on its own, so the alignment check never changes the
+             * real-network verdict, only the synthetic test shapes'.
+             * This IS a real, standing constraint coupled to resolution/
+             * MAC_PC choice, not an implementation footnote -- see
+             * out_burst's header comment and mac_array.h's own note. */
             act_t val = 0;
             if (wr_row < r_sz && wr_col < col_sz) {
                 acc_t total = 0;
@@ -326,12 +348,17 @@ static void pw_flat_pipeline(
                 val = (act_t)clip_shift(total, shift_reg);
             }
             if (wr_row < r_sz) {
-                row_word.range(wr_col * 8 + 7, wr_col * 8) = val;
-                if (wr_col == MAC_PC - 1) {
-                    int word_addr = (d.out_off + ot_out_ch_base + (rt * MAC_PR + wr_row) * d.w_out + colt * MAC_PC) >> 2;
-                    out_burst.write_request(word_addr, 1);
-                    out_burst.write(row_word);
-                    out_burst.write_response();
+                int byte_addr = d.out_off + ot_out_ch_base + (rt * MAC_PR + wr_row) * d.w_out + colt * MAC_PC;
+                bool fast_path = (col_sz == MAC_PC) && ((byte_addr & 3) == 0);
+                if (fast_path) {
+                    row_word.range(wr_col * 8 + 7, wr_col * 8) = val;
+                    if (wr_col == MAC_PC - 1) {
+                        out_burst.write_request(byte_addr >> 2, 1);
+                        out_burst.write(row_word);
+                        out_burst.write_response();
+                    }
+                } else if (wr_col < col_sz) {
+                    out_base[byte_addr + wr_col] = val;
                 }
             }
         }
@@ -994,7 +1021,7 @@ static void run_layer(const LayerDescV2 &d,
                  * above run_layer for the full rationale. Called once per
                  * (rt,colt) tile (unlike DW's per-ot loop above), since the
                  * flat pipeline handles every ot/cbase internally. */
-                pw_flat_pipeline(d, w_base, pw_patch_full, pw_bias_cache, out_burst, rt, colt, r_sz, col_sz);
+                pw_flat_pipeline(d, w_base, pw_patch_full, pw_bias_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
             }
         }
     }
