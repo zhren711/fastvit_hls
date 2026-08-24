@@ -114,6 +114,22 @@ supposedly standing in for.
   natural conclusion, stop and check in even if each individual round felt justified in the moment.
 - If a "fix one bottleneck, the next equally-bad one pops up" pattern appears, STOP and name it as an
   architectural pattern — do not keep fixing individual instances.
+- **When a tool's behavior itself is the obstacle (not the design), check official docs/example repos
+  for a purpose-built mechanism before spending more rounds trying to make the tool's default
+  heuristic accept the code.** Confirmed 2026-08-24 (ZHR-92): four rounds tried to get Vitis HLS's
+  burst *inference* to accept WRITEOUT/PW_PATCH_HOIST/gmem_w's access patterns (conditional-branch
+  restructuring attempts, `memcpy`, `config_interface` widen/alignment/latency/burst-length knobs —
+  all failed or made things worse, one pushed the design 55% over the LUT budget) before checking
+  whether Xilinx ships an explicit alternative. It does: `hls::burst_maxi` (`Interface/Memory/
+  manual_burst` in `Xilinx/Vitis-HLS-Introductory-Examples`) issues a burst by direct API call
+  (`read_request`/`read`/`write_request`/`write`) instead of pattern-matching a loop — it doesn't run
+  the inference analyzer at all, so `AccessInCondBranchMissed` and its siblings simply don't apply.
+  Verified synthesizable under this project's actual `-flow_target vivado` IP-export flow (the
+  official example uses `-flow_target vitis`, not the same flow — confirmed separately, not assumed
+  transferable), clean csynth ("All loop constraints were satisfied" — the first time any burst-related
+  csynth run in this project has said that), tiny resource cost at probe scale (2,535 LUT). The general
+  lesson: three-plus failed rounds fighting a heuristic is itself a signal to look for a manual/explicit
+  escape hatch in the vendor's own toolkit before continuing to negotiate with the heuristic.
 - Any Vivado run: **background + poll logs, never wait on a full P&R in the foreground.**
   `phys_opt_design` gets silently killed under foreground execution in this environment (see ZHR-17)
   with no crash log — if a run needs `phys_opt_design`, especially post-route, split into two batch
