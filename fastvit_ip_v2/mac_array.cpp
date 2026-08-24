@@ -1,4 +1,13 @@
 #include "mac_array.h"
+#include <hls_burst_maxi.h>
+/* ZHR-92 angle-B step (2026-08-24): explicit-API burst probe for WRITEOUT
+ * (PW's own write, inside pw_flat_pipeline). out_burst is
+ * hls::burst_maxi<ap_uint<32>>, not <act_t> -- the previous attempt
+ * (int8-typed burst_maxi on this same bundle) hit an internal LLVM-IR
+ * codegen crash, plausibly from mixing an 8-bit view with the bundle's
+ * real 32-bit AXI width (forced by in_base_wide already sharing
+ * gmem_act). Matching the bundle's own width should avoid that mismatch.
+ * See out_burst's own comment at mac_array_top's signature. */
 
 /* Host-side only (see mac_array.h) -- NOT reachable from mac_array_top's
  * call graph, so none of this division is synthesized into hardware.
@@ -234,7 +243,7 @@ static void pw_flat_pipeline(
     const wt_t w_base[],
     const act_t pw_patch_full[MAX_CIN][MAC_PR][MAC_PC],
     const acc_t pw_bias_cache[MAX_PW_BIAS_CACHE],
-    act_t out_base[],
+    hls::burst_maxi<ap_uint<32> > &out_burst,
     int rt, int colt, int r_sz, int col_sz)
 {
     #pragma HLS ARRAY_PARTITION variable=pw_patch_full cyclic factor=MAC_PD dim=1
@@ -248,6 +257,12 @@ static void pw_flat_pipeline(
 
     acc_t acc[MAC_PD][MAC_PR][MAC_PC];
     #pragma HLS ARRAY_PARTITION variable=acc complete dim=0
+    /* ZHR-92 angle-B step (2026-08-24): one row (MAC_PC=4 act_t) packs
+     * exactly into one 32-bit word -- accumulated a byte/cycle across the
+     * row, flushed as a single-word burst_maxi write at the row's last
+     * column (word address assumes byte address is 4-aligned; not
+     * verified this round, same caveat as prior WRITEOUT probes). */
+    ap_uint<32> row_word = 0;
 
     /* loop-carried state -- all plain counters, wrap via compare+add,
      * no derived multiply/divide/mod anywhere in the hot loop (see the
@@ -295,6 +310,12 @@ static void pw_flat_pipeline(
                 }
             }
         } else {
+            /* ZHR-92 angle-B step (2026-08-24): pack one row (MAC_PC=4
+             * act_t) into row_word a byte/cycle, flush as a single
+             * 32-bit-word burst_maxi write when the row completes
+             * (wr_col==MAC_PC-1) -- avoids the previous attempt's 8-bit
+             * view on an already-32-bit-widened bundle. */
+            act_t val = 0;
             if (wr_row < r_sz && wr_col < col_sz) {
                 acc_t total = 0;
                 for (int dd = 0; dd < MAC_PD; dd++) {
@@ -302,8 +323,16 @@ static void pw_flat_pipeline(
                     total += acc[dd][wr_row][wr_col];
                 }
                 total += pw_bias_cache[ot_idx];
-                out_base[d.out_off + ot_out_ch_base + (rt * MAC_PR + wr_row) * d.w_out + (colt * MAC_PC + wr_col)] =
-                    (act_t)clip_shift(total, shift_reg);
+                val = (act_t)clip_shift(total, shift_reg);
+            }
+            if (wr_row < r_sz) {
+                row_word.range(wr_col * 8 + 7, wr_col * 8) = val;
+                if (wr_col == MAC_PC - 1) {
+                    int word_addr = (d.out_off + ot_out_ch_base + (rt * MAC_PR + wr_row) * d.w_out + colt * MAC_PC) >> 2;
+                    out_burst.write_request(word_addr, 1);
+                    out_burst.write(row_word);
+                    out_burst.write_response();
+                }
             }
         }
 
@@ -374,7 +403,8 @@ static void pw_flat_pipeline(
  * and the single call into run_reduce_unified. */
 static void run_layer(const LayerDescV2 &d,
                        const act_t in_base[], const wt_t w_base[], const acc_t b_base[],
-                       act_t out_base[], const ap_uint<32> in_base_wide[])
+                       act_t out_base[], const ap_uint<32> in_base_wide[],
+                       hls::burst_maxi<ap_uint<32> > &out_burst)
 {
     const int Hin = d.h_in, Win = d.w_in;
     const int K = d.k, S = d.stride, P = d.pad;
@@ -964,7 +994,7 @@ static void run_layer(const LayerDescV2 &d,
                  * above run_layer for the full rationale. Called once per
                  * (rt,colt) tile (unlike DW's per-ot loop above), since the
                  * flat pipeline handles every ot/cbase internally. */
-                pw_flat_pipeline(d, w_base, pw_patch_full, pw_bias_cache, out_base, rt, colt, r_sz, col_sz);
+                pw_flat_pipeline(d, w_base, pw_patch_full, pw_bias_cache, out_burst, rt, colt, r_sz, col_sz);
             }
         }
     }
@@ -1124,7 +1154,8 @@ void mac_array_top(
     const acc_t  b_base[],
     act_t        out_base[],
     int          out_written[],
-    const ap_uint<32> in_base_wide[])
+    const ap_uint<32> in_base_wide[],
+    hls::burst_maxi<ap_uint<32> > out_burst)
 {
 #pragma HLS INTERFACE m_axi port=desc         offset=slave bundle=gmem_meta
 #pragma HLS INTERFACE m_axi port=in_base      offset=slave bundle=gmem_act
@@ -1132,6 +1163,15 @@ void mac_array_top(
 #pragma HLS INTERFACE m_axi port=b_base       offset=slave bundle=gmem_b
 #pragma HLS INTERFACE m_axi port=out_base     offset=slave bundle=gmem_act
 #pragma HLS INTERFACE m_axi port=out_written  offset=slave bundle=gmem_meta
+/* ZHR-92 angle-B step (2026-08-24): out_burst is hls::burst_maxi<ap_uint
+ * <32>>, matching gmem_act's real 32-bit AXI width (forced by
+ * in_base_wide already sharing this bundle) -- the previous attempt used
+ * <act_t> (8-bit) and crashed csynth's codegen. Same bundle=gmem_act, not
+ * a 5th master. Used only by pw_flat_pipeline's WRITEOUT; the other 7
+ * out_base call sites (WRITEOUT_DW, run_add/gap/relu/sigmoid/gelu/scale)
+ * are untouched, still plain-pointer out_base. */
+#pragma HLS INTERFACE m_axi port=out_burst    offset=slave bundle=gmem_act
+#pragma HLS INTERFACE s_axilite port=out_burst bundle=control
 /* A3 round (2026-08-23, ZHR-92, MERGE): back on bundle=gmem_act, sharing
  * the SAME physical master as in_base/out_base -- the standalone
  * gmem_act_wide master (previous round, solution18) is gone. That
@@ -1186,7 +1226,7 @@ void mac_array_top(
             case LDESC_OP_SIGMOID: run_sigmoid(desc[i], in_base, out_base); break;
             case LDESC_OP_SCALE:   run_scale(desc[i], in_base, out_base); break;
             case LDESC_OP_GELU:    run_gelu(desc[i], in_base, out_base); break;
-            default:                run_layer(desc[i], in_base, w_base, b_base, out_base, in_base_wide); break;
+            default:                run_layer(desc[i], in_base, w_base, b_base, out_base, in_base_wide, out_burst); break;
         }
         out_written[i] = 1;
     }

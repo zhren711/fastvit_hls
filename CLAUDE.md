@@ -149,6 +149,17 @@ supposedly standing in for.
   assume `export_design` picked up the latest source; confirm it did (e.g. grep the exported
   `hdl/verilog` for a signature unique to the current change) before trusting any P&R number that comes
   out of it.
+- **`vitis_hls`'s shell exit code does not mean `csynth_design` succeeded.** Confirmed 2026-08-24
+  (ZHR-92, `hls::burst_maxi` same-bundle probe): `csynth_design` hit an internal LLVM-IR codegen crash
+  ("Call parameter type does not match function signature!" / "Broken module found, compilation
+  aborted!") and produced no `mac_array_top_csynth.rpt` at all — but the wrapper script still exited 0,
+  because the driving tcl's own trailing `exit` command runs regardless of whether `csynth_design`
+  silently aborted internally. Third occurrence of the same failure class in this project ("tool
+  reports success, didn't actually do the work") — see `export_design`'s stale-HDL-reuse finding
+  directly above, and ZHR-5's original version of it. **Never trust a shell exit code alone as proof
+  an HLS/Vivado step completed** — after every `csynth_design`/`export_design`/P&R run, confirm the
+  actual output artifact exists and is fresh (the `_csynth.rpt`, the exported `hdl/verilog`, the
+  routed `.dcp`) before reading any number out of it or reporting a round's result.
 - **A runtime-derived expression used as a loop bound becomes real hardware arithmetic (often a
   multiplier), not just a comparator.** Confirmed by direct measurement, not inference: converting
   four staging loops from runtime bounds (`patch_r`/`patch_c` = `(MAC_PR-1)*S+K`, `K` itself) to
