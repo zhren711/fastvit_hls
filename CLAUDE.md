@@ -130,6 +130,16 @@ supposedly standing in for.
   csynth run in this project has said that), tiny resource cost at probe scale (2,535 LUT). The general
   lesson: three-plus failed rounds fighting a heuristic is itself a signal to look for a manual/explicit
   escape hatch in the vendor's own toolkit before continuing to negotiate with the heuristic.
+- **Before starting a new round of real measurement, check whether this project already measured it.**
+  Confirmed valuable 2026-08-25 (ZHR-92): a DW per-tile cost round was about to build and board-test a
+  fresh probe from scratch; checking git history first found half the decomposition (the per-ot
+  component, 1,187.5 cycles/ot) was already measured on real hardware in an earlier round (`c8400b1`).
+  Commit ordering (`c8400b1` predates the DW flat-pipeline attempt/revert) plus an empty `git diff`
+  against the current source confirmed the old number was still valid against today's code — no
+  re-measurement needed, only the missing other half (per-tile) had to be measured fresh. This project
+  has run dozens of rounds; a lot of specific numbers already exist in commit messages and Linear
+  comments. Check before spending a board round re-deriving something already on record — search git
+  log/commit messages for the quantity or shape you're about to measure before writing a new probe.
 - Any Vivado run: **background + poll logs, never wait on a full P&R in the foreground.**
   `phys_opt_design` gets silently killed under foreground execution in this environment (see ZHR-17)
   with no crash log — if a run needs `phys_opt_design`, especially post-route, split into two batch
