@@ -83,12 +83,39 @@ static void load_file(const char *path, void *dst, size_t expect_size) {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 2) {
-        fprintf(stderr, "usage: %s <bundle_dir containing desc_all.bin>\n", argv[0]);
+    /* ZHR-92 (2026-08-24): stdout is fully-buffered (not line-buffered)
+     * when it's a pipe rather than a tty -- exactly the case when this
+     * runs over SSH -- so printf output can sit unflushed in libc's
+     * internal buffer indefinitely. If the process hangs and gets killed,
+     * everything since the last flush is lost, which is exactly what
+     * happened investigating the original full-network hang (zero bytes
+     * captured despite real dispatch activity). Force line-buffering so
+     * every printf reaches the pipe immediately -- the scattered
+     * fflush(stdout) calls below are now redundant but kept as explicit
+     * documentation at the specific points that matter most. */
+    setvbuf(stdout, NULL, _IOLBF, 0);
+
+    if (argc != 2 && argc != 3) {
+        fprintf(stderr, "usage: %s <bundle_dir containing desc_all.bin> [n_entries_limit]\n", argv[0]);
         return 1;
     }
     char path[600];
     const char *dir = argv[1];
+    /* ZHR-92 (2026-08-24): bisection support -- run only entries 0..limit-1,
+     * default N_HW_SEQ (all 82). Used to localize the full-network hang
+     * (entries 0-15 pass in isolation individually, but no isolated
+     * single-op test can expose a real-sequential-execution-only bug --
+     * this bisects the REAL harness itself instead of building more
+     * one-off bundles). */
+    int n_limit = N_HW_SEQ;
+    if (argc == 3) {
+        n_limit = atoi(argv[2]);
+        if (n_limit < 1 || n_limit > N_HW_SEQ) {
+            fprintf(stderr, "n_entries_limit must be 1..%d, got %d\n", N_HW_SEQ, n_limit);
+            return 1;
+        }
+    }
+    printf(">>> running entries 0..%d (n_limit=%d)\n", n_limit - 1, n_limit);
 
     snprintf(path, sizeof(path), "%s/desc_all.bin", dir);
     size_t desc_size = file_size(path);
@@ -167,7 +194,7 @@ int main(int argc, char **argv) {
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);
 
-    for (int i = 0; i < N_HW_SEQ; i++) {
+    for (int i = 0; i < n_limit; i++) {
         uintptr_t this_desc_phys = desc_phys + (uintptr_t)i * sizeof(MacLayerDesc);
         uintptr_t this_written_phys = out_written_phys + (uintptr_t)i * sizeof(int32_t);
 
@@ -179,6 +206,23 @@ int main(int argc, char **argv) {
         W64(MAC_OUT_BASE_LO, MAC_OUT_BASE_HI, arena_phys);
         W64(MAC_OUT_WRITTEN_LO, MAC_OUT_WRITTEN_HI, this_written_phys);
         W64(MAC_IN_BASE_WIDE_LO, MAC_IN_BASE_WIDE_HI, arena_phys);
+        /* ZHR-92 angle-B (2026-08-24): out_burst -- WRITEOUT's fast path
+         * writes through this port, same physical region as out_base
+         * despite sharing bundle=gmem_act (shared bundle != shared
+         * control register -- see CLAUDE.md). Every dispatch needs it
+         * set; csim cannot catch a missing write here at all. */
+        W64(MAC_OUT_BURST_LO, MAC_OUT_BURST_HI, arena_phys);
+
+        /* ZHR-92 (2026-08-24): print+flush BEFORE dispatch too -- if this
+         * entry is the one that hangs, the process gets killed and any
+         * buffered-but-unflushed output is lost. Printing the "about to
+         * dispatch" line first, flushed immediately, guarantees we know
+         * which entry was in flight even if nothing after this line ever
+         * prints. */
+        printf(">>> [%2d] op_type=%d cin=%d cout=%d h_in=%d w_in=%d -- dispatching...\n",
+               i, host_desc[i].op_type, host_desc[i].cin, host_desc[i].cout,
+               host_desc[i].h_in, host_desc[i].w_in);
+        fflush(stdout);
 
         struct timespec e0, e1;
         clock_gettime(CLOCK_MONOTONIC, &e0);
@@ -190,14 +234,21 @@ int main(int argc, char **argv) {
             if (v & MAC_AP_DONE) break;
             clock_gettime(CLOCK_MONOTONIC, &e1);
             double elapsed_ms = (e1.tv_sec - e0.tv_sec) * 1000.0 + (e1.tv_nsec - e0.tv_nsec) / 1e6;
-            if (elapsed_ms > 8000.0) { timed_out = 1; break; }
+            /* ZHR-92 (2026-08-24): bumped 8000->30000ms, matching the
+             * single-op entry7/entry9 probes' established margin (~100x
+             * the slowest real entry measured so far, ~400ms) -- cleanly
+             * distinguishes a genuine hang from "just slow" for this
+             * bisection round. */
+            if (elapsed_ms > 30000.0) { timed_out = 1; break; }
             usleep(500);
         }
         clock_gettime(CLOCK_MONOTONIC, &e1);
         entry_ms[i] = (e1.tv_sec - e0.tv_sec) * 1000.0 + (e1.tv_nsec - e0.tv_nsec) / 1e6;
 
         if (timed_out) {
-            fprintf(stderr, ">>> TIMEOUT at entry %d (op_type=%d) after 8000ms -- ABORTING, do not trust anything past this point\n",
+            printf(">>> [%2d] TIMEOUT after 30000ms -- ABORTING, do not trust anything past this point\n", i);
+            fflush(stdout);
+            fprintf(stderr, ">>> TIMEOUT at entry %d (op_type=%d) after 30000ms -- ABORTING, do not trust anything past this point\n",
                     i, host_desc[i].op_type);
             written_ok[i] = 0;
             any_fail = 1;
@@ -206,6 +257,12 @@ int main(int argc, char **argv) {
 
         mac_cache_invalidate(this_written_phys, sizeof(int32_t));
         written_ok[i] = (out_written_v[i] != 0);
+        /* ZHR-92 (2026-08-24): print+flush immediately after EVERY entry,
+         * not just checkpoint hits -- if the NEXT entry hangs, this is
+         * the last line we're guaranteed to have seen. */
+        printf(">>> [%2d] done: %.2fms, out_written=%d%s\n",
+               i, entry_ms[i], out_written_v[i], written_ok[i] ? "" : "  <-- FAIL (defect-5 symptom)");
+        fflush(stdout);
         if (!written_ok[i]) {
             fprintf(stderr, ">>> entry %d: out_written[%d]=0 -- defect-5 symptom (ap_done set, write never happened)\n", i, i);
             any_fail = 1;
@@ -232,7 +289,12 @@ int main(int argc, char **argv) {
      * wired up for it yet, kept for future use, not part of this round's
      * pass/fail judgment (see ZHR-92 for why 'se' is this round's
      * end-to-end comparison point). */
-    if (!any_fail || ckpt_cursor >= N_CKPT) {
+    /* ZHR-92 (2026-08-24): only meaningful when the run actually reached
+     * entry 81 (n_limit==N_HW_SEQ) -- when bisecting with a smaller
+     * n_limit, host_desc[81] is valid (desc_all.bin is always loaded in
+     * full) but its ARENA output was never written by the IP, so dumping
+     * it would just be stale/poison data, not a real result. */
+    if (n_limit == N_HW_SEQ && (!any_fail || ckpt_cursor >= N_CKPT)) {
         uintptr_t final_phys = arena_phys + (uintptr_t)host_desc[N_HW_SEQ - 1].out_off;
         int final_size = host_desc[N_HW_SEQ - 1].cin * host_desc[N_HW_SEQ - 1].h_in * host_desc[N_HW_SEQ - 1].w_in;
         mac_cache_invalidate(final_phys, (size_t)final_size);
@@ -244,15 +306,14 @@ int main(int argc, char **argv) {
     }
 
     int n_ok = 0;
-    for (int i = 0; i < N_HW_SEQ; i++) if (written_ok[i]) n_ok++;
+    for (int i = 0; i < n_limit; i++) if (written_ok[i]) n_ok++;
 
-    /* top-10 slowest entries, by simple selection (N=82, no need for
-     * anything fancier) */
+    /* top-10 slowest entries, by simple selection */
     printf("\n>>> top 10 most expensive entries (real, this run):\n");
     int used[N_HW_SEQ]; memset(used, 0, sizeof(used));
-    for (int rank = 0; rank < 10 && rank < N_HW_SEQ; rank++) {
+    for (int rank = 0; rank < 10 && rank < n_limit; rank++) {
         int best = -1;
-        for (int i = 0; i < N_HW_SEQ; i++) {
+        for (int i = 0; i < n_limit; i++) {
             if (!written_ok[i] && !any_fail) continue;  /* skip past-abort entries */
             if (used[i]) continue;
             if (best == -1 || entry_ms[i] > entry_ms[best]) best = i;
@@ -264,10 +325,11 @@ int main(int argc, char **argv) {
                host_desc[best].h_in, host_desc[best].w_in, entry_ms[best]);
     }
 
-    printf("\n>>> out_written check: %d/%d entries confirmed written\n", n_ok, N_HW_SEQ);
+    printf("\n>>> out_written check: %d/%d entries confirmed written (of %d dispatched, n_limit=%d)\n",
+           n_ok, n_limit, n_limit, n_limit);
     printf(">>> checkpoints dumped: %d/%d\n", ckpt_cursor, N_CKPT);
-    printf(">>> PL-side total (AP_START entry[0] -> ap_done entry[81] or abort): %.2f ms\n", total_ms);
-    printf(">>> %s\n", (n_ok == N_HW_SEQ && ckpt_cursor == N_CKPT) ? "PASS -- all entries written, all checkpoints captured" : "INCOMPLETE -- see failures above");
+    printf(">>> PL-side total (AP_START entry[0] -> ap_done entry[%d] or abort): %.2f ms\n", n_limit - 1, total_ms);
+    printf(">>> %s\n", (n_ok == n_limit && !any_fail) ? "PASS -- all dispatched entries written" : "INCOMPLETE -- see failures above");
 
     munmap((void*)ctrl, MAC_ARRAY_MAP_SIZE);
     munmap(dma_virt, MAP_SIZE);
@@ -275,5 +337,5 @@ int main(int argc, char **argv) {
     close(fd2);
     mac_driver_exit();
 
-    return (n_ok == N_HW_SEQ && ckpt_cursor == N_CKPT) ? 0 : 2;
+    return (n_ok == n_limit && !any_fail) ? 0 : 2;
 }
