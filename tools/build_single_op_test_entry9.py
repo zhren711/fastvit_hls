@@ -1,0 +1,112 @@
+"""
+build_single_op_test_entry9.py -- ZHR-92 (2026-08-24): isolated board test
+for entry[9] (cin=144, cout=48, 64x64 PWCONV) -- untested Cin/n_cbase
+scale for PW_PATCH_HOIST/weight-read (n_cbase=ceil(144/32)=5 vs entry3's
+2), unrelated to hls::burst_maxi's own invocation count (already cleared
+by entry7's clean pass). Same design has been fully re-synthesized/
+re-routed this round even though PW_PATCH_HOIST's own code is untouched
+-- real behavior at this Cin scale has never been board-verified under
+THIS bitstream.
+
+Real fields (w_off/b_off/shift_off/use_shift_table) pulled directly from
+desc_all.bin's entry9. entry_08.bin/entry_09.bin are the real
+csim-dumped chain's input/reference for this exact layer.
+"""
+import struct
+import os
+
+ROOT = r"E:\codes\microzed\fastvit_hls"
+OUT_DIR = os.path.join(ROOT, "accuracy_test_imgs_256", "board_test_entry9")
+os.makedirs(OUT_DIR, exist_ok=True)
+
+MAC_PR, MAC_PC, MAC_PD = 4, 4, 2
+
+OP_PWCONV = 1
+cin, cout = 144, 48
+h_in, w_in = 64, 64
+k, stride, pad, fpg = 1, 1, 0, 1
+real_w_off, real_b_off, real_shift_off = 12432, 336, 3014880  # from desc_all.bin entry9
+
+W_SLICE_BYTES = cout * cin * k * k          # 6912
+SHIFT_SLICE_BYTES = cout                     # 48
+B_SLICE_ELEMS = cout                         # 48 int32 words
+
+with open(os.path.join(ROOT, "fastvit_ip_v2", "ckpt_weights_flat.bin"), "rb") as f:
+    w_flat = f.read()
+with open(os.path.join(ROOT, "fastvit_ip_v2", "ckpt_bias_flat.bin"), "rb") as f:
+    b_flat = f.read()
+
+w_slice = w_flat[real_w_off: real_w_off + W_SLICE_BYTES]
+shift_slice = w_flat[real_shift_off: real_shift_off + SHIFT_SLICE_BYTES]
+assert len(w_slice) == W_SLICE_BYTES and len(shift_slice) == SHIFT_SLICE_BYTES
+
+b_byte_off = real_b_off * 4
+b_slice = b_flat[b_byte_off: b_byte_off + B_SLICE_ELEMS * 4]
+assert len(b_slice) == B_SLICE_ELEMS * 4
+
+w_base_buf = w_slice + shift_slice
+shift_off_relocated = W_SLICE_BYTES
+
+with open(os.path.join(ROOT, "accuracy_test_imgs_256", "entry_08.bin"), "rb") as f:
+    in_buf = f.read()
+assert len(in_buf) == cin * h_in * w_in, f"entry_08.bin size {len(in_buf)} != {cin*h_in*w_in}"
+
+with open(os.path.join(ROOT, "accuracy_test_imgs_256", "entry_09.bin"), "rb") as f:
+    ref_out = f.read()
+
+h_out = (h_in + 2 * pad - k) // stride + 1
+w_out = (w_in + 2 * pad - k) // stride + 1
+ch_dim = cin
+n_row_tiles = (h_out + MAC_PR - 1) // MAC_PR
+n_col_tiles = (w_out + MAC_PC - 1) // MAC_PC
+n_ch_tiles = (ch_dim + MAC_PD - 1) // MAC_PD
+last_row_tile = h_out - (n_row_tiles - 1) * MAC_PR
+last_col_tile = w_out - (n_col_tiles - 1) * MAC_PC
+last_ch_tile = ch_dim - (n_ch_tiles - 1) * MAC_PD
+in_ch_stride = h_in * w_in
+out_ch_stride = h_out * w_out
+
+assert h_out == 64 and w_out == 64
+assert len(ref_out) == cout * h_out * w_out
+
+n_cbase = (cin + 32 - 1) // 32
+
+fields = [
+    OP_PWCONV, cin, cout,
+    h_in, w_in,
+    k, stride, pad,
+    fpg,
+    0,
+    0, 0, 0, 0,
+    0,
+    h_out, w_out,
+    n_row_tiles, n_col_tiles, n_ch_tiles,
+    last_row_tile, last_col_tile, last_ch_tile,
+    1,
+    shift_off_relocated,
+    in_ch_stride, out_ch_stride,
+]
+assert len(fields) == 27, len(fields)
+desc_bytes = struct.pack("<27i", *fields)
+
+with open(os.path.join(OUT_DIR, "desc.bin"), "wb") as f:
+    f.write(desc_bytes)
+with open(os.path.join(OUT_DIR, "in.bin"), "wb") as f:
+    f.write(in_buf)
+with open(os.path.join(OUT_DIR, "w.bin"), "wb") as f:
+    f.write(w_base_buf)
+with open(os.path.join(OUT_DIR, "b.bin"), "wb") as f:
+    f.write(b_slice)
+with open(os.path.join(OUT_DIR, "ref_out.bin"), "wb") as f:
+    f.write(ref_out)
+
+print(f">>> desc.bin: {len(desc_bytes)} bytes (27 int32 fields)")
+print(f">>> in.bin: {len(in_buf)} bytes (cin={cin} h={h_in} w={w_in})")
+print(f">>> w.bin: {len(w_base_buf)} bytes ({W_SLICE_BYTES} weight + {SHIFT_SLICE_BYTES} shift, shift_off={shift_off_relocated})")
+print(f">>> b.bin: {len(b_slice)} bytes ({B_SLICE_ELEMS} int32)")
+print(f">>> ref_out.bin: {len(ref_out)} bytes (cout={cout} h_out={h_out} w_out={w_out})")
+print(f">>> h_out={h_out} w_out={w_out} n_row_tiles={n_row_tiles} n_col_tiles={n_col_tiles} "
+      f"n_ch_tiles={n_ch_tiles} last=({last_row_tile},{last_col_tile},{last_ch_tile}) "
+      f"in_ch_stride={in_ch_stride} out_ch_stride={out_ch_stride}")
+print(f">>> n_cbase={n_cbase} (entry3's was 2) -- untested PW_PATCH_HOIST/weight-read scale")
+print(f">>> bundle written to {OUT_DIR}")
