@@ -227,7 +227,12 @@ int main(int argc, char **argv) {
         if (v & MAC_AP_DONE) break;
         clock_gettime(CLOCK_MONOTONIC, &t1);
         double elapsed_ms = (t1.tv_sec - t0.tv_sec) * 1000.0 + (t1.tv_nsec - t0.tv_nsec) / 1e6;
-        if (elapsed_ms > 5000.0) { timed_out = 1; break; }
+        /* ZHR-92 (2026-08-24): bumped 5000->30000ms for the entry7 burst-
+         * repeat-count probe -- expected real time is ~100-400ms, so
+         * 30s is ~100x margin, cleanly distinguishing a genuine hang
+         * from "just slow" without risking a premature false-timeout on
+         * a legitimately longer real layer. */
+        if (elapsed_ms > 30000.0) { timed_out = 1; break; }
         usleep(1000);
     }
     printf(">>> poll_count = %ld (independent cross-check: poll_count * ~1.08ms measured usleep granularity = %.1f ms)\n",
