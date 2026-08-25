@@ -274,7 +274,35 @@ supposedly standing in for.
   stale-HDL cache reuse, `vitis_hls`'s misleading exit code, and ZHR-5's original finding) — the common
   thread: never trust a report of state without independently confirming the underlying artifact, and
   add "was there a hang or failed reconfiguration since the last known-good state" to the list of
-  reasons a report might lie.
+  reasons a report might lie. **Caveat added 2026-08-25**: don't assume the causal direction is
+  settled either. The hang and the MD5 anomaly were read as hang→corruption (in that order), but 11/11
+  later reproduction attempts (10 repeated full-network runs plus 1 replaying the exact original
+  pre-hang command sequence) failed to reproduce the hang at all — which means the original hang and
+  the MD5 anomaly may both have been downstream symptoms of one earlier, still-unidentified cause,
+  not a simple chain where the hang caused the bad read. Don't assume the first plausible causal story
+  is the right one just because the timing lines up.
+- **Board recovery checklist after a hang or failed FPGA reconfiguration — follow in order, one step
+  at a time, don't skip ahead even if a step "obviously" will pass.** Established 2026-08-24/25
+  (ZHR-92) after the first occurrence was worked out live under pressure; codified here so the next
+  one doesn't require re-deriving it:
+    1. **Full physical power cycle** — not a soft `reboot`. A software reboot does not reliably reset
+       the FPGA manager / PL fabric / DDR controller state the way a hard power pull does. This
+       project's agent has no remote power control — ask the user to do it, then verify via `uptime`
+       (should read minutes, not hours — confirmed useful 2026-08-25: an assumed-fresh board turned
+       out to have 15h35m uptime, i.e. no power cycle had actually happened yet, caught only by
+       checking this number instead of trusting the claim).
+    2. **Load the golden rollback image first**, verify its MD5 and `fpga_manager` state — this is the
+       cheapest possible proof the PL fabric itself can still be configured at all, before spending any
+       effort on the bitstream actually under test.
+    3. **Re-verify the target bitstream's MD5** — per the bullet above, do not trust any MD5 read
+       before this point (i.e. before both the power cycle and the golden-image proof-of-life).
+    4. **Re-deploy from the local archive** (`vivado_impl/bitstream_archive/<name>/`), not from
+       whatever copy is already sitting in the board's `/lib/firmware` — even if its MD5 now reads
+       correct, treat "was this file touched by anything since the hang" as unverifiable and replace it
+       anyway.
+    5. **Single-op verification** (a known-good isolated test, e.g. one already-passing entry) before
+       trusting the board for anything larger — confirms the specific re-deployed bitstream actually
+       works, not just that the FPGA manager accepted it.
 - When the code itself contains an admitted placeholder/TODO (a hardcoded stand-in value, a comment
   saying "not yet calibrated"/"not yet implemented", etc.) and the observed symptom is consistent with
   that placeholder being the cause, verify the placeholder first — before chasing a more interesting

@@ -91,8 +91,33 @@ void mac_run_layers(
      * physical region as in_base (harmless to set even for op types, e.g.
      * Add, that never read it). */
     w64(MAC_IN_BASE_WIDE_LO, MAC_IN_BASE_WIDE_HI, in_base_phys);
+    /* ZHR-92 (2026-08-25): out_burst -- same physical region as out_base
+     * (see MAC_OUT_BURST_LO/HI's own comment in the driver header).
+     * Found missing here during the full-network-hang investigation's
+     * "check every dispatch site sets it" pass -- this function currently
+     * has no callers among the test harnesses (all of them deliberately
+     * bypass it for mac_wait_done()'s unbounded wait, see
+     * mac_array_single_op_test.c's own header comment), so this was not
+     * an active risk for anything tested so far, but it's a real gap for
+     * whoever calls this function next. */
+    w64(MAC_OUT_BURST_LO, MAC_OUT_BURST_HI, out_base_phys);
 
     REG_WR(mac_ctrl, MAC_AP_CTRL_OFFSET, MAC_AP_START);
+    /* ZHR-92 (2026-08-25): this wait is UNBOUNDED -- no timeout, no
+     * external kill path. Every other dispatch site in this project's
+     * test harnesses (mac_array_single_op_test.c, _add.c,
+     * mac_array_full_network_test.c) now uses a bounded 30s wait after
+     * this same investigation found the opposite (an unbounded/
+     * effectively-unbounded wait) directly implicated in a real board
+     * hang that took a full recovery cycle to clear. This function's
+     * design predates that finding and was NOT changed here -- switching
+     * it to a bounded wait is a real API/behavior decision (some callers
+     * may deliberately want a blocking wait), not a mechanical fix, and
+     * is left to a deliberate choice rather than done silently. Anyone
+     * adding a new caller of mac_run_layers should not assume "trusted
+     * architecture" makes an unbounded wait safe -- that assumption is
+     * exactly what this investigation could not fully confirm or rule
+     * out (see ZHR-92's hang-reproduction rounds). */
     mac_wait_done();
 
     /* FPGA -> CPU: invalidate before the ARM trusts anything the IP wrote. */

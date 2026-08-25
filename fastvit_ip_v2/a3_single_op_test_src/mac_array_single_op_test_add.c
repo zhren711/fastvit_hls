@@ -118,6 +118,17 @@ int main(int argc, char **argv) {
     W64(MAC_B_BASE_LO, MAC_B_BASE_HI, in_phys);
     W64(MAC_OUT_BASE_LO, MAC_OUT_BASE_HI, out_phys);
     W64(MAC_OUT_WRITTEN_LO, MAC_OUT_WRITTEN_HI, out_written_phys);
+    /* ZHR-92 (2026-08-25): in_base_wide/out_burst were both added in later
+     * rounds than this file -- ADD's own dispatch (run_add) never reads
+     * either, so leaving them unset was functionally harmless for ADD
+     * specifically, but "harmless for THIS entry's op_type" is exactly
+     * the kind of gap that bites the next person who repurposes this file
+     * for a different op. Set both explicitly, matching every other
+     * dispatch site's convention -- never leave a register that shares a
+     * bundle "probably fine to skip" just because the current op doesn't
+     * exercise it. */
+    W64(MAC_IN_BASE_WIDE_LO, MAC_IN_BASE_WIDE_HI, in_phys);
+    W64(MAC_OUT_BURST_LO, MAC_OUT_BURST_HI, out_phys);
 
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);
@@ -129,7 +140,11 @@ int main(int argc, char **argv) {
         if (v & MAC_AP_DONE) break;
         clock_gettime(CLOCK_MONOTONIC, &t1);
         double elapsed_ms = (t1.tv_sec - t0.tv_sec) * 1000.0 + (t1.tv_nsec - t0.tv_nsec) / 1e6;
-        if (elapsed_ms > 5000.0) { timed_out = 1; break; }
+        /* ZHR-92 (2026-08-25): bumped 5000->30000ms, matching every other
+         * board test harness's timeout -- found inconsistent during the
+         * full-network-hang investigation's "check the default is on
+         * everywhere" pass. */
+        if (elapsed_ms > 30000.0) { timed_out = 1; break; }
         usleep(1000);
     }
     clock_gettime(CLOCK_MONOTONIC, &t1);
