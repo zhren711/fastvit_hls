@@ -249,6 +249,32 @@ supposedly standing in for.
   deployable artifact on its own. Always convert via `bit_to_bin()` (or pull the swapped `.bin` back
   off the board after a successful load, as this project's archived bitstreams already do) before
   copying anything into `/lib/firmware` — never assume Vivado's raw `-bin_file` output is load-ready.
+- **Sharing an m_axi `bundle=` between a plain pointer and an `hls::burst_maxi`-typed parameter does
+  NOT mean they share a control register.** Confirmed 2026-08-24 (ZHR-92): `out_burst` and `out_base`
+  both bind to `bundle=gmem_act` (same physical AXI master, confirmed via csynth — no 5th master), but
+  HLS still allocates `out_burst` its own separate AXI-Lite base-address register (offset `0x6c`/`0x70`
+  in this design, read from the solution's own generated `xmac_array_top_hw.h`, never guessed). If the
+  ARM host only programs the plain-pointer parameter's register and leaves the `burst_maxi` parameter's
+  register unprogrammed, every write through the burst path lands at whatever that register defaults
+  to — wrong output, not a crash, and **csim cannot catch this at all** (csim has no register-address
+  concept; it just calls the C++ function directly with real pointers). Any new `hls::burst_maxi`
+  parameter needs its own register write added to the ARM driver, verified by finding its real offset
+  in the generated hardware header — never assumed from "it shares a bundle with X, so it must share
+  X's register."
+- **A PL hang can poison the PS side's own reads of `/lib/firmware`: file size and mtime stay
+  unchanged, but the content that reads back is wrong.** Confirmed 2026-08-24 (ZHR-92): after a
+  full-network run hung (PID alive, zero CPU time, no progress) and was killed, `md5sum` on a `.bin`
+  file already verified correct twice — including immediately before the hang — started returning a
+  THIRD, different checksum, reproducibly, with unchanged size/mtime. A full power cycle (not a soft
+  `reboot` — a hard power pull) fixed it: the file read back correct again with no re-copy needed,
+  confirming this was a stale/volatile PS-side read, not real on-disk corruption. **Any MD5 check
+  performed after a hang or a failed FPGA reconfiguration attempt is not trustworthy** — power-cycle
+  the board first, then re-verify, before trusting any checksum read from it. Fourth confirmed instance
+  of "tool/system reports something that isn't true" in this project (after `export_design`'s
+  stale-HDL cache reuse, `vitis_hls`'s misleading exit code, and ZHR-5's original finding) — the common
+  thread: never trust a report of state without independently confirming the underlying artifact, and
+  add "was there a hang or failed reconfiguration since the last known-good state" to the list of
+  reasons a report might lie.
 - When the code itself contains an admitted placeholder/TODO (a hardcoded stand-in value, a comment
   saying "not yet calibrated"/"not yet implemented", etc.) and the observed symptom is consistent with
   that placeholder being the cause, verify the placeholder first — before chasing a more interesting
