@@ -422,6 +422,43 @@ supposedly standing in for.
   concluding a measured II/latency bottleneck reflects the architecture under test rather than the
   probe's own construction.** Read the HLS log's own II-violation diagnostic first; it names the
   array directly and makes this a one-line fix, not a redesign.
+- **A net resource-increment estimate built from two isolated csynth runs (new mechanism's own
+  csynth, minus the old mechanism's named-region csynth numbers, added onto a real P&R baseline) is
+  not a substitute for real P&R — confirmed wrong in both magnitude and direction, not just
+  magnitude.** Confirmed 2026-08-28 (ZHR-92, DW raster integration Step 2): the forced-DSP isolated
+  estimate for the new mechanism (10,825 LUT / 110 DSP; net vs. the replaced DW regions: -2,357 LUT /
+  +94 DSP; predicted whole-IP total 26,914 LUT (50.59%) / 149 DSP (67.7%)) was checked against real
+  P&R on the actual integrated design and came back **41,222 LUT (77.48%) / 92 DSP (41.82%)** — LUT
+  underestimated by 53%, DSP overestimated by 38%, **in opposite directions**, not the uniform
+  "csynth runs high, real P&R comes in lower" pattern this project had previously assumed (see the
+  0.632x csynth→P&R scaling factor noted elsewhere, itself flagged as "self-assumed... unverified
+  per-region" — this result shows why that flag was warranted). Root cause: the estimate's own
+  arithmetic crosses two different tools' resource-allocation decisions as if they were one number —
+  HLS's csynth reports what *that function's own synthesis* bound to LUT vs. DSP in isolation, but
+  real Vivado synthesis (the `launch_runs synth_1` step on the *whole* exported IP) makes its own,
+  independent LUT-vs-DSP binding/packing decisions across the *entire* design, which an
+  isolated-function csynth run has no way to see or predict. **A net-increment estimate assembled
+  this way (isolated-csynth-of-new minus isolated-csynth-of-old, layered onto a real P&R baseline) is
+  a *sizing sanity check* at best — useful for deciding whether a design is obviously infeasible, not
+  a number to plan a timing/resource budget around. Before committing to a resource-sensitive decision
+  (pblock sizing, DSP-vs-LUT binding choice, accept/reject a design), run the real, whole-IP P&R —
+  don't extrapolate from isolated-mechanism csynth deltas, even when both the "new" and "old" halves
+  were independently csynth-measured with real care.**
+- **An HLS-level resource-binding choice (`#pragma HLS BIND_OP ... impl=DSP` vs. leaving it default)
+  does not reliably determine the real, whole-IP P&R resource distribution — but it can still change
+  real placement, and therefore real timing, even when it doesn't.** Confirmed 2026-08-28 (ZHR-92, DW
+  raster integration Step 2): the same integrated design, re-exported and re-P&R'd with the DW
+  reduction's multiply forced to DSP (`LB_FORCE_DSP`) vs. left at HLS's default LUT-preferring
+  binding, came back with **essentially identical real resource counts** (LUT 41,222 vs. 41,243, DSP
+  92 vs. 92, BRAM 35 vs. 35 tiles — Vivado's own `synth_design` step apparently makes its own DSP-
+  inference decision on 8-bit multiplies largely independent of the HLS-level hint). Yet the two runs'
+  real timing outcomes were opposite: forced-DSP failed timing (WNS=-0.108ns), the default/LUT-mode
+  build met timing (WNS=+0.021ns), on **matching resource totals**. The two builds' differing RTL
+  structure (even while converging to similar final resource counts) evidently steered placement
+  differently enough to move an already-razor-thin margin across zero. **Treat an HLS-level binding
+  pragma as a lever on RTL structure and therefore placement/timing, not as a reliable lever on final
+  resource counts — the two effects are separate and can point in different directions; don't assume
+  a binding choice "didn't matter" just because a follow-up real-resource check comes back unchanged.**
 
 ## Known open issues as of 2026-08-15
 
