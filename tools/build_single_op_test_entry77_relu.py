@@ -15,7 +15,7 @@ ROOT = r"E:\codes\microzed\fastvit_hls"
 OUT_DIR = os.path.join(ROOT, "accuracy_test_imgs_256", "board_test_entry77_relu")
 os.makedirs(OUT_DIR, exist_ok=True)
 
-MAC_PR, MAC_PC, MAC_PD = 4, 4, 2
+MAC_PR, MAC_PC, MAC_PD = 4, 4, 1
 
 OP_RELU = 4
 cin, cout = 48, 48

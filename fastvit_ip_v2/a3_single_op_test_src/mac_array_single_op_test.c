@@ -209,6 +209,11 @@ int main(int argc, char **argv) {
      * Same physical region as in_base -- already flushed above via
      * mac_cache_flush(in_phys, in_size). */
     W64(MAC_IN_BASE_WIDE_LO, MAC_IN_BASE_WIDE_HI, in_phys);
+    /* A3 row-hoist round (2026-08-25, ZHR-92): in_burst -- ROW_READ now
+     * unconditionally reads through this port for every PW dispatch (see
+     * mac_array.cpp), same physical region as in_base/in_base_wide, same
+     * "shared bundle != shared control register" trap as out_burst above. */
+    W64(MAC_IN_BURST_LO, MAC_IN_BURST_HI, in_phys);
     /* ZHR-92 angle-B (2026-08-24): out_burst -- WRITEOUT's fast path
      * writes through this port, same physical region as out_base (see
      * MAC_OUT_BURST_LO/HI's own comment in the driver header). Every PW

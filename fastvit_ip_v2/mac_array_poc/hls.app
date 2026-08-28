@@ -8,6 +8,17 @@
     </Simulation>
     <solutions>
         <solution name="solution1" status=""/>
+        <solution name="solution_export_rowhoist" status=""/>
+        <solution name="solution_export_mulfix" status=""/>
+        <solution name="solution_export_totalfield" status=""/>
+        <solution name="solution_export_baseline_recheck" status=""/>
+        <solution name="solution_export_dualfix" status=""/>
+        <solution name="solution_export_macpd1" status=""/>
+        <solution name="solution_macpd_probe2" status=""/>
+        <solution name="solution_macpd_probe4" status=""/>
+        <solution name="solution_macpd_probe8" status=""/>
+        <solution name="solution_pwflat_iifix" status=""/>
+        <solution name="solution_export_pwflat_iifix" status=""/>
     </solutions>
 </AutoPilot:project>
 

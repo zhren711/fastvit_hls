@@ -206,6 +206,12 @@ int main(int argc, char **argv) {
         W64(MAC_OUT_BASE_LO, MAC_OUT_BASE_HI, arena_phys);
         W64(MAC_OUT_WRITTEN_LO, MAC_OUT_WRITTEN_HI, this_written_phys);
         W64(MAC_IN_BASE_WIDE_LO, MAC_IN_BASE_WIDE_HI, arena_phys);
+        /* A3 row-hoist round (2026-08-25, ZHR-92): in_burst -- ROW_READ's
+         * read-side counterpart to out_burst, same physical region as
+         * in_base/in_base_wide, same "shared bundle != shared control
+         * register" trap. Flagged and fixed before this round's board
+         * test, not after. */
+        W64(MAC_IN_BURST_LO, MAC_IN_BURST_HI, arena_phys);
         /* ZHR-92 angle-B (2026-08-24): out_burst -- WRITEOUT's fast path
          * writes through this port, same physical region as out_base
          * despite sharing bundle=gmem_act (shared bundle != shared

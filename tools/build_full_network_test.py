@@ -22,7 +22,7 @@ import struct
 import os
 
 ROOT = r"E:\codes\microzed\fastvit_hls"
-MAC_PR, MAC_PC, MAC_PD = 4, 4, 2
+MAC_PR, MAC_PC, MAC_PD = 4, 4, 1
 N_HW_SEQ = 82
 
 with open(os.path.join(ROOT, "fastvit_ip_v2", "mac_array_ckpt_desc.h")) as f:

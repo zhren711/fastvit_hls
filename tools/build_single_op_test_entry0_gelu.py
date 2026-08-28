@@ -22,7 +22,7 @@ ROOT = r"E:\codes\microzed\fastvit_hls"
 OUT_DIR = os.path.join(ROOT, "accuracy_test_imgs_256", "board_test_entry0_gelu")
 os.makedirs(OUT_DIR, exist_ok=True)
 
-MAC_PR, MAC_PC, MAC_PD = 4, 4, 2
+MAC_PR, MAC_PC, MAC_PD = 4, 4, 1
 
 # entry[0] real fields, verbatim from mac_array_ckpt_desc.h's g_hw_seq[0].
 OP_GELU = 7

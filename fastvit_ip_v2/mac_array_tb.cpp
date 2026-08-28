@@ -319,7 +319,7 @@ int main()
         for (int i = 0; i < S2_B; i++)  s2_bbuf[i] = acc_t(s2_b_gold[i]);
 
         int s2_written[1] = {0};
-        mac_array_top(&s2, 1, s2_feat.data(), s2_wbuf.data(), s2_bbuf.data(), s2_feat.data(), s2_written, reinterpret_cast<const ap_uint<32>*>(s2_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s2_feat.data())));
+        mac_array_top(&s2, 1, s2_feat.data(), s2_wbuf.data(), s2_bbuf.data(), s2_feat.data(), s2_written, reinterpret_cast<const ap_uint<32>*>(s2_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s2_feat.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s2_feat.data())));
 
         int mismatches_s2 = 0;
         for (int i = 0; i < S2_TOTAL; i++)
@@ -364,7 +364,7 @@ int main()
     std::vector<acc_t> bbuf_snapshot = bbuf;
     int out_written[2] = {0, 0};
 
-    mac_array_top(desc, 2, feat.data(), wbuf.data(), bbuf.data(), feat.data(), out_written, reinterpret_cast<const ap_uint<32>*>(feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())));
+    mac_array_top(desc, 2, feat.data(), wbuf.data(), bbuf.data(), feat.data(), out_written, reinterpret_cast<const ap_uint<32>*>(feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())));
 
     bool weights_untouched = (wbuf == wbuf_snapshot) && (bbuf == bbuf_snapshot);
     bool both_written = out_written[0] == 1 && out_written[1] == 1;
@@ -393,7 +393,7 @@ int main()
     std::vector<act_t> pre_call_snapshot = feat2;
 
     int out_written2[2] = {0, 0};
-    mac_array_top(desc, 2, feat2.data(), wbuf.data(), bbuf.data(), feat2.data(), out_written2, reinterpret_cast<const ap_uint<32>*>(feat2.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat2.data())));
+    mac_array_top(desc, 2, feat2.data(), wbuf.data(), bbuf.data(), feat2.data(), out_written2, reinterpret_cast<const ap_uint<32>*>(feat2.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat2.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat2.data())));
 
     /* fault injection: layer 1's output region [16000, 16000+5200) reverts
      * to its pre-call contents (all zero, since region C was never
@@ -471,7 +471,7 @@ int main()
         for (int i = 0; i < B3_TOTAL; i++) b3buf[i] = acc_t(b3_gold[i]);
 
         int w3ritten[2] = {0, 0};
-        mac_array_top(desc3, 2, f3.data(), w3buf.data(), b3buf.data(), f3.data(), w3ritten, reinterpret_cast<const ap_uint<32>*>(f3.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f3.data())));
+        mac_array_top(desc3, 2, f3.data(), w3buf.data(), b3buf.data(), f3.data(), w3ritten, reinterpret_cast<const ap_uint<32>*>(f3.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f3.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f3.data())));
 
         int mismatches_p3 = 0;
         for (int i = 0; i < F3_TOTAL; i++)
@@ -539,7 +539,7 @@ int main()
         for (int i = 0; i < B4_TOTAL; i++) b4buf[i] = acc_t(b4_gold[i]);
 
         int w4ritten[3] = {0, 0, 0};
-        mac_array_top(desc4, 3, f4.data(), w4buf.data(), b4buf.data(), f4.data(), w4ritten, reinterpret_cast<const ap_uint<32>*>(f4.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f4.data())));
+        mac_array_top(desc4, 3, f4.data(), w4buf.data(), b4buf.data(), f4.data(), w4ritten, reinterpret_cast<const ap_uint<32>*>(f4.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f4.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f4.data())));
 
         int mismatches_p4 = 0;
         for (int i = 0; i < F4_TOTAL; i++)
@@ -610,7 +610,7 @@ int main()
         for (int i = 0; i < B5_TOTAL; i++) b5buf[i] = acc_t(b5_gold[i]);
 
         int w5ritten[3] = {0, 0, 0};
-        mac_array_top(desc5, 3, f5.data(), w5buf.data(), b5buf.data(), f5.data(), w5ritten, reinterpret_cast<const ap_uint<32>*>(f5.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f5.data())));
+        mac_array_top(desc5, 3, f5.data(), w5buf.data(), b5buf.data(), f5.data(), w5ritten, reinterpret_cast<const ap_uint<32>*>(f5.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f5.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f5.data())));
 
         int mismatches_p5a = 0;
         for (int i = 0; i < F5_TOTAL; i++)
@@ -629,7 +629,7 @@ int main()
         std::vector<act_t> pre_call_snapshot5 = f5b;
 
         int w5ritten_b[3] = {0, 0, 0};
-        mac_array_top(desc5, 3, f5b.data(), w5buf.data(), b5buf.data(), f5b.data(), w5ritten_b, reinterpret_cast<const ap_uint<32>*>(f5b.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f5b.data())));
+        mac_array_top(desc5, 3, f5b.data(), w5buf.data(), b5buf.data(), f5b.data(), w5ritten_b, reinterpret_cast<const ap_uint<32>*>(f5b.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f5b.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f5b.data())));
 
         for (int i = desc5[2].out_off; i < F5_TOTAL; i++) f5b[i] = pre_call_snapshot5[i];
 
@@ -715,7 +715,7 @@ int main()
         for (int i = 0; i < B6_TOTAL; i++) b6buf[i] = acc_t(b6_gold[i]);
 
         int w6ritten[6] = {0, 0, 0, 0, 0, 0};
-        mac_array_top(desc6, 6, f6.data(), w6buf.data(), b6buf.data(), f6.data(), w6ritten, reinterpret_cast<const ap_uint<32>*>(f6.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f6.data())));
+        mac_array_top(desc6, 6, f6.data(), w6buf.data(), b6buf.data(), f6.data(), w6ritten, reinterpret_cast<const ap_uint<32>*>(f6.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f6.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f6.data())));
 
         int mismatches_p6 = 0;
         for (int i = 0; i < F6_TOTAL; i++)
@@ -772,7 +772,7 @@ int main()
         for (int i = 0; i < B7_TOTAL; i++) b7buf[i] = acc_t(b7_gold[i]);
 
         int w7ritten[2] = {0, 0};
-        mac_array_top(desc7, 2, f7.data(), w7buf.data(), b7buf.data(), f7.data(), w7ritten, reinterpret_cast<const ap_uint<32>*>(f7.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f7.data())));
+        mac_array_top(desc7, 2, f7.data(), w7buf.data(), b7buf.data(), f7.data(), w7ritten, reinterpret_cast<const ap_uint<32>*>(f7.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f7.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f7.data())));
 
         int mismatches_p7 = 0;
         for (int i = 0; i < F7_TOTAL; i++)
@@ -828,7 +828,7 @@ int main()
         for (int i = 0; i < S8A_B; i++)  s8a_bbuf[i] = acc_t(s8a_b[i]);
 
         int s8a_written[1] = {0};
-        mac_array_top(&desc8a, 1, s8a_feat.data(), s8a_wbuf.data(), s8a_bbuf.data(), s8a_feat.data(), s8a_written, reinterpret_cast<const ap_uint<32>*>(s8a_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s8a_feat.data())));
+        mac_array_top(&desc8a, 1, s8a_feat.data(), s8a_wbuf.data(), s8a_bbuf.data(), s8a_feat.data(), s8a_written, reinterpret_cast<const ap_uint<32>*>(s8a_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s8a_feat.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s8a_feat.data())));
 
         int mismatches_8a = 0;
         for (int i = 0; i < S8A_TOTAL; i++)
@@ -870,7 +870,7 @@ int main()
         for (int i = 0; i < S8B_B; i++)  s8b_bbuf[i] = acc_t(s8b_b[i]);
 
         int s8b_written[1] = {0};
-        mac_array_top(&desc8b, 1, s8b_feat.data(), s8b_wbuf.data(), s8b_bbuf.data(), s8b_feat.data(), s8b_written, reinterpret_cast<const ap_uint<32>*>(s8b_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s8b_feat.data())));
+        mac_array_top(&desc8b, 1, s8b_feat.data(), s8b_wbuf.data(), s8b_bbuf.data(), s8b_feat.data(), s8b_written, reinterpret_cast<const ap_uint<32>*>(s8b_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s8b_feat.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s8b_feat.data())));
 
         int mismatches_8b = 0;
         for (int i = 0; i < S8B_TOTAL; i++)
@@ -926,7 +926,7 @@ int main()
         for (int i = 0; i < S9_B; i++)  s9_bbuf[i] = acc_t(s9_b[i]);
 
         int s9_written[1] = {0};
-        mac_array_top(&desc9, 1, s9_feat.data(), s9_wbuf.data(), s9_bbuf.data(), s9_feat.data(), s9_written, reinterpret_cast<const ap_uint<32>*>(s9_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s9_feat.data())));
+        mac_array_top(&desc9, 1, s9_feat.data(), s9_wbuf.data(), s9_bbuf.data(), s9_feat.data(), s9_written, reinterpret_cast<const ap_uint<32>*>(s9_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s9_feat.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s9_feat.data())));
 
         int mismatches_9 = 0;
         for (int i = 0; i < S9_TOTAL; i++)
@@ -1003,7 +1003,7 @@ int main()
         for (int i = 0; i < B10_TOTAL; i++) b10buf[i] = acc_t(b10_gold[i]);
 
         int w10ritten[3] = {0, 0, 0};
-        mac_array_top(desc10, 3, f10.data(), w10buf.data(), b10buf.data(), f10.data(), w10ritten, reinterpret_cast<const ap_uint<32>*>(f10.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f10.data())));
+        mac_array_top(desc10, 3, f10.data(), w10buf.data(), b10buf.data(), f10.data(), w10ritten, reinterpret_cast<const ap_uint<32>*>(f10.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f10.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(f10.data())));
 
         int mismatches_10 = 0;
         for (int i = 0; i < F10_TOTAL; i++)
@@ -1066,7 +1066,7 @@ int main()
         for (int i = 0; i < S11_B; i++)  s11_bbuf[i] = acc_t(s11_b[i]);
 
         int s11_written[1] = {0};
-        mac_array_top(&desc11, 1, s11_feat.data(), s11_wbuf.data(), s11_bbuf.data(), s11_feat.data(), s11_written, reinterpret_cast<const ap_uint<32>*>(s11_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s11_feat.data())));
+        mac_array_top(&desc11, 1, s11_feat.data(), s11_wbuf.data(), s11_bbuf.data(), s11_feat.data(), s11_written, reinterpret_cast<const ap_uint<32>*>(s11_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s11_feat.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s11_feat.data())));
 
         int mismatches_11 = 0;
         for (int i = 0; i < S11_TOTAL; i++)
@@ -1127,7 +1127,7 @@ int main()
         for (int i = 0; i < S12_B; i++)  s12_bbuf[i] = acc_t(s12_b[i]);
 
         int s12_written[1] = {0};
-        mac_array_top(&desc12, 1, s12_feat.data(), s12_wbuf.data(), s12_bbuf.data(), s12_feat.data(), s12_written, reinterpret_cast<const ap_uint<32>*>(s12_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s12_feat.data())));
+        mac_array_top(&desc12, 1, s12_feat.data(), s12_wbuf.data(), s12_bbuf.data(), s12_feat.data(), s12_written, reinterpret_cast<const ap_uint<32>*>(s12_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s12_feat.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s12_feat.data())));
 
         int mismatches_12 = 0;
         for (int i = 0; i < S12_TOTAL; i++)
@@ -1181,7 +1181,7 @@ int main()
         for (int i = 0; i < S13_B; i++)  s13_bbuf[i] = acc_t(s13_b[i]);
 
         int s13_written[1] = {0};
-        mac_array_top(&desc13, 1, s13_feat.data(), s13_wbuf.data(), s13_bbuf.data(), s13_feat.data(), s13_written, reinterpret_cast<const ap_uint<32>*>(s13_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s13_feat.data())));
+        mac_array_top(&desc13, 1, s13_feat.data(), s13_wbuf.data(), s13_bbuf.data(), s13_feat.data(), s13_written, reinterpret_cast<const ap_uint<32>*>(s13_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s13_feat.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s13_feat.data())));
 
         int mismatches_13 = 0;
         for (int i = 0; i < S13_TOTAL; i++)
@@ -1247,7 +1247,7 @@ int main()
         for (int i = 0; i < S14_B; i++)       s14_bbuf[i] = acc_t(s14_b[i]);
 
         int s14_written[1] = {0};
-        mac_array_top(&desc14, 1, s14_feat.data(), s14_wbuf.data(), s14_bbuf.data(), s14_feat.data(), s14_written, reinterpret_cast<const ap_uint<32>*>(s14_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s14_feat.data())));
+        mac_array_top(&desc14, 1, s14_feat.data(), s14_wbuf.data(), s14_bbuf.data(), s14_feat.data(), s14_written, reinterpret_cast<const ap_uint<32>*>(s14_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s14_feat.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s14_feat.data())));
 
         int mismatches_14 = 0;
         for (int i = 0; i < S14_TOTAL; i++)
@@ -1313,7 +1313,7 @@ int main()
         for (int i = 0; i < S15_B; i++)   s15_bbuf[i] = acc_t(s15_b[i]);
 
         int s15_written[1] = {0};
-        mac_array_top(&desc15, 1, s15_feat.data(), s15_wbuf.data(), s15_bbuf.data(), s15_feat.data(), s15_written, reinterpret_cast<const ap_uint<32>*>(s15_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s15_feat.data())));
+        mac_array_top(&desc15, 1, s15_feat.data(), s15_wbuf.data(), s15_bbuf.data(), s15_feat.data(), s15_written, reinterpret_cast<const ap_uint<32>*>(s15_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s15_feat.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s15_feat.data())));
 
         int mismatches_15 = 0;
         for (int i = 0; i < S15_TOTAL; i++)
@@ -1321,6 +1321,70 @@ int main()
         phase15_ok = (mismatches_15 == 0);
         printf("[Phase15] gmem_act wide-path read (use_wide_path=1, PW_PATCH_HOIST, real 4x4-tile shape): "
                "%s (%d/%d mismatches)\n", phase15_ok ? "PASS" : "FAIL", mismatches_15, S15_TOTAL);
+    }
+
+    /* ================= PHASE 16: row-hoist fast-path, non-4-aligned in_off
+     * (A3 row-hoist round, 2026-08-25, ZHR-92) =================
+     * Found while double-checking MAX_WORDS_PER_CH's derivation: every
+     * existing PW fast-path (W%4==0) descriptor in this file happens to
+     * have in_off%4==0 (checked directly against every desc[]/desc3..15
+     * literal above, not assumed) -- meaning ROW_READ's general byte-
+     * offset-shift logic (word_addr0=byte_addr>>2, r=byte_addr&3,
+     * pos=i*4+b-r) had never been exercised by a passing csim run before
+     * this phase; 16 passing phases only proved the r=0 special case.
+     * W%4==0 makes r CONSTANT across the whole tile (same in_ch_stride/
+     * oh*W argument as row_buf's own header comment in mac_array.cpp), so
+     * one deliberately-misaligned in_off (3, the worst case) exercises the
+     * general path fully, not partially. Small shape (cin=4, h_in=w_in=8)
+     * to keep this phase cheap and easy to hand-verify; buffer padded by
+     * in_off bytes at the front (same in-place, self-contained pattern as
+     * desc12-15) so the shift never reads/writes out of bounds. */
+    bool phase16_ok = false;
+    {
+        LayerDescV2 desc16 = LayerDescV2{ LDESC_OP_PWCONV, /*cin*/4, /*cout*/2, /*h_in*/8, /*w_in*/8,
+                                           /*k*/1, /*stride*/1, /*pad*/0, /*fpg*/1, /*out_shift*/4,
+                                           /*in_off*/3, /*w_off*/0, /*b_off*/0, /*out_off*/259 /* 3+256 */ };
+        MacArrayParams p16 = derive_mac_array_params(desc16);
+        desc16.h_out = p16.h_out; desc16.w_out = p16.w_out; desc16.in_ch_stride = p16.in_ch_stride; desc16.out_ch_stride = p16.out_ch_stride;
+        desc16.n_row_tiles = p16.n_row_tiles; desc16.n_col_tiles = p16.n_col_tiles; desc16.n_ch_tiles = p16.n_ch_tiles;
+        desc16.last_row_tile = p16.last_row_tile; desc16.last_col_tile = p16.last_col_tile; desc16.last_ch_tile = p16.last_ch_tile;
+        assert(desc16.h_out == 8 && desc16.w_out == 8 && desc16.w_out % 4 == 0);
+
+        const int S16_IN  = 4 * 8 * 8;                        /* 256 */
+        const int S16_OUT = 2 * 8 * 8;                        /* 128 */
+        const int S16_TOTAL = desc16.in_off + S16_IN + S16_OUT; /* 3+256+128=387 */
+        const int S16_W = 2 * 4;                              /* 8 */
+        const int S16_B = 2;
+
+        std::vector<int8_t>  s16_in(S16_TOTAL, 0);
+        std::vector<int8_t>  s16_w(S16_W, 0);
+        std::vector<int32_t> s16_b(S16_B, 0);
+        Lcg rng16(0x16A11EDD);
+        for (int i = 0; i < S16_IN; i++) s16_in[desc16.in_off + i] = rng16.next_i8();
+        for (int i = 0; i < S16_W; i++)  s16_w[i]  = rng16.next_i8();
+        for (int i = 0; i < S16_B; i++)  s16_b[i]  = (int32_t)rng16.next_i8() * 4;
+
+        int h16, w16;
+        golden_out_dims(desc16, h16, w16);
+        std::vector<int8_t> s16_gold = s16_in;
+        golden_pwconv(desc16, h16, w16, s16_in, s16_w, s16_b, s16_gold);
+
+        std::vector<act_t> s16_feat(S16_TOTAL, act_t(0));
+        std::vector<wt_t>  s16_wbuf(S16_W, wt_t(0));
+        std::vector<acc_t> s16_bbuf(S16_B, acc_t(0));
+        for (int i = 0; i < S16_TOTAL; i++) s16_feat[i] = act_t(s16_in[i]);
+        for (int i = 0; i < S16_W; i++)   s16_wbuf[i] = wt_t(s16_w[i]);
+        for (int i = 0; i < S16_B; i++)   s16_bbuf[i] = acc_t(s16_b[i]);
+
+        int s16_written[1] = {0};
+        mac_array_top(&desc16, 1, s16_feat.data(), s16_wbuf.data(), s16_bbuf.data(), s16_feat.data(), s16_written, reinterpret_cast<const ap_uint<32>*>(s16_feat.data()), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s16_feat.data())), hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(s16_feat.data())));
+
+        int mismatches_16 = 0;
+        for (int i = 0; i < S16_TOTAL; i++)
+            if ((int8_t)s16_feat[i] != s16_gold[i]) mismatches_16++;
+        phase16_ok = (mismatches_16 == 0);
+        printf("[Phase16] row-hoist fast-path, non-4-aligned in_off (r=3, cin=4,w_in=8): "
+               "%s (%d/%d mismatches)\n", phase16_ok ? "PASS" : "FAIL", mismatches_16, S16_TOTAL);
     }
 
     printf("\n[Summary] Phase0 (stride=2 DW correctness): %s\n", phase0_ok ? "PASS" : "FAIL");
@@ -1339,6 +1403,13 @@ int main()
     printf("[Summary] Phase13 (PW Cin-chunking tail case, real cin=144 crash site): %s\n", phase13_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase14 (per-channel out_shift table, use_shift_table=1): %s\n", phase14_ok ? "PASS" : "FAIL");
     printf("[Summary] Phase15 (gmem_act wide-path read, use_wide_path=1): %s\n", phase15_ok ? "PASS" : "FAIL");
+    printf("[Summary] Phase16 (row-hoist fast-path, non-4-aligned in_off): %s\n", phase16_ok ? "PASS" : "FAIL");
 
-    return (phase0_ok && phase1_ok && phase2_ok && phase3_ok && phase4_ok && phase5_ok && phase6_ok && phase7_ok && phase8_ok && phase9_ok && phase10_ok && phase11_ok && phase12_ok && phase13_ok && phase14_ok) ? 0 : 1;
+    /* ZHR-92 (2026-08-25): phase15_ok was printed in the Summary above but
+     * never included in this return-code AND-chain -- a pre-existing gap
+     * (predates this round), found and fixed while wiring in phase16_ok,
+     * not something silently slipped in. Without this fix a broken
+     * Phase15 or Phase16 would still print FAIL but the run's overall
+     * exit code (and run_csim.tcl's pass/fail signal) would stay 0. */
+    return (phase0_ok && phase1_ok && phase2_ok && phase3_ok && phase4_ok && phase5_ok && phase6_ok && phase7_ok && phase8_ok && phase9_ok && phase10_ok && phase11_ok && phase12_ok && phase13_ok && phase14_ok && phase15_ok && phase16_ok) ? 0 : 1;
 }

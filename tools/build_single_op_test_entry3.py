@@ -33,7 +33,7 @@ ROOT = r"E:\codes\microzed\fastvit_hls"
 OUT_DIR = os.path.join(ROOT, "accuracy_test_imgs_256", "board_test_entry3")
 os.makedirs(OUT_DIR, exist_ok=True)
 
-MAC_PR, MAC_PC, MAC_PD = 4, 4, 2
+MAC_PR, MAC_PC, MAC_PD = 4, 4, 1
 
 # entry[3] real fields, verbatim from fastvit_ip_v2/mac_array_ckpt_desc.h's
 # g_hw_seq[3] + set_shift_table_fields()'s g_hw_seq[3] entry.

@@ -321,6 +321,107 @@ supposedly standing in for.
   then deferred through 9+ debugging rounds while more specific theories (SE `out_shift`, a missing
   final GELU, LayerScale) got chased instead — it turned out to be the dominant root cause, off by
   ~37x, confirmed only in Phase 0.8 step 5 by finally checking it directly.
+- **A golden/reference implementation written in a different language from the thing it checks can
+  silently diverge on integer-division truncation direction, not just on obvious algorithm
+  differences.** Confirmed 2026-08-26 (ZHR-63 quantization-fix round, building
+  `diagnose_full_network_sim.py`'s bit-faithful Python re-implementation of `mac_array.cpp`): C++'s
+  `sum/HW` on a signed integer truncates toward zero; Python/NumPy's `//` floors toward −∞. These
+  give different results whenever the dividend is negative — exactly the case here, since `run_gap`
+  sums signed int8 activations that can net negative. Undetected, this would have made the simulator
+  systematically diverge from real hardware immediately after every GAP op (the SE block, entries
+  75+) — and because the divergence looks like ordinary quantization error (small, plausible integer
+  drift), it would have been mistaken for a real accuracy contributor and chased as one, not caught
+  as a tooling bug. Caught only because the simulator's output was checked against real hardware
+  dumps entry-by-entry before being trusted (same discipline as `diagnose_entry_by_entry.py`'s
+  original bit-exact validation), not because the bug was anticipated. **Any time a golden/reference
+  model is written in a different language than the implementation it validates, integer division,
+  modulo, and shift semantics need an explicit sign-behavior check — "translated the algorithm"
+  is not the same claim as "translated the arithmetic," and the two can differ exactly on the inputs
+  most likely to matter (real signed data, not synthetic all-positive test vectors).**
+
+- **A plan recorded in Linear ("do X next") is not evidence that X was executed — check the actual
+  code/artifact before citing a past round's conclusion as fact.** Confirmed 2026-08-26 (ZHR-63
+  quantization-fix round): Phase 0.7's kickoff plan (2026-08-15) said "run activation calibration on
+  real images." Every later round — including repeated verbal instructions across this whole
+  project's history — referred to this as something already done. It never was: Phase 0.8's actual
+  calibration fix (`calibrate_and_requantize_256.py`) explicitly documents, in its own docstring,
+  that it uses the same synthetic generator as `calibrate_activations.py` ("this repo has no
+  photos"). The "real image range [-1.434, 1.748], 14.1% saturation" figure cited in multiple later
+  rounds as if it came from a real photograph was *also* measured on that same synthetic generator's
+  own output. Nobody had checked the actual data source in over a dozen rounds; the plan's own
+  wording was being read as a completed-work log. **Before citing a prior round's finding, especially
+  one restated secondhand across several later comments, check what the code that produced it
+  actually consumed — a plan entry, a comment saying "next we should," or a docstring's stated intent
+  is not the same claim as "this ran."**
+
+- **A number a reviewer/user states as a result is not evidence unless it was actually produced by a
+  tool run you can point to — do not write it into a permanent record (Linear, CLAUDE.md) until you've
+  reproduced it yourself, and say so explicitly if you can't.** Confirmed 2026-08-26 (ZHR-92,
+  per-channel-vs-pooled-calibration round): the user stated specific, precise-looking numbers
+  ("saturation 23.47%→0.19%, 48/48 layers' best_delta→0, stage1 cosine 0.6313→0.6482") plus a named
+  bug mechanism ("sum(...)/n averaging by total element count instead of per-channel count"), framed
+  as an already-confirmed root cause. The actual tool run produced different numbers in the OPPOSITE
+  direction (saturation got worse, 23.47%→25.90%; stage1 cosine got worse, 0.6313→0.5161). Refusing to
+  write the stated numbers into ZHR-92 and asking where they came from — instead of accepting them and
+  building the next round on top of them — surfaced that the user had fabricated the numbers by
+  inference from conversational context ("this is the result that should happen"), not from having
+  actually run anything; they confirmed this directly the next turn. Had the numbers been written down
+  as fact, every subsequent round would have reasoned from fictional data. **Any claimed result —
+  from a user, a teammate, a review comment, or your own memory of an earlier round — needs an
+  actual artifact (a log, a report file, a rerunnable command) before it goes into a permanent record.
+  "I should independently reproduce this, not just transcribe it" applies regardless of how confident
+  or specific the source sounds.**
+
+- **A persisted intermediate artifact can look valid (right file, right size, right dtype) while being
+  generated under a configuration the current code no longer uses — and nothing checks.** Confirmed
+  2026-08-26 (ZHR-92, quantization-fix round): `accuracy_test_imgs_256/stem_output_0000.bin` — the
+  Stem output every simulator script AND the real board's `mac_array_full_network_test.c` (line 154,
+  `load_file(stem_path, arena_v, stem_size)` loads it straight into the DMA arena dispatched to the
+  FPGA) used as the network's starting point — was quantized with `compute_stem_arm.py`'s **default**
+  `--output-scale` (`None` → falls back to `PLACEHOLDER_SCALE = 1/127`), not the real calibrated
+  `stem_output_scale = 0.132136` every downstream shift/scale in `shift_table_meta.json` assumes. This
+  made the file **71.6% saturated** at ±127/±128 — confirmed empirically (69% exact match quantizing
+  the true ONNX Stem value at 1/127, 0% match at the real 0.132136), not inferred. Fourth confirmed
+  instance of this project's "tool/artifact reports something that isn't true" failure class, alongside
+  `export_design`'s stale-HDL-cache reuse, `vitis_hls`'s misleading exit code, and the PL-hang MD5
+  anomaly — the common thread across all four: **a persisted artifact that looks legitimate (right
+  shape, plausible values, no error) was generated under a since-superseded configuration, and the code
+  consuming it has no way to know.** Regenerating it correctly (matching `shift_table_meta.json`'s
+  real `stem_input_scale`/`stem_output_scale`, plus a *second*, independent stale artifact discovered
+  along the way — `compute_stem_arm.py`'s own default `--image img_0000.bin` is a wrong-resolution
+  leftover, 128×128 vs this pipeline's 256×256, which would have crashed the script's reshape had it
+  actually been used) fixed the saturation (71.6%→0%) but — checked directly, not assumed — did **not**
+  meaningfully change the six-checkpoint cosine curve (stage1 0.6313→0.6325, cliff shape unchanged) or
+  explain the accuracy line's actual open questions; this project's independently-confirmed network-wide
+  per-layer saturation (48/48 layers, 23-37%, unrelated to Stem) dominates enough that a clean Stem
+  start doesn't move the needle. Both facts matter and don't cancel each other: the artifact bug was
+  real and board-relevant (not simulator-only), *and* it wasn't the explanation being sought. **General
+  guard, not yet applied everywhere it should be**: any persisted intermediate artifact (a calibration
+  output, a golden reference, a precomputed table) that another script consumes without regenerating
+  needs its generating parameters recorded alongside it (a sibling `.meta.json` — added this round for
+  `stem_output_0000.bin`, listing `input_scale`/`output_scale`/generator/commit/image-source) and
+  ideally checked at load time, not trusted because the file exists and parses. This is expensive to
+  retrofit everywhere at once; treat it as the default going forward for any NEW persisted artifact,
+  and retrofit existing ones opportunistically when touched, not as a dedicated sweep.
+- **A standalone HLS probe's own unpartitioned arrays can silently masquerade as a limit of the
+  mechanism under test, not a property of the probe.** Confirmed twice in immediate succession,
+  2026-08-27 (ZHR-92, line-buffer and DSP-pack-array rounds): the line-buffer probe's synthetic input
+  array (`pixels[MAC_PD][N_PIXELS]`) and, one round later, the DSP-pack-array probe's accumulator
+  (`acc[N_GROUPS][2][2]`) were both left unpartitioned, and both times HLS's own diagnostic
+  (`HLS 200-885`, quoted directly both times, not inferred) named the exact array and the exact reason
+  ("limited memory ports") when multiple unrolled/parallel accesses per cycle contended for a
+  default-inferred 1-2-port memory. Both times this looked exactly like a real architectural
+  bottleneck (achieved II degrading 1→2→4 as parallelism P grew; a DSP-packed reduction loop
+  measuring only ~2x speedup instead of the theoretical 4x) until the diagnostic was read carefully
+  and the one-line fix (`#pragma HLS ARRAY_PARTITION variable=<array> complete dim=<N>`) resolved it
+  at zero or near-zero resource cost, fully recovering the theoretical result both times. Neither case
+  was actually testing the row-buffer/BRAM mechanism or the packed-multiply mechanism's own limits —
+  both were testing the probe's own data-feeding/accumulation scaffolding. **Any array touched by
+  multiple simultaneous (unrolled/parallel) accesses per cycle — inputs and accumulators alike, not
+  just the structure being deliberately tested — needs to be checked for partitioning before
+  concluding a measured II/latency bottleneck reflects the architecture under test rather than the
+  probe's own construction.** Read the HLS log's own II-violation diagnostic first; it names the
+  array directly and makes this a one-line fix, not a redesign.
 
 ## Known open issues as of 2026-08-15
 

@@ -128,6 +128,7 @@ int main(int argc, char **argv) {
      * bundle "probably fine to skip" just because the current op doesn't
      * exercise it. */
     W64(MAC_IN_BASE_WIDE_LO, MAC_IN_BASE_WIDE_HI, in_phys);
+    W64(MAC_IN_BURST_LO, MAC_IN_BURST_HI, in_phys);
     W64(MAC_OUT_BURST_LO, MAC_OUT_BURST_HI, out_phys);
 
     struct timespec t0, t1;

@@ -1,5 +1,6 @@
 INFO: [SIM 2] *************** CSIM start ***************
 INFO: [SIM 4] CSIM will launch CLANG as the compiler.
+   Compiling ../../../../mac_array_tb.cpp in debug mode
    Compiling ../../../../mac_array.cpp in debug mode
    Generating csim.exe
 [Setup] mac_array_params_dump.txt written for tools/verify_mac_array_mapping.py
@@ -25,6 +26,8 @@ INFO: [SIM 4] CSIM will launch CLANG as the compiler.
 [Phase12] PW Cin-chunking fix (cin=1152->cout=384, real layer_0044_pwconv shape): PASS (0/98304 mismatches)
 [Phase13] PW Cin-chunking tail case (cin=144->cout=48, real layer_0006_pwconv, the original crash site): PASS (0/786432 mismatches)
 [Phase14] per-channel out_shift table (use_shift_table=1, 8 distinct shifts): PASS (0/5600 mismatches)
+[Phase15] gmem_act wide-path read (use_wide_path=1, PW_PATCH_HOIST, real 4x4-tile shape): PASS (0/8064 mismatches)
+[Phase16] row-hoist fast-path, non-4-aligned in_off (r=3, cin=4,w_in=8): PASS (0/387 mismatches)
 
 [Summary] Phase0 (stride=2 DW correctness): PASS
 [Summary] Phase1 (correctness + no collateral writes): PASS
@@ -41,5 +44,7 @@ INFO: [SIM 4] CSIM will launch CLANG as the compiler.
 [Summary] Phase12 (PW Cin-chunking fix, real cin=1152 shape): PASS
 [Summary] Phase13 (PW Cin-chunking tail case, real cin=144 crash site): PASS
 [Summary] Phase14 (per-channel out_shift table, use_shift_table=1): PASS
+[Summary] Phase15 (gmem_act wide-path read, use_wide_path=1): PASS
+[Summary] Phase16 (row-hoist fast-path, non-4-aligned in_off): PASS
 INFO: [SIM 1] CSim done with 0 errors.
 INFO: [SIM 3] *************** CSIM finish ***************
