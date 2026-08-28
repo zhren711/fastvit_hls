@@ -67,6 +67,18 @@
 #define MAC_OUT_BURST_LO      0x6c
 #define MAC_OUT_BURST_HI      0x70
 
+/* A3 row-hoist round (2026-08-25, ZHR-92): in_burst, ROW_READ's read-side
+ * counterpart to out_burst. Same "shared bundle != shared control
+ * register" trap as out_burst's own history -- offset read directly from
+ * the MAC_PD=1 solution's generated xmac_array_top_hw.h (0x78/0x7c), not
+ * guessed. Flagged BEFORE board deployment this time (out_burst's own
+ * equivalent gap was only caught after a board test). Same physical DRAM
+ * region as in_base/in_base_wide (ROW_READ's burst path and the slow
+ * in_base_wide reads share bundle=gmem_act) -- host must write the SAME
+ * address into MAC_IN_BASE_WIDE_* and MAC_IN_BURST_*. */
+#define MAC_IN_BURST_LO        0x78
+#define MAC_IN_BURST_HI        0x7c
+
 /* Must stay byte-layout-identical to fastvit_ip_v2/mac_array.h's
  * LayerDescV2 (int fields, same order) -- this is what actually gets DMA'd
  * into DRAM and read by the IP's gmem_meta master, so the two structs are

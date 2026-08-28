@@ -347,6 +347,16 @@ static void pw_flat_pipeline(
                 total += pw_bias_cache[ot_idx];
                 val = (act_t)clip_shift(total, shift_reg);
             }
+            /* A3 shared-multiplier round (2026-08-25, ZHR-92, U2598
+             * candidate #1) -- ATTEMPTED AND REVERTED. Converting
+             * (rt*MAC_PR+wr_row)*d.w_out below to an rt-loop accumulator
+             * (run_layer) + a 4-entry wr_row table (built via 3 adds, same
+             * call shape as this file's other accumulator conversions) held
+             * csim 17/17 but did NOT change mul_32s_32s_32_2_1's real
+             * instance count in the exported RTL (still 2, same as
+             * baseline) -- this term is not one of the two surviving
+             * physical instances. Ruled out, not a dead end: the real
+             * owner of those two instances is still unidentified. */
             if (wr_row < r_sz) {
                 int byte_addr = d.out_off + ot_out_ch_base + (rt * MAC_PR + wr_row) * d.w_out + colt * MAC_PC;
                 bool fast_path = (col_sz == MAC_PC) && ((byte_addr & 3) == 0);
@@ -363,8 +373,25 @@ static void pw_flat_pipeline(
             }
         }
 
-        /* counter update -- no division/modulo anywhere */
-        if (k == PW_FLAT_STEPS_PER_CBASE - 1) {
+        /* A3 shared-multiplier round (2026-08-25, ZHR-92, MAC_PD=1 sweep):
+         * FOUND AND FIXED via csim, not assumed correct -- k's wrap bound
+         * used to be PW_FLAT_STEPS_PER_CBASE unconditionally, for BOTH the
+         * gather phase (where that's the right bound) AND the writeout
+         * phase (which actually needs PW_FLAT_WRITEOUT_ELEMS=MAC_PR*MAC_PC
+         * steps, a spatial-tile constant, unrelated to Cin-chunking). At
+         * MAC_PD=2 these two bounds happened to both equal 16
+         * (MAX_CIN_PW/MAC_PD == MAC_PR*MAC_PC) -- a numerical coincidence
+         * that masked this bug for this whole project's history. At
+         * MAC_PD=1 the gather bound becomes 32, so writeout (still using
+         * the same k/bound) ran 32 steps instead of 16 -- total_iters
+         * (computed assuming writeout=PW_FLAT_WRITEOUT_ELEMS) then
+         * underestimated the real step count, terminating PW_FLAT early
+         * and dropping the last few output channels entirely (verified:
+         * Phase1's cin=20/cout=13 shape lost exactly 3/13 channels in an
+         * isolated Python state-machine simulation before this fix, 13/13
+         * correct after). Phase-dependent wrap bound restores both. */
+        int wrap_bound = in_writeout ? PW_FLAT_WRITEOUT_ELEMS : PW_FLAT_STEPS_PER_CBASE;
+        if (k == wrap_bound - 1) {
             k = 0;
             if (!in_writeout) {
                 if (cbase_idx == n_cbase - 1) {
@@ -431,7 +458,8 @@ static void pw_flat_pipeline(
 static void run_layer(const LayerDescV2 &d,
                        const act_t in_base[], const wt_t w_base[], const acc_t b_base[],
                        act_t out_base[], const ap_uint<32> in_base_wide[],
-                       hls::burst_maxi<ap_uint<32> > &out_burst)
+                       hls::burst_maxi<ap_uint<32> > &out_burst,
+                       hls::burst_maxi<ap_uint<32> > &in_burst)
 {
     const int Hin = d.h_in, Win = d.w_in;
     const int K = d.k, S = d.stride, P = d.pad;
@@ -468,6 +496,121 @@ static void run_layer(const LayerDescV2 &d,
 
     for (int rt = 0; rt < d.n_row_tiles; rt++) {
         int r_sz = (rt == d.n_row_tiles - 1) ? d.last_row_tile : MAC_PR;
+
+        /* A3 row-hoist round (2026-08-25, ZHR-92) stage 1: PW-only row-
+         * level burst hoist. PW_PATCH_HOIST (below, per-(rt,colt)) issues
+         * Cin*MAC_PR non-burst word reads EVERY colt tile, re-reading the
+         * SAME row data 16x/row (measured: 192 transactions/tile, ~86
+         * cycles each, entry3). Fix: read each (ci,rr) row ONCE per rt (not
+         * per (rt,colt)) via a runtime-length hls::burst_maxi burst
+         * covering the full row (w_in bytes, not just MAC_PC=4), into
+         * row_buf; every colt then does a cheap SRAM-only COPY out of it.
+         * Combined Phase-1 probe (row_hoist_probe/, isolated, not part of
+         * this file) validated the two riskiest primitives before this
+         * code was written: (1) burst_maxi::read_request with a genuine
+         * RUNTIME length synthesizes clean (ManualBurstInstancePassed,
+         * Length="variable") -- this project's first runtime-length burst;
+         * (2) a flat runtime-indexed row buffer, correctly partitioned,
+         * reaches II=1 on both the fill and the copy-out side. Partition
+         * scheme (complete dim=1 / cyclic factor=MAC_PC dim=2) is the
+         * exact scheme the probe's second round confirmed reaches II=1 --
+         * the probe's FIRST round (row_buf partitioned, destination array
+         * NOT) stuck at II=16; the real bottleneck was the destination
+         * array's own missing partition, not row_buf, a correction to my
+         * own initial (wrong) diagnosis. pw_patch_full below already has
+         * the equivalent destination-side partitioning this needs (cyclic
+         * factor=MAC_PD dim=1, complete dim=2/3) -- the real COPY loop's
+         * ci is the loop's own sequential induction variable, not unrolled
+         * (unlike the probe's dd), so it needs LESS destination
+         * parallelism than the probe tested, not more; no new pragma
+         * needed on pw_patch_full. MAX_CIN_TIMES_W=9216 (see mac_array.h)
+         * is the verified real product bound Cin*w_in, not MAX_CIN*W_MAX. */
+        static act_t row_buf[MAC_PR][MAX_CIN_TIMES_W];
+        #pragma HLS ARRAY_PARTITION variable=row_buf complete dim=1
+        #pragma HLS ARRAY_PARTITION variable=row_buf cyclic factor=MAC_PC dim=2
+
+        /* A3 row-hoist round (2026-08-25, ZHR-92, slow-path removal): the
+         * W%4==0 gate this comment used to describe is GONE -- real DRAM
+         * layout is channel-major (in_ch_stride=H*W, confirmed via
+         * derive_mac_array_params), so a row's Cin channels are NOT
+         * contiguous in DRAM, each (ci,rr) its own burst of W bytes, but
+         * ROW_READ_FILL below (word_addr0=byte_addr>>2, r=byte_addr&3,
+         * n_words=(r+W+3)>>2) is a fully general byte-run extraction with
+         * no dependency on W%4 or on r==0 -- verified by hand-derivation
+         * for W=1 (entry76/78, the only real layers the old gate excluded):
+         * n_words reduces to exactly 1 for every alignment residue r, and
+         * the single valid byte lane is extracted correctly regardless of
+         * r. Unconditional for every PWCONV layer now -- the old
+         * PW_PATCH_HOIST slow path this gate used to fall back to is
+         * deleted (see COPY_FROM_ROW's own header comment below). */
+        /* A3 row-hoist round (2026-08-25, ZHR-92) shared-multiplier followup
+         * -- ATTEMPTED AND REVERTED, kept as a TODO for the eventual 150MHz
+         * multiplier cleanup (Phase D), not a dead end. Replacing this
+         * loop's `oh*W` (oh=rt*MAC_PR+rr) with an accumulator pair
+         * (row_rt_off accumulated across the outer rt loop via
+         * MAC_PR*W-a-shift, rr_off accumulated across this rr loop via
+         * 3 adds: 0,W,2W,3W) DID genuinely eliminate mul_32s_32s_32_2_1
+         * from run_layer's own csynth report entirely (0 occurrences,
+         * confirmed, not the pre-existing ci*in_ch_stride site which was
+         * already accumulator-based before this round) -- csim stayed
+         * 17/17. But real P&R showed this was the WRONG target: the
+         * critical path's source/destination (ap_CS_fsm_reg[68] ->
+         * mul_32s_32s_32_2_1_U2598) was BYTE-FOR-BYTE IDENTICAL before and
+         * after -- same FSM register, same DSP instance suffix, DSP count
+         * unchanged 66->66 -- proving that specific instance belongs to
+         * pw_flat_pipeline's own untouched WRITEOUT term
+         * ((rt*MAC_PR+wr_row)*d.w_out), not to this loop. Net P&R effect
+         * was a real regression (WNS -0.181973ns -> -0.347903ns, -0.166ns)
+         * for only -90 LUT -- not worth it, reverted. Diagnostic lesson:
+         * "this round added a new multiply, therefore it's the newly-
+         * surfaced critical path's source" was an unverified assumption --
+         * the path already existed across three PRIOR rounds per CLAUDE.md
+         * (logic levels 4->4->5), and _U2598's literal suffix survived
+         * this whole round unchanged, which is what actually proved the
+         * misattribution. Before touching this again: read _U2598's real
+         * source line directly from csynth's own multiplier-instance list
+         * (pw_flat_pipeline_csynth.rpt), don't re-infer it. */
+        bool row_hoist_ok = (d.op_type == LDESC_OP_PWCONV);
+        if (row_hoist_ok) {
+            ROW_READ: for (int rr = 0; rr < MAC_PR; rr++) {
+                /* Row-validity zero-fill, not a guard: ALWAYS issue the
+                 * read (oh clamped to a safe in-bounds row, same r_valid?
+                 * rr:0 clamp PW_PATCH_HOIST's slow path already uses) --
+                 * never skip the read_request call itself. This is the
+                 * READ side of the read/store asymmetry CLAUDE.md's
+                 * WRITEOUT finding already established (a store can't be
+                 * unconditional the way a read can); COPY_FROM_ROW below
+                 * is what actually discards this row's data downstream via
+                 * a data-path valid, not this loop. */
+                bool r_valid = rr < r_sz;
+                int oh = rt * MAC_PR + (r_valid ? rr : 0);
+                int ch_base = 0;    /* == ci * d.in_ch_stride, accumulated -- no runtime multiply */
+                int flat_base = 0;  /* == ci * W, accumulated -- row_buf's own flat layout */
+                ROW_READ_CH: for (int ci = 0; ci < Cin; ci++) {
+                    int byte_addr = d.in_off + ch_base + oh * W;
+                    int word_addr0 = byte_addr >> 2;
+                    int r = byte_addr & 3;
+                    int n_words = (r + W + 3) >> 2;
+                    in_burst.read_request((size_t)word_addr0, (unsigned)n_words);
+                    ROW_READ_FILL: for (int i = 0; i < MAX_WORDS_PER_CH; i++) {
+                        #pragma HLS PIPELINE II=1
+                        bool word_valid = i < n_words;
+                        ap_uint<32> wd = word_valid ? in_burst.read() : (ap_uint<32>)0;
+                        for (int b = 0; b < 4; b++) {
+                            #pragma HLS UNROLL
+                            int pos = i * 4 + b - r;
+                            bool valid = word_valid && (pos >= 0) && (pos < W);
+                            if (valid) {
+                                row_buf[rr][flat_base + pos] = (act_t)wd.range(b * 8 + 7, b * 8);
+                            }
+                        }
+                    }
+                    ch_base += d.in_ch_stride;
+                    flat_base += W;
+                }
+            }
+        }
+
         for (int colt = 0; colt < d.n_col_tiles; colt++) {
             int col_sz = (colt == d.n_col_tiles - 1) ? d.last_col_tile : MAC_PC;
 
@@ -629,27 +772,44 @@ static void run_layer(const LayerDescV2 &d,
                  * 512-wide UNIFIED unrolled region, needing one accumulator
                  * PER LANE, +5 DSP/+247 LUT for the privilege); this is an
                  * ordinary sequential staging loop, one accumulator total. */
-                int in_ch_base = 0;   // == ci * d.in_ch_stride, incremented below
-                PW_PATCH_HOIST: for (int ci = 0; ci < Cin; ci++) {
+                /* A3 row-hoist round (2026-08-25, ZHR-92, slow-path removal):
+                 * the W%4==0-gated dual path (see row_hoist_ok's own header
+                 * comment above) is GONE -- hand-derivation (not tested,
+                 * checked by inspection before this change) showed
+                 * ROW_READ's general byte-run extraction (n_words=
+                 * (r+W+3)>>2, pos=i*4+b-r masking) was never actually
+                 * specialized to W%4==0 in the first place; that gate was a
+                 * conservative carryover from the original dual-path plan
+                 * (which assumed WRITEOUT's fast/slow split as the template),
+                 * not a real requirement of the code as written. Verified
+                 * for W=1 specifically (entry76/78, the only real layers
+                 * this excluded): n_words reduces to exactly 1 for every
+                 * alignment residue r, and the single valid byte lane
+                 * (pos==0 iff b==r) is extracted correctly regardless of r.
+                 * The old PW_PATCH_HOIST block (per-(rt,colt) direct DRAM
+                 * read via in_base_wide) is now dead code -- grep-confirmed
+                 * before deleting, not assumed: PW_PATCH_HOIST served ONLY
+                 * PWCONV (DW has its own separate DW_PATCH_STAGE/
+                 * DW_WT_STAGE, untouched), and in_base_wide had no other
+                 * reader anywhere in this file. in_base_wide's m_axi
+                 * parameter/interface itself is left declared (unused, not
+                 * removed) -- same "kept declared, harmless, avoids a
+                 * driver/testbench/header ripple" convention already
+                 * established for use_wide_path's own dead-field history. */
+                int flat_base = 0;   // == ci * W, accumulated
+                COPY_FROM_ROW: for (int ci = 0; ci < Cin; ci++) {
+                    #pragma HLS PIPELINE II=1
                     for (int rr = 0; rr < MAC_PR; rr++) {
-                        bool r_valid = rr < r_sz;
-                        int oh = rt * MAC_PR + (r_valid ? rr : 0);
-                        int base_idx = d.in_off + in_ch_base + oh * W + colt * MAC_PC;
-                        int word_addr0 = base_idx >> 2;
-                        bool need_word1 = r_valid && (((base_idx & 3) + col_sz) > 4);
-                        ap_uint<32> packed0 = r_valid   ? in_base_wide[word_addr0]     : (ap_uint<32>)0;
-                        ap_uint<32> packed1 = need_word1 ? in_base_wide[word_addr0 + 1] : (ap_uint<32>)0;
+                        #pragma HLS UNROLL
                         for (int cw = 0; cw < MAC_PC; cw++) {
-                            bool valid = r_valid && (cw < col_sz);
-                            int elem_idx = base_idx + cw;
-                            int lane = elem_idx & 3;
-                            bool second = (elem_idx >> 2) != word_addr0;
+                            #pragma HLS UNROLL
+                            bool valid = (rr < r_sz) && (cw < col_sz);
                             pw_patch_full[ci][rr][cw] = valid
-                                ? (act_t)(second ? packed1 : packed0).range(lane * 8 + 7, lane * 8)
+                                ? row_buf[rr][flat_base + colt * MAC_PC + cw]
                                 : (act_t)0;
                         }
                     }
-                    in_ch_base += d.in_ch_stride;
+                    flat_base += W;
                 }
             }
 
@@ -773,6 +933,16 @@ static void run_layer(const LayerDescV2 &d,
                      * discarded, not an out-of-bounds read. `c` itself is
                      * no longer needed (was only ever used in this one
                      * multiply). */
+                    /* A3 shared-multiplier round (2026-08-25, ZHR-92, U2598
+                     * candidate #2) -- ATTEMPTED AND REVERTED. Hoisting
+                     * MAC_PD*d.in_ch_stride outside this ot loop (a shift,
+                     * MAC_PD compile-time) and accumulating ch_off_base by
+                     * that step each ot -- same in_ch_base-style pattern
+                     * already used one level down in this same loop -- held
+                     * csim 17/17 but did NOT change mul_32s_32s_32_2_1's
+                     * real instance count in the exported RTL (still 2,
+                     * combined with candidate #1 above, tested together).
+                     * Ruled out. */
                     int ch_off = ot * MAC_PD * d.in_ch_stride;
                     DW_PATCH_STAGE: for (int cc = 0; cc < MAC_PD; cc++) {
                         bool valid = (cc < c_sz);
@@ -1182,7 +1352,8 @@ void mac_array_top(
     act_t        out_base[],
     int          out_written[],
     const ap_uint<32> in_base_wide[],
-    hls::burst_maxi<ap_uint<32> > out_burst)
+    hls::burst_maxi<ap_uint<32> > out_burst,
+    hls::burst_maxi<ap_uint<32> > in_burst)
 {
 #pragma HLS INTERFACE m_axi port=desc         offset=slave bundle=gmem_meta
 #pragma HLS INTERFACE m_axi port=in_base      offset=slave bundle=gmem_act
@@ -1199,6 +1370,16 @@ void mac_array_top(
  * are untouched, still plain-pointer out_base. */
 #pragma HLS INTERFACE m_axi port=out_burst    offset=slave bundle=gmem_act
 #pragma HLS INTERFACE s_axilite port=out_burst bundle=control
+/* A3 row-hoist round (2026-08-25, ZHR-92): in_burst is ROW_READ's read-side
+ * counterpart to out_burst, same bundle=gmem_act, same "shares a bundle,
+ * does NOT share a control register" caveat as out_burst's own history --
+ * this gets its own AXI-Lite base-address register, which the host driver
+ * must program explicitly before dispatch (not yet wired into
+ * mac_array_driver.c at this stage -- csim has no register-address concept
+ * and cannot catch a missing write; this is a P&R-stage TODO, tracked, not
+ * silently deferred). */
+#pragma HLS INTERFACE m_axi port=in_burst     offset=slave bundle=gmem_act
+#pragma HLS INTERFACE s_axilite port=in_burst bundle=control
 /* A3 round (2026-08-23, ZHR-92, MERGE): back on bundle=gmem_act, sharing
  * the SAME physical master as in_base/out_base -- the standalone
  * gmem_act_wide master (previous round, solution18) is gone. That
@@ -1253,7 +1434,7 @@ void mac_array_top(
             case LDESC_OP_SIGMOID: run_sigmoid(desc[i], in_base, out_base); break;
             case LDESC_OP_SCALE:   run_scale(desc[i], in_base, out_base); break;
             case LDESC_OP_GELU:    run_gelu(desc[i], in_base, out_base); break;
-            default:                run_layer(desc[i], in_base, w_base, b_base, out_base, in_base_wide, out_burst); break;
+            default:                run_layer(desc[i], in_base, w_base, b_base, out_base, in_base_wide, out_burst, in_burst); break;
         }
         out_written[i] = 1;
     }

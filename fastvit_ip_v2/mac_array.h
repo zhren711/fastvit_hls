@@ -98,7 +98,18 @@ typedef ap_int<32>  acc_t;   /* accumulator / bias */
  * the overall move (halving throughput) is itself a bigger decision. */
 #define MAC_PR 4   /* output-row tile size (both ops)   */
 #define MAC_PC 4   /* output-col tile size (both ops)   */
-#define MAC_PD 2   /* DW: channel tile. PW: Cin reduction-chunk size. */
+/* A3 row-hoist timing round (2026-08-25, ZHR-92): 2->1, stop-loss after
+ * five failed attempts to recover WNS on the row-hoist design via targeted
+ * multiplier fixes (U2598's real source(s) never identified -- open
+ * question in ZHR-92). Cost: computation roughly doubles (UNIFIED
+ * 144->288 cycles/ot), but row-hoist's own H-cost cut (16,580->~1,228
+ * cycles/tile) is large enough that entry3's net per-tile cost still only
+ * grows 8,140->15,052 cycles (13.5x -> 7.3x vs. the pre-row-hoist
+ * baseline) -- and unlike MAC_PD=2, this is expected to actually route at
+ * WNS>=0, which is the only number that matters (7.3x that ships beats
+ * 13.5x that doesn't). Independently sweepable parameter, same convention
+ * as MAC_PC's own 8->4 history above. */
+#define MAC_PD 1   /* DW: channel tile. PW: Cin reduction-chunk size. */
 
 /* Compile-time bounds for on-chip staging buffers -- sized for this PoC's
  * test problem (Cin<=32), NOT arbitrary real FastViT layer sizes (e.g.
@@ -189,6 +200,24 @@ typedef ap_int<32>  acc_t;   /* accumulator / bias */
  * acc's cross-cbase accumulation or WRITEOUT timing -- exactly the same
  * risk profile the weight hoist already proved out. */
 #define MAX_CIN  1152
+
+/* A3 row-hoist round (2026-08-25, ZHR-92): PW_PATCH_HOIST row-level burst
+ * hoist. MAX_CIN_TIMES_W=9216 is the real PRODUCT bound Cin*w_in across
+ * every real PWCONV layer in the 82-entry network (verified directly
+ * against desc_all.bin, not estimated -- entry9: cin=144,w_in=64 -> 9216
+ * exactly). NOT MAX_CIN*W_MAX (1152*64=73,728, 8x larger) -- Cin and W
+ * trade off against each other in the real network, so the independent
+ * per-dimension bound is never simultaneously needed. row_buf's flat
+ * per-channel stride is the RUNTIME w_in, not a fixed W_MAX slot, which is
+ * what makes the smaller product bound achievable -- see row_buf's own
+ * declaration in run_layer. mac_array_tb.cpp's desc12 (cin=1152,w_in=8)
+ * and desc13 (cin=144,w_in=64) both land exactly on this bound (1152*8=
+ * 144*64=9216), so csim already exercises the tight boundary without a
+ * new phase. MAX_WORDS_PER_CH=17 bounds ROW_READ_FILL's per-channel word
+ * count: worst case byte-offset r=3 within the first word, w_in=64 ->
+ * (3+64+3)>>2=17 words to cover the run. */
+#define MAX_CIN_TIMES_W  9216
+#define MAX_WORDS_PER_CH 17
 
 /* A3 round 3 (2026-08-21, ZHR-92): bound for run_reduce_unified's
  * per-step gather buffers (lane_in_all/lane_w_all), see mac_array.cpp's
@@ -358,6 +387,24 @@ struct LayerDescV2 {
      * semantics (PW_PATCH_HOIST's now-removed branch) may not match what
      * a new use would need. */
     int use_wide_path;
+
+    /* A3 shared-multiplier round (2026-08-25, ZHR-92) -- ATTEMPTED AND
+     * REVERTED (a `total=cin*h_in*w_in` field here, read by run_add/
+     * run_relu/run_sigmoid/run_gelu instead of each computing it fresh).
+     * Genuinely eliminated the FOUR source lines the HLS binding database
+     * named (mul_ln1265/1248/1217/1179, grp_fu_938's opset) from any
+     * multiplier binding, and dropped mul_32s_32s_32_2_1's real instance
+     * count 2->1 (U2597 gone) -- but the SURVIVING instance (U2598) is the
+     * one every P&R run's critical path actually terminates at, and real
+     * P&R got WORSE, not better (WNS -0.181973ns -> -0.294226ns). U2598
+     * has a 5th-or-more binding source this round never found -- see the
+     * follow-up investigation (grep U2598's own grp_fu_N and opset, same
+     * binding-database method, not the .bind.rpt text search that
+     * incorrectly seemed to show 0 occurrences project-wide -- that check
+     * was invalid, .bind.rpt uses opcode labels like mul(12), never RTL
+     * core names, a lesson now in CLAUDE.md). Not reintroduced here --
+     * kept as a documented TODO for whoever finds U2598's real remaining
+     * source(s), not a dead end. */
 };
 
 /* Host-side utility (stands in for the real descriptor generator). NOT
@@ -404,7 +451,8 @@ void mac_array_top(
     act_t        out_base[],
     int          out_written[],
     const ap_uint<32> in_base_wide[],
-    hls::burst_maxi<ap_uint<32> > out_burst
+    hls::burst_maxi<ap_uint<32> > out_burst,
+    hls::burst_maxi<ap_uint<32> > in_burst
 );
 
 #endif // __MAC_ARRAY_H__

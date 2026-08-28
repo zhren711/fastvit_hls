@@ -91,6 +91,12 @@ void mac_run_layers(
      * physical region as in_base (harmless to set even for op types, e.g.
      * Add, that never read it). */
     w64(MAC_IN_BASE_WIDE_LO, MAC_IN_BASE_WIDE_HI, in_base_phys);
+    /* A3 row-hoist round (2026-08-25, ZHR-92): in_burst -- same physical
+     * region as in_base/in_base_wide (see MAC_IN_BURST_LO/HI's own comment
+     * in the driver header). Flagged and fixed before board deployment
+     * this time, not after (out_burst's own equivalent gap above was only
+     * caught post-board). */
+    w64(MAC_IN_BURST_LO, MAC_IN_BURST_HI, in_base_phys);
     /* ZHR-92 (2026-08-25): out_burst -- same physical region as out_base
      * (see MAC_OUT_BURST_LO/HI's own comment in the driver header).
      * Found missing here during the full-network-hang investigation's
