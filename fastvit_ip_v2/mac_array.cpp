@@ -249,11 +249,33 @@ static void run_reduce_dw(
 #define PW_FLAT_STEPS_PER_CBASE (MAX_CIN_PW / MAC_PD)
 #define PW_FLAT_WRITEOUT_ELEMS  (MAC_PR * MAC_PC)
 
-static void pw_flat_pipeline(
+/* ZHR-92 round (2026-08-27, PW_FLAT II=2->1): HLS's own diagnostic named
+ * the exact cause -- two writes on the shared gmem_act-bundled port
+ * (out_burst.write at the old line 367, out_base[]= at the old line 371)
+ * in mutually-exclusive (if/else) branches, but the scheduler can't prove
+ * across-iteration non-conflict, forcing II=2. FAST_WRITEOUT is now a
+ * template parameter, not a runtime branch: each instantiation gets
+ * dead-code-eliminated down to exactly ONE write mechanism, so there is
+ * only ever one write site on the port per instantiation -- the conflict
+ * the scheduler couldn't rule out is gone by construction, not asserted
+ * away. Real network verified (layer_descriptor_256.json, all 52 layers):
+ * every PW layer's w_out is a multiple of MAC_PC=4 except layers 50/51
+ * (SE block fc1/fc2, h_in=w_in=1) -- so pw_flat_pipeline (FAST_WRITEOUT=
+ * true) unconditionally assumes col_sz==MAC_PC and w_out%MAC_PC==0 (both
+ * guaranteed by the dispatch in run_layer below, not re-checked here), and
+ * pw_flat_pipeline_narrow (FAST_WRITEOUT=false) exists only to serve
+ * those 2 layers via the original scalar out_base[] path, unchanged
+ * behavior from before this round. All shared gather/compute/wrap-bound
+ * logic (including the two previously-fixed bugs documented in this
+ * function's own body) stays in ONE template body, not duplicated --
+ * duplicating it was considered and rejected as the higher-risk path. */
+template<bool FAST_WRITEOUT>
+static void pw_flat_pipeline_impl(
     const LayerDescV2 &d,
     const wt_t w_base[],
     const act_t pw_patch_full[MAX_CIN][MAC_PR][MAC_PC],
     const acc_t pw_bias_cache[MAX_PW_BIAS_CACHE],
+    const wt_t pw_shift_cache[MAX_PW_BIAS_CACHE],
     act_t out_base[],
     hls::burst_maxi<ap_uint<32> > &out_burst,
     int rt, int colt, int r_sz, int col_sz)
@@ -359,16 +381,17 @@ static void pw_flat_pipeline(
              * owner of those two instances is still unidentified. */
             if (wr_row < r_sz) {
                 int byte_addr = d.out_off + ot_out_ch_base + (rt * MAC_PR + wr_row) * d.w_out + colt * MAC_PC;
-                bool fast_path = (col_sz == MAC_PC) && ((byte_addr & 3) == 0);
-                if (fast_path) {
+                if (FAST_WRITEOUT) {
                     row_word.range(wr_col * 8 + 7, wr_col * 8) = val;
                     if (wr_col == MAC_PC - 1) {
                         out_burst.write_request(byte_addr >> 2, 1);
                         out_burst.write(row_word);
                         out_burst.write_response();
                     }
-                } else if (wr_col < col_sz) {
-                    out_base[byte_addr + wr_col] = val;
+                } else {
+                    if (wr_col < col_sz) {
+                        out_base[byte_addr + wr_col] = val;
+                    }
                 }
             }
         }
@@ -396,7 +419,7 @@ static void pw_flat_pipeline(
             if (!in_writeout) {
                 if (cbase_idx == n_cbase - 1) {
                     in_writeout = true;
-                    shift_reg = d.use_shift_table ? (int)w_base[d.shift_off + ot_idx] : d.out_shift;
+                    shift_reg = d.use_shift_table ? (int)pw_shift_cache[ot_idx] : d.out_shift;
                 } else {
                     /* A3 round (2026-08-23, ZHR-92, run_layer rewrite
                      * stage 2 followup): FOUND AND FIXED via csim, not
@@ -435,6 +458,38 @@ static void pw_flat_pipeline(
             }
         }
     }
+}
+
+static void pw_flat_pipeline(
+    const LayerDescV2 &d,
+    const wt_t w_base[],
+    const act_t pw_patch_full[MAX_CIN][MAC_PR][MAC_PC],
+    const acc_t pw_bias_cache[MAX_PW_BIAS_CACHE],
+    const wt_t pw_shift_cache[MAX_PW_BIAS_CACHE],
+    act_t out_base[],
+    hls::burst_maxi<ap_uint<32> > &out_burst,
+    int rt, int colt, int r_sz, int col_sz)
+{
+    pw_flat_pipeline_impl<true>(d, w_base, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
+}
+
+/* Serves only layers whose w_out isn't a multiple of MAC_PC -- verified
+ * against layer_descriptor_256.json this round: layers 50/51 (SE block
+ * fc1/fc2, h_in=w_in=1) are the only two in the real network. Dispatched
+ * from run_layer below via n_col_tiles==1 && last_col_tile<MAC_PC, the
+ * same condition that makes col_sz<MAC_PC true for every tile of these
+ * layers (there is only one tile). */
+static void pw_flat_pipeline_narrow(
+    const LayerDescV2 &d,
+    const wt_t w_base[],
+    const act_t pw_patch_full[MAX_CIN][MAC_PR][MAC_PC],
+    const acc_t pw_bias_cache[MAX_PW_BIAS_CACHE],
+    const wt_t pw_shift_cache[MAX_PW_BIAS_CACHE],
+    act_t out_base[],
+    hls::burst_maxi<ap_uint<32> > &out_burst,
+    int rt, int colt, int r_sz, int col_sz)
+{
+    pw_flat_pipeline_impl<false>(d, w_base, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
 }
 
 /* ---- round 11: run_dwconv/run_pwconv are GONE. This is the only tile
@@ -491,6 +546,26 @@ static void run_layer(const LayerDescV2 &d,
         PW_BIAS_HOIST: for (int oc = 0; oc < d.cout; oc++) {
             #pragma HLS PIPELINE II=1
             pw_bias_cache[oc] = b_base[d.b_off + oc];
+        }
+    }
+
+    /* ZHR-92 round (2026-08-27, PW_FLAT II=2->1, second cause): same
+     * hoist pattern as pw_bias_cache directly above. HLS's own diagnostic
+     * (gmem_w port contention) named the exact conflict: on the specific
+     * PW_FLAT iteration where an ot's last cbase's last gather step also
+     * triggers the compute->writeout transition, the regular per-iteration
+     * gather weight read (w_base[...]) and the shift-table read
+     * (w_base[d.shift_off+ot_idx], only when d.use_shift_table) land on
+     * the SAME iteration -- two genuine same-cycle reads on gmem_w, not a
+     * cross-iteration scheduling artifact like the gmem_act case. Hoisting
+     * the whole per-ot shift table into an on-chip cache before PW_FLAT
+     * starts (unconditionally populated; harmless/unused when
+     * use_shift_table=0) removes the read from the hot loop entirely. */
+    static wt_t pw_shift_cache[MAX_PW_BIAS_CACHE];
+    if (d.op_type == LDESC_OP_PWCONV && d.use_shift_table) {
+        PW_SHIFT_HOIST: for (int oc = 0; oc < d.cout; oc++) {
+            #pragma HLS PIPELINE II=1
+            pw_shift_cache[oc] = w_base[d.shift_off + oc];
         }
     }
 
@@ -1190,8 +1265,61 @@ static void run_layer(const LayerDescV2 &d,
                  * one call -- see pw_flat_pipeline's own header comment
                  * above run_layer for the full rationale. Called once per
                  * (rt,colt) tile (unlike DW's per-ot loop above), since the
-                 * flat pipeline handles every ot/cbase internally. */
-                pw_flat_pipeline(d, w_base, pw_patch_full, pw_bias_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
+                 * flat pipeline handles every ot/cbase internally.
+                 *
+                 * ZHR-92 round (2026-08-27, PW_FLAT II=2->1): dispatch to
+                 * the narrow (scalar-only) variant for the 2 real layers
+                 * whose w_out isn't a multiple of MAC_PC (verified against
+                 * layer_descriptor_256.json, see pw_flat_pipeline_impl's
+                 * header comment) -- every other layer keeps the fast
+                 * (burst-only) variant, now branch-free internally.
+                 *
+                 * FOUND AND FIXED via csim, not assumed correct: an
+                 * earlier version of this condition also required
+                 * n_col_tiles==1, which correctly covers the 2 real
+                 * layers (both n_col_tiles==1) but incorrectly missed a
+                 * layer with SEVERAL column tiles where only the LAST is
+                 * a narrower remainder (w_out not an exact multiple of
+                 * MAC_PC, n_col_tiles>1) -- the original per-tile
+                 * fast_path check caught that case correctly (evaluated
+                 * every tile), this layer-level dispatch must too.
+                 * last_col_tile<MAC_PC alone is the right, general
+                 * condition regardless of n_col_tiles; no real network
+                 * layer has this mixed shape (verified) so this costs
+                 * nothing on the deployed network, only broadens
+                 * correctness for shapes the testbench exercises.
+                 *
+                 * SECOND bug found the same way (Phase16, in_off=3):
+                 * the original fast_path was col_sz==MAC_PC AND
+                 * byte_addr word-aligned -- col_sz alone was never
+                 * sufficient (see pw_flat_pipeline_impl's own long-
+                 * standing comment on this). byte_addr's alignment is
+                 * (d.out_off + ot*d.out_ch_stride + ...) & 3; every term
+                 * besides d.out_off is provably a multiple of 4 whenever
+                 * w_out%MAC_PC==0 (out_ch_stride=h_out*w_out inherits
+                 * w_out's divisibility; the (rt*MAC_PR+wr_row)*w_out and
+                 * colt*MAC_PC terms are multiples of 4 by construction) --
+                 * so on the non-narrow branch, alignment reduces to the
+                 * layer-constant d.out_off&3, safe to check once here.
+                 * GENERAL RULE (reusable beyond this one site): whenever a
+                 * spatial dimension is known to be a multiple of MAC_PC/
+                 * MAC_PR, every address term built from tile/row/col
+                 * indices times that dimension is automatically a
+                 * multiple of MAC_PC too -- only the layer-level base
+                 * offset can break alignment, and it does so as a single
+                 * per-layer constant, not something that varies by tile.
+                 * Verified against the real deployed network (2026-08-27,
+                 * layer_hw_sequence_256.json, all 82 sequence entries):
+                 * zero PW entries have out_off%4!=0, so this alignment
+                 * guard -- like the col_sz one above it -- costs nothing
+                 * on the deployed network and exists purely to keep
+                 * synthetic/future shapes correct. */
+                bool pw_narrow = (d.last_col_tile < MAC_PC) || ((d.out_off & 3) != 0);
+                if (pw_narrow) {
+                    pw_flat_pipeline_narrow(d, w_base, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
+                } else {
+                    pw_flat_pipeline(d, w_base, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
+                }
             }
         }
     }
