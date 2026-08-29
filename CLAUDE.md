@@ -459,6 +459,24 @@ supposedly standing in for.
   pragma as a lever on RTL structure and therefore placement/timing, not as a reliable lever on final
   resource counts — the two effects are separate and can point in different directions; don't assume
   a binding choice "didn't matter" just because a follow-up real-resource check comes back unchanged.**
+- **Two independent implementations of the same wait-for-ap_done mechanism can coexist in this
+  codebase with only one of them actually on the path that produces this project's cited numbers —
+  a third instance of the "two paths do the same thing, only one is real" class (after the
+  `use_wide_path` dead field and `mac_run_layers`'s unbounded-wait precedent).** Confirmed 2026-08-28
+  (ZHR-92, fixed-dispatch-overhead quantification round): `mac_array_driver.c`'s
+  `mac_wait_done_timeout()` polls at `usleep(1000)` (1ms granularity) and is what
+  `mac_array_single_op_test.c` calls — but `mac_array_full_network_test.c` (the harness that produced
+  every full-network ms figure this project has cited, including the 3,608.76ms/4,288.60ms numbers
+  in the DW-raster round) never calls it at all; it has its own separately-written inline poll loop at
+  `usleep(500)` (0.5ms). Found while measuring the real per-entry dispatch floor (0.580ms, confirmed
+  to ~zero variance over 20 repeated full-network runs) — the floor itself turned out small (≈65ms /
+  1.79% of a full run, below the round's own close-out threshold), but the duplicate-implementation
+  finding is the more durable lesson: **when asked "what polling granularity does this project use,"
+  the honest answer requires checking which specific harness produced the number in question, not
+  assuming one canonical driver function is universally on the path** — this codebase has at least two
+  real, working, differently-tuned implementations of the same wait loop, and only source-reading
+  (not the function's own name or the driver header's documentation) tells you which one a given
+  measurement actually went through.
 
 ## Known open issues as of 2026-08-15
 

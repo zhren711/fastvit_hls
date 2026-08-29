@@ -234,20 +234,20 @@ int main(int argc, char **argv) {
         clock_gettime(CLOCK_MONOTONIC, &e0);
         W32(MAC_AP_CTRL_OFFSET, MAC_AP_START);
 
-        int timed_out = 0;
-        for (;;) {
-            uint32_t v = *(volatile uint32_t*)((char*)ctrl + MAC_AP_CTRL_OFFSET);
-            if (v & MAC_AP_DONE) break;
-            clock_gettime(CLOCK_MONOTONIC, &e1);
-            double elapsed_ms = (e1.tv_sec - e0.tv_sec) * 1000.0 + (e1.tv_nsec - e0.tv_nsec) / 1e6;
-            /* ZHR-92 (2026-08-24): bumped 8000->30000ms, matching the
-             * single-op entry7/entry9 probes' established margin (~100x
-             * the slowest real entry measured so far, ~400ms) -- cleanly
-             * distinguishes a genuine hang from "just slow" for this
-             * bisection round. */
-            if (elapsed_ms > 30000.0) { timed_out = 1; break; }
-            usleep(500);
-        }
+        /* ZHR-92 (2026-08-28): this used to be its own inline poll loop
+         * (usleep(500), duplicating mac_wait_done_timeout()'s usleep(1000)
+         * in mac_array_driver.c) -- a third instance of the "two paths do
+         * the same thing, only one is real" class this project has hit
+         * before (use_wide_path, mac_run_layers's unbounded wait; see
+         * CLAUDE.md). mac_driver_init() already ran above, so mac_ctrl is
+         * valid; call the shared function instead of maintaining a second
+         * implementation. Timeout unchanged at 30000ms (ZHR-92 2026-08-24
+         * precedent, ~100x the slowest real entry measured so far). Note
+         * for future measurement rounds: this changes the per-entry poll
+         * granularity from 0.5ms to 1ms -- the ~65ms/1.79% fixed-overhead
+         * floor measured 2026-08-28 was on the OLD 0.5ms loop and will
+         * shift slightly (not re-measured after this change). */
+        int timed_out = mac_wait_done_timeout(30000);
         clock_gettime(CLOCK_MONOTONIC, &e1);
         entry_ms[i] = (e1.tv_sec - e0.tv_sec) * 1000.0 + (e1.tv_nsec - e0.tv_nsec) / 1e6;
 
