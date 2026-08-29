@@ -28,7 +28,12 @@ static void dsp_pack_mul(
     B.range(4, 0) = a0;
     B.range(14, 10) = a1;
     ap_uint<43> P;
+    // ZHR-92 DSP-packing Step 4 export-bug variant (a) (2026-08-29):
+    // #ifdef'd off to test whether this BIND_OP is what triggers the
+    // mul_32s_31s_32_2_1 naming-mismatch export failure -- see CLAUDE.md.
+#ifndef PW_PACK_NO_DSP_BIND
 #pragma HLS BIND_OP variable=P op=mul impl=DSP
+#endif
     P = A * B;
     p00 = P.range(8, 0);
     p01 = P.range(18, 10);
@@ -41,6 +46,31 @@ static void dsp_pack_mul_signed(
     acc_t &p00, acc_t &p01, acc_t &p10, acc_t &p11)
 {
 #pragma HLS INLINE off
+#ifdef PW_PACK_WIDE_INTERMEDIATE
+    // ZHR-92 DSP-packing Step 4 export-bug variant (c) (2026-08-29): all
+    // bias-correction intermediates widened to a single uniform ap_int<32>
+    // (matching acc_t) instead of the native ap_uint<4>/<5>/<9> packed
+    // widths, to test whether the unusual narrow-width mix is what
+    // triggers the mul_32s_31s_32_2_1 naming-mismatch export failure --
+    // see CLAUDE.md.
+    ap_int<32> w0_u = (ap_int<32>)(w0 + 8);
+    ap_int<32> w1_u = (ap_int<32>)(w1 + 8);
+    ap_int<32> a0_u = (ap_int<32>)(a0 + 16);
+    ap_int<32> a1_u = (ap_int<32>)(a1 + 16);
+
+    ap_uint<9> u00_n, u01_n, u10_n, u11_n;
+    dsp_pack_mul((ap_uint<4>)w0_u, (ap_uint<4>)w1_u, (ap_uint<5>)a0_u, (ap_uint<5>)a1_u,
+                 u00_n, u01_n, u10_n, u11_n);
+    ap_int<32> u00 = (ap_int<32>)u00_n;
+    ap_int<32> u01 = (ap_int<32>)u01_n;
+    ap_int<32> u10 = (ap_int<32>)u10_n;
+    ap_int<32> u11 = (ap_int<32>)u11_n;
+
+    p00 = (acc_t)(u00 - 8 * a0_u - 16 * w0_u + 128);
+    p01 = (acc_t)(u01 - 8 * a1_u - 16 * w0_u + 128);
+    p10 = (acc_t)(u10 - 8 * a0_u - 16 * w1_u + 128);
+    p11 = (acc_t)(u11 - 8 * a1_u - 16 * w1_u + 128);
+#else
     ap_uint<4> w0_u = (ap_uint<4>)(w0 + 8);
     ap_uint<4> w1_u = (ap_uint<4>)(w1 + 8);
     ap_uint<5> a0_u = (ap_uint<5>)(a0 + 16);
@@ -53,6 +83,7 @@ static void dsp_pack_mul_signed(
     p01 = (acc_t)((acc_t)u01 - 8 * (acc_t)a1_u - 16 * (acc_t)w0_u + 128);
     p10 = (acc_t)((acc_t)u10 - 8 * (acc_t)a0_u - 16 * (acc_t)w1_u + 128);
     p11 = (acc_t)((acc_t)u11 - 8 * (acc_t)a1_u - 16 * (acc_t)w1_u + 128);
+#endif
 }
 
 static acc_t pw_pack_clip_shift(acc_t acc, int shift)

@@ -444,6 +444,20 @@ supposedly standing in for.
   (pblock sizing, DSP-vs-LUT binding choice, accept/reject a design), run the real, whole-IP P&R —
   don't extrapolate from isolated-mechanism csynth deltas, even when both the "new" and "old" halves
   were independently csynth-measured with real care.**
+  **Third confirmed instance, 2026-08-29 (ZHR-92, DSP-packing Step 2+3→whole-IP check):** this time
+  the metric that diverged was II, not resources. Step 3's isolated csynth of
+  `pw_flat_pipeline_packed` (compiled alone, one call site) achieved II=1 exactly, matching the
+  theoretical trip count. Compiling the SAME unmodified function body inside the full `mac_array_top`
+  call graph (csynth only, not yet P&R) made its own `PW_FLAT_PACKED` loop regress to **II=2** — the
+  loop's `dsp_pack_mul_signed` calls, isolated to one call site in Step 3, now compete with the rest
+  of the design's resource/scheduling context. Net effect: DSP packing's already-modest 2x theoretical
+  benefit (only `n_ot` halving; the 16 spatial lanes were already UNROLL-parallel, see the plan's own
+  correction on this) collapses to roughly 1x once the II=2 tax is applied, before P&R was even
+  attempted — this alone was judged sufficient to abandon the integration without spending an
+  export/P&R cycle to confirm it further (see the DSP-packing line's own close-out below). **Three
+  distinct metrics now (LUT/DSP split, WNS sign, achieved II) have each independently violated
+  "isolated csynth predicts whole-IP behavior" in this project — treat this as the default
+  expectation for ANY isolated-csynth number (resource, timing, OR II), not just resources.**
 - **An HLS-level resource-binding choice (`#pragma HLS BIND_OP ... impl=DSP` vs. leaving it default)
   does not reliably determine the real, whole-IP P&R resource distribution — but it can still change
   real placement, and therefore real timing, even when it doesn't.** Confirmed 2026-08-28 (ZHR-92, DW
@@ -477,6 +491,24 @@ supposedly standing in for.
   real, working, differently-tuned implementations of the same wait loop, and only source-reading
   (not the function's own name or the driver header's documentation) tells you which one a given
   measurement actually went through.
+- **A 7th confirmed instance of this project's "tool reports success, didn't do the work" class — but
+  a genuinely different failure shape from the first 6.** Confirmed 2026-08-29 (ZHR-92, DSP-packing
+  Step 4 export): `export_design` on a design combining three separately-compiled source files for the
+  first time (`mac_array_raster_pwpack_integrated.cpp` + `dw_raster_layer.cpp` +
+  `pw_pack_pipeline.cpp`) failed downstream Vivado BD synthesis with `module
+  'mac_array_top_mul_32s_31s_32_2_1' not found`. Confirmed via direct inspection, not inferred: HLS's
+  own csynth log claims "Generating core module 'mul_32s_31s_32_2_1': 2 instance(s)"; grepping the
+  entire exported project tree for that filename finds zero matches — it was never written to disk at
+  all. What WAS written: `mul_32s_31ns_63_2_1.v` and `mul_32s_32s_32_2_1.v`, neither name matching what
+  the failing call site references. Reproduced twice, fresh `rm -rf` + fresh project name both times,
+  same result (different `ipshared` cache hash, identical error) — deterministic, not a stale-cache or
+  path issue. **This differs from the first 6 instances of this failure class (export_design reusing
+  cached HDL, `vitis_hls`'s exit code lying, stale calibration/Stem artifacts, etc.) in kind, not just
+  number: those were all "the tool skipped/reused old work instead of doing new work." This one is "the
+  tool DID generate new work, but the generated call site's embedded module name doesn't match what
+  RTGEN actually named the file it wrote" — a real RTL-codegen naming inconsistency inside a single
+  HLS run, not a caching/staleness problem. Don't reach for the stale-cache playbook (rm -rf, fresh
+  solution name) for this shape of failure — already tried, confirmed not the cause.**
 
 ## Known open issues as of 2026-08-15
 

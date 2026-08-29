@@ -7,7 +7,6 @@
 // OFF). dw_raster_layer.{h,cpp} are referenced, never edited, by this
 // file -- zero diff, same discipline as verifying PW was untouched when
 // DW raster was added.
-#include "pw_pack_pipeline.h"
 // mac_array_raster_integrated.cpp -- ZHR-92 Phase 1 Step 2 P&R round
 // (2026-08-28). Verbatim copy of mac_array.cpp with exactly ONE change:
 // run_layer's very first statement is now an early-return DW branch to
@@ -37,6 +36,211 @@
  * anyway) but is a real, resolution/MAC_PC-coupled constraint, not an
  * implementation footnote -- see mac_array.h's own note on this too. */
 #include <hls_burst_maxi.h>
+
+#ifdef PW_ENABLE_PACKING
+// ZHR-92 DSP-packing line, TERMINAL STATUS (2026-08-29) -- see
+// pw_pack_pipeline.h's own header for the full close-out writeup. Short
+// version: this "direction 3" inline (eliminating pw_pack_pipeline.cpp
+// as a third separately-compiled source, after variants (a)/(c) both
+// failed identically to fix the export_design naming-mismatch bug)
+// DID get past that bug at the csynth level -- but csynth on the full
+// mac_array_top call graph also revealed PW_FLAT_PACKED regressing to
+// II=2 (Step 3's isolated csynth had shown II=1), which collapses
+// packing's 2x theoretical benefit to roughly 1x. That alone was enough
+// to close this line without ever running export_design/P&R on this
+// inlined variant -- PW_ENABLE_PACKING stays OFF by default, this block
+// is dead code on the verified/deployed build, kept only as a documented
+// record of a correct-but-not-worth-integrating mechanism. Content below
+// is pw_pack_pipeline.cpp verbatim (default path only, no NO_DSP_BIND/
+// WIDE_INTERMEDIATE variants -- those were diagnostic-only), functions
+// marked static since they're now file-local instead of externally
+// declared via a header.
+#define PW_FLAT_STEPS_PER_CBASE (MAX_CIN_PW / MAC_PD)
+#define PW_FLAT_WRITEOUT_ELEMS  (MAC_PR * MAC_PC)
+
+typedef ap_int<5> pkact_t;
+typedef ap_int<4> pkwt_t;
+
+static inline pkwt_t pw_pack_trunc_w(wt_t w) { return (pkwt_t)(w >> 4); }
+static inline pkact_t pw_pack_trunc_a(act_t a) { return (pkact_t)(a >> 3); }
+
+static void dsp_pack_mul(
+    ap_uint<4> w0, ap_uint<4> w1,
+    ap_uint<5> a0, ap_uint<5> a1,
+    ap_uint<9> &p00, ap_uint<9> &p01, ap_uint<9> &p10, ap_uint<9> &p11
+) {
+#pragma HLS INLINE off
+    ap_uint<25> A = 0;
+    A.range(4, 0) = w0;
+    A.range(23, 20) = w1;
+    ap_uint<18> B = 0;
+    B.range(4, 0) = a0;
+    B.range(14, 10) = a1;
+    ap_uint<43> P;
+#pragma HLS BIND_OP variable=P op=mul impl=DSP
+    P = A * B;
+    p00 = P.range(8, 0);
+    p01 = P.range(18, 10);
+    p10 = P.range(28, 20);
+    p11 = P.range(38, 30);
+}
+
+static void dsp_pack_mul_signed(
+    pkwt_t w0, pkwt_t w1, pkact_t a0, pkact_t a1,
+    acc_t &p00, acc_t &p01, acc_t &p10, acc_t &p11)
+{
+#pragma HLS INLINE off
+    ap_uint<4> w0_u = (ap_uint<4>)(w0 + 8);
+    ap_uint<4> w1_u = (ap_uint<4>)(w1 + 8);
+    ap_uint<5> a0_u = (ap_uint<5>)(a0 + 16);
+    ap_uint<5> a1_u = (ap_uint<5>)(a1 + 16);
+
+    ap_uint<9> u00, u01, u10, u11;
+    dsp_pack_mul(w0_u, w1_u, a0_u, a1_u, u00, u01, u10, u11);
+
+    p00 = (acc_t)((acc_t)u00 - 8 * (acc_t)a0_u - 16 * (acc_t)w0_u + 128);
+    p01 = (acc_t)((acc_t)u01 - 8 * (acc_t)a1_u - 16 * (acc_t)w0_u + 128);
+    p10 = (acc_t)((acc_t)u10 - 8 * (acc_t)a0_u - 16 * (acc_t)w1_u + 128);
+    p11 = (acc_t)((acc_t)u11 - 8 * (acc_t)a1_u - 16 * (acc_t)w1_u + 128);
+}
+
+static acc_t pw_pack_clip_shift(acc_t acc, int shift)
+{
+    acc_t v = acc >> shift;
+    if (v > 127)  v = 127;
+    if (v < -128) v = -128;
+    return v;
+}
+
+static void pw_flat_pipeline_packed(
+    const LayerDescV2 &d,
+    const wt_t w_base[],
+    const act_t pw_patch_full[MAX_CIN][MAC_PR][MAC_PC],
+    const acc_t pw_bias_cache[MAX_PW_BIAS_CACHE],
+    const wt_t pw_shift_cache[MAX_PW_BIAS_CACHE],
+    act_t out_base[],
+    int rt, int colt, int r_sz, int col_sz)
+{
+#pragma HLS ARRAY_PARTITION variable=pw_patch_full complete dim=2
+#pragma HLS ARRAY_PARTITION variable=pw_patch_full complete dim=3
+
+    const int Cin = d.cin;
+    const int n_ot_pairs = d.cout / 2;   // caller-guaranteed even (real network: always true)
+    const int n_cbase = (Cin + MAX_CIN_PW - 1) / MAX_CIN_PW;
+    const int total_iters = n_ot_pairs * (n_cbase * PW_FLAT_STEPS_PER_CBASE + PW_FLAT_WRITEOUT_ELEMS);
+
+    acc_t acc2[2][MAC_PR][MAC_PC];
+#pragma HLS ARRAY_PARTITION variable=acc2 complete dim=0
+
+    int k = 0;
+    bool in_writeout = false;
+    int cbase_idx = 0;
+    int ch_off = 0;
+    int w_ot0_base = 0;              /* == ot0*Cin, accumulated (ot0 = 2*ot_pair_idx) */
+    int w_ot1_base = Cin;            /* == ot1*Cin, ot1 = ot0+1 */
+    int ot0_out_ch_base = 0;
+    int ot1_out_ch_base = d.out_ch_stride;
+    int ot0_idx = 0;
+    int ot1_idx = 1;
+    int wr_row = 0, wr_col = 0;
+    int shift0 = d.out_shift, shift1 = d.out_shift;
+
+    PW_FLAT_PACKED: for (int i = 0; i < total_iters; i++) {
+#pragma HLS PIPELINE II=1
+        bool reset_acc = (!in_writeout) && (cbase_idx == 0) && (k == 0);
+
+        if (!in_writeout) {
+            wt_t w0 = w_base[d.w_off + w_ot0_base + ch_off];
+            wt_t w1 = w_base[d.w_off + w_ot1_base + ch_off];
+            pkwt_t w0p = pw_pack_trunc_w(w0);
+            pkwt_t w1p = pw_pack_trunc_w(w1);
+
+            act_t lane_in[MAC_PR][MAC_PC];
+#pragma HLS ARRAY_PARTITION variable=lane_in complete dim=0
+            for (int rr = 0; rr < MAC_PR; rr++) {
+#pragma HLS UNROLL
+                for (int cw = 0; cw < MAC_PC; cw++) {
+#pragma HLS UNROLL
+                    lane_in[rr][cw] = pw_patch_full[ch_off][rr][cw];
+                }
+            }
+
+            /* 8 spatial pairs covering all 16 (rr,cw) lanes, consecutive
+             * flat index (2p, 2p+1) in row-major order -- see
+             * pw_pack_pipeline.h's own header comment (now archived) for
+             * why this pairing, not a different one. */
+            for (int p = 0; p < (MAC_PR * MAC_PC) / 2; p++) {
+#pragma HLS UNROLL
+                int idx0 = 2 * p, idx1 = 2 * p + 1;
+                int r0 = idx0 / MAC_PC, c0 = idx0 % MAC_PC;
+                int r1 = idx1 / MAC_PC, c1 = idx1 % MAC_PC;
+                pkact_t a0 = pw_pack_trunc_a(lane_in[r0][c0]);
+                pkact_t a1 = pw_pack_trunc_a(lane_in[r1][c1]);
+
+                acc_t p00, p01, p10, p11;
+                dsp_pack_mul_signed(w0p, w1p, a0, a1, p00, p01, p10, p11);
+
+                acc2[0][r0][c0] = reset_acc ? p00 : (acc_t)(acc2[0][r0][c0] + p00);
+                acc2[0][r1][c1] = reset_acc ? p01 : (acc_t)(acc2[0][r1][c1] + p01);
+                acc2[1][r0][c0] = reset_acc ? p10 : (acc_t)(acc2[1][r0][c0] + p10);
+                acc2[1][r1][c1] = reset_acc ? p11 : (acc_t)(acc2[1][r1][c1] + p11);
+            }
+        } else {
+            /* writeout: BOTH paired channels' value at (wr_row,wr_col) in
+             * the SAME step. Scalar store only, no out_burst/
+             * FAST_WRITEOUT this round. */
+            act_t val0 = 0, val1 = 0;
+            if (wr_row < r_sz && wr_col < col_sz) {
+                acc_t total0 = acc2[0][wr_row][wr_col] + pw_bias_cache[ot0_idx];
+                acc_t total1 = acc2[1][wr_row][wr_col] + pw_bias_cache[ot1_idx];
+                val0 = (act_t)pw_pack_clip_shift(total0, shift0);
+                val1 = (act_t)pw_pack_clip_shift(total1, shift1);
+            }
+            if (wr_row < r_sz && wr_col < col_sz) {
+                int addr0 = d.out_off + ot0_out_ch_base + (rt * MAC_PR + wr_row) * d.w_out + colt * MAC_PC;
+                int addr1 = d.out_off + ot1_out_ch_base + (rt * MAC_PR + wr_row) * d.w_out + colt * MAC_PC;
+                out_base[addr0 + wr_col] = val0;
+                out_base[addr1 + wr_col] = val1;
+            }
+        }
+
+        int wrap_bound = in_writeout ? PW_FLAT_WRITEOUT_ELEMS : PW_FLAT_STEPS_PER_CBASE;
+        if (k == wrap_bound - 1) {
+            k = 0;
+            if (!in_writeout) {
+                if (cbase_idx == n_cbase - 1) {
+                    in_writeout = true;
+                    shift0 = d.use_shift_table ? (int)pw_shift_cache[ot0_idx] : d.out_shift;
+                    shift1 = d.use_shift_table ? (int)pw_shift_cache[ot1_idx] : d.out_shift;
+                } else {
+                    cbase_idx++;
+                    ch_off++;
+                }
+            } else {
+                in_writeout = false;
+                cbase_idx = 0;
+                ch_off = 0;
+                w_ot0_base += 2 * Cin;
+                w_ot1_base += 2 * Cin;
+                ot0_out_ch_base += 2 * d.out_ch_stride;
+                ot1_out_ch_base += 2 * d.out_ch_stride;
+                ot0_idx += 2;
+                ot1_idx += 2;
+                wr_row = 0;
+                wr_col = 0;
+            }
+        } else {
+            k++;
+            if (!in_writeout) {
+                ch_off++;
+            } else {
+                if (wr_col == MAC_PC - 1) { wr_col = 0; wr_row++; }
+                else { wr_col++; }
+            }
+        }
+    }
+}
+#endif // PW_ENABLE_PACKING
 /* ZHR-92 angle-B step (2026-08-24): explicit-API burst probe for WRITEOUT
  * (PW's own write, inside pw_flat_pipeline). out_burst is
  * hls::burst_maxi<ap_uint<32>>, not <act_t> -- the previous attempt
