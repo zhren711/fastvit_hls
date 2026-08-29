@@ -458,6 +458,18 @@ supposedly standing in for.
   distinct metrics now (LUT/DSP split, WNS sign, achieved II) have each independently violated
   "isolated csynth predicts whole-IP behavior" in this project — treat this as the default
   expectation for ANY isolated-csynth number (resource, timing, OR II), not just resources.**
+  **Fourth confirmed instance, 2026-08-29 (ZHR-92, ROW_READ burst-batching line-C, Step 4 real P&R):**
+  this time the direction of the error itself flipped, not just the magnitude. Isolated csynth
+  (Step 3, `row_read_produce`/`row_read_consume` extracted into their own DATAFLOW processes) predicted
+  +1,244 LUT / +3 DSP over the deployed baseline. Real whole-IP P&R came back **+172 LUT / +3 DSP** —
+  DSP matched exactly, but LUT was overestimated by **7.2x** (1,244 predicted vs. 172 real). The
+  DW-raster round's own instance of this same lesson (net-increment estimate) *underestimated* LUT by
+  53%; this one *overestimated* LUT by 7.2x — opposite directions, same class of number, same project,
+  ~1 day apart. **Four distinct metrics now (LUT/DSP split — twice, in opposite directions — WNS sign,
+  achieved II) have each independently violated "isolated csynth predicts whole-IP behavior." The
+  direction of the error is not even consistent across instances — don't assume a "conservative"
+  isolated-csynth estimate is safe just because a prior instance happened to underestimate; the next
+  one may just as easily overestimate by a large factor.**
 - **An HLS-level resource-binding choice (`#pragma HLS BIND_OP ... impl=DSP` vs. leaving it default)
   does not reliably determine the real, whole-IP P&R resource distribution — but it can still change
   real placement, and therefore real timing, even when it doesn't.** Confirmed 2026-08-28 (ZHR-92, DW
