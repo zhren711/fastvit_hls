@@ -241,6 +241,17 @@ supposedly standing in for.
   even add new ones (an outer-scope seed multiply is a new site). Each additional site is suspected
   (not yet confirmed via RTL cosim — unused anywhere in this project so far) to cost real FSM
   arbitration overhead per invocation, independent of the multiply's own 3-4 cycle latency.
+  **CONFIRMED, not just suspected, 2026-08-29 (ZHR-92, descriptor-hoist round):** removing 2 redundant
+  per-tile `gmem_meta` reads from `pw_flat_pipeline_impl` (pure subtraction, no new call sites added by
+  hand) real-P&R'd into a WORSE WNS (+0.021ns → -0.305ns), and the critical path *moved* — for the
+  first time across an entire exploration line (baseline, 111MHz, 125MHz, and an X0-108 pblock attempt
+  had all shown the identical `gmem_meta` AXI-FIFO path, ~10ns/10 logic levels/80-83% route, remarkably
+  stable) — to `pw_flat_pipeline_impl`'s own FSM feeding `grp_fu_873`, the SAME shared-multiplier
+  functional-unit index this project has already traced to the scalar-op family (`run_gelu`/
+  `run_sigmoid`/`run_relu`/`run_add`) in an unrelated earlier round. HLS's own global binding decision
+  added a new competitor to that shared resource as a *side effect* of an unrelated local code change
+  that only removed reads — the mechanism this bullet already predicted, now caught in the act via a
+  real, unplanned P&R result, not induced by design.
 - All results — including negative ones — get written back to the relevant Linear issue as a
   comment, not just left in chat or local memory. Real numbers over assumptions: this project has
   been burned before by static-report/simulation readings that turned out wrong (ZHR-5's "140x
@@ -470,6 +481,12 @@ supposedly standing in for.
   direction of the error is not even consistent across instances — don't assume a "conservative"
   isolated-csynth estimate is safe just because a prior instance happened to underestimate; the next
   one may just as easily overestimate by a large factor.**
+  **Fifth confirmed instance, 2026-08-29 (ZHR-92, descriptor-hoist round):** a gentler case, but the
+  same lesson — isolated csynth predicted -2.7%/-3.7% (LUT/FF) for removing two redundant per-tile
+  `gmem_meta` reads; real whole-IP P&R came back -1.26% LUT (DSP/BRAM both correctly predicted at zero
+  change). Same *direction* this time, but real magnitude was roughly half the isolated estimate — a
+  reminder that even a same-sign isolated-csynth number isn't a magnitude to plan around, not just an
+  opposite-sign one.
 - **An HLS-level resource-binding choice (`#pragma HLS BIND_OP ... impl=DSP` vs. leaving it default)
   does not reliably determine the real, whole-IP P&R resource distribution — but it can still change
   real placement, and therefore real timing, even when it doesn't.** Confirmed 2026-08-28 (ZHR-92, DW
