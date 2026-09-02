@@ -1140,9 +1140,51 @@ supposedly standing in for.
   must reflect current config) is a standing TODO to verify, not a fact — especially before building
   new code (like a register-write driver) that will silently inherit whichever version is wrong.**
 
-## Current deployed baseline (updated 2026-08-31 -- supersedes every earlier baseline reference below)
+## Current deployed baseline (updated 2026-09-02 -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_gmemmeta_elim1` is now the deployed baseline**, replacing `mac_array_a3_dwraster_step2`
+**`mac_array_a3_pw_weight_hoist` is now the deployed baseline**, replacing `mac_array_a3_gmemmeta_elim1`
+(3,630.74ms/59.25% LUT/WNS+0.272ns, deployed 2026-08-31). This is the largest single latency win on
+this project's whole latency-optimization line -- see ZHR-63's mainline summary and ZHR-92's own
+round-by-round history for how it was reached, `vivado_impl/bitstream_archive/
+mac_array_a3_pw_weight_hoist_2026-09-02/README.txt` for the full technical writeup.
+
+**What changed**: PW's weight read was re-reading the same weight data redundantly from DRAM on every
+spatial `(rt,colt)` tile (up to 341.3x redundancy for shallow/wide-spatial layers, 13.22x weighted
+average across the 26 real PW layers) -- fixed with a 144KB on-chip weight cache
+(`pw_weight_cache`, populated once per layer via a new `PW_WEIGHT_HOIST` loop, before the spatial
+sweep begins), sized for the largest of the 22 real PW layers that fit under that cutoff
+(`layer_0040_pwconv`). The 4 real layers whose weight exceeds 144KB (`layer_0043/44/47/48_pwconv`,
+also the 4 lowest-redundancy real PW layers at 4.0x) fall back to the pre-existing direct-DRAM-read
+path unchanged. `PW_CACHED` (cached vs. direct-read) is a runtime bool, not a 2nd template dimension
+-- an earlier attempt at templating it alongside the pre-existing `FAST_WRITEOUT` produced 4
+independently-synthesized instantiations and physically duplicated `pw_weight_cache` itself; see the
+"array parameter read from 2+ instantiations" entry elsewhere in this file for why, and why the
+runtime-bool form avoids both the LUT duplication and (checked, not assumed) the `FAST_WRITEOUT`-style
+II=2 risk.
+
+Real P&R (route_design alone, no phys_opt needed): **WNS +0.153200ns** (closed, down from +0.272ns but
+still positive), **LUT 31,953/53,200 (60.06%)**, up +1.37% from 59.25%, **BRAM 74/140 tiles (52.86%)**,
+up from 24.29% -- isolated csynth had projected 70% here, real P&R came in meaningfully better (the
+first instance on this project's whole isolated-vs-real line where isolated was more pessimistic than
+reality, not more optimistic -- don't assume a consistent error direction). **DSP 52/220 (23.64%)**,
+up from 21.82%.
+
+Board: PL-side full-network total **2,111.27ms**, down from 3,630.74ms (**-41.9%**). Two single-op
+board tests byte-exact (entry3, the cached path, 0/196,608 mismatches, 50.70ms->22.66ms; entry64, the
+`layer_0043_pwconv` fallback-path layer, 0/73,728 mismatches, no regression vs. the old direct-read
+path's own 120.68ms). Full-network six-checkpoint correctness verified via cosine similarity against
+the untouched ONNX float32 reference (`ckpt_ref_*_0000.npy`, dated 2026-08-21) matching the
+project's own long-established figures exactly: 0.6313/0.1286/0.2227/0.3491/-0.2459/-0.2811 for
+stage1/stage2/stage3/stage4/finaldw/se -- **NOT verified via byte-exact-vs-`ckpt_hw_*`, deliberately**;
+see the "Known open issues" entry on why that specific check is currently untrustworthy for ANY
+build, not just this one, and is not cited here as a correctness claim. Register map is UNCHANGED
+from `mac_array_a3_gmemmeta_elim1` (`PW_CACHED` is entirely internal to the IP body, not a new
+register) -- existing ARM-side binaries built for that baseline remain valid, no rebuild needed.
+
+## Prior deployed baseline (superseded 2026-09-02, kept for history)
+
+**`mac_array_a3_gmemmeta_elim1` was the deployed baseline from 2026-08-31 to 2026-09-02**, replacing
+`mac_array_a3_dwraster_step2`
 (3,608.76ms/77.52% LUT/WNS+0.021ns, deployed 2026-08-28). Every mention of "3,608.76ms" / "77.52% LUT"
 elsewhere in this file below is a **historical value, accurate for the round that measured it** — not
 rewritten, since those entries correctly record what was true and known at the time. This section is
@@ -1156,6 +1198,19 @@ from 77.52%, **DSP 48/220 (21.82%)**, down from 41.82%. Board: single-op PW+DW b
 network 82/82 written, 6/6 checkpoints byte-exact vs csim (cosine=1.000000), PL total 3,630.74ms
 (+0.61% vs the old baseline, essentially flat as predicted -- the eliminated path was config reads,
 not the data path).
+**CORRECTION, 2026-09-02 (ZHR-92): the "6/6 checkpoints byte-exact vs csim" claim above cannot have
+been freshly re-verified as stated.** This round's own interface change (`mac_array_top`'s signature)
+is what broke `mac_array_ckpt_dump.cpp`'s compile going forward -- and `tools/
+compare_board_full_network_ckpts.py`'s own `ckpt_hw_*` reference was ALREADY stale by this date
+(last legitimately generated ~2026-08-23, before this round's own gmem_meta elimination AND before
+the 2026-08-28 DW raster integration before it -- see the "Known open issues" entry for the full
+timeline). This claim was either citing that already-stale reference without regenerating it, or not
+independently re-run at all. **Does not invalidate this round's real, separately-confirmed results**
+(the P&R numbers, the +0.61%-flat timing finding, and the single-op byte-exact checks used a
+different, unaffected reference) -- only the specific "6/6 checkpoints byte-exact vs csim" sentence.
+The board's own correctness at this point in time is NOT disproven by this correction, just no longer
+evidenced by this specific claim; nobody has gone back to re-verify gmemmeta_elim1 specifically
+against the ONNX reference the way the 2026-09-02 round did for its own successor.
 
 Practical consequence: the new build has ~18 percentage points more LUT headroom than any prior
 config on this line. Lines previously closed out for lack of resource/timing margin (DSP packing,
@@ -1295,6 +1350,24 @@ them against this build.
   underlying bug (why even a freshly-relinked regeneration still doesn't match real board output) is
   left genuinely unresolved -- flagged for whoever next needs byte-exact csim-vs-board checking badly
   enough to justify the entry-by-entry bisection this round didn't do.
+  **GENERALIZED RULE, not specific to `ckpt_hw_*`: before trusting ANY persisted reference/golden data
+  file as a correctness judge, check its generation timestamp against the date of the last real
+  architecture change to whatever it's supposed to be validating -- if the reference predates that
+  change, it cannot prove anything about post-change correctness no matter how clean the comparison
+  looks.** This is the same underlying failure class this file already documents for other persisted
+  artifacts (the stale Stem-calibration scale, the wrong-resolution default image) -- reference/golden
+  data doesn't announce its own staleness, and a clean-looking pass/fail number gives no signal about
+  whether the file being compared against is itself current. **Correction check performed 2026-09-02:
+  swept the other two commits with real full-network checkpoint claims made between the reference's
+  last generation (2026-08-23) and this correction (`000350a` DW raster integration, 2026-08-28;
+  `32a6f1d` PW_FLAT II fix, 2026-08-27) -- both turned out NOT to need correction. Read closely, both
+  commit messages explicitly describe a same-session A/B comparison (fresh board dump from the OLD
+  build vs. fresh board dump from the NEW build, both real hardware, neither compared against
+  `ckpt_hw_*` or any golden file at all) -- "7 checkpoints... IDENTICAL byte-for-byte between both
+  runs," not "byte-exact vs csim." Only `mac_array_a3_gmemmeta_elim1`'s own claim (explicitly "vs
+  csim (cosine=1.000000)") was actually vulnerable and needed the correction added above. **Don't
+  assume every historical checkpoint claim in this project's history is equally suspect just because
+  one class of them was -- check what each one was actually compared against before correcting it.**
 - **RESOLVED 2026-08-30 (was open earlier the same day): `mac_array_tb.cpp` (the legacy 17-phase csim
   suite) fails most DW-conv phases and SIGSEGVs when run against `mac_array_raster_integrated.cpp` --
   this is a testbench/source pairing mismatch AND a real, confirmed raster-DW bug, but the bug's real
