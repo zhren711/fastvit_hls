@@ -286,10 +286,27 @@ static void run_reduce_dw(
  * logic (including the two previously-fixed bugs documented in this
  * function's own body) stays in ONE template body, not duplicated --
  * duplicating it was considered and rejected as the higher-risk path. */
+/* ZHR-92 round (2026-09-02): PW_CACHED downgraded from a 2nd template bool
+ * to a plain runtime bool -- see PW_WEIGHT_HOIST's own header comment for
+ * why (4 independently-synthesized instantiations, +21.2% LUT and a
+ * doubled pw_weight_cache BRAM footprint, neither shared). This is a
+ * DIFFERENT case from FAST_WRITEOUT's own template dispatch: that one
+ * hoists a runtime branch specifically because two mutually-exclusive
+ * branches were found WRITING to the SAME shared AXI port (gmem_act),
+ * which the scheduler couldn't prove non-conflicting across iterations,
+ * forcing II=2 (see FAST_WRITEOUT's own comment). PW_CACHED's two arms are
+ * a BRAM read (pw_weight_cache, no AXI port at all) vs. an AXI READ on
+ * gmem_w -- only one arm ever touches gmem_w, so there is no second
+ * branch's access to the same port for the scheduler to reconcile. This is
+ * inference from the diagnosed FAST_WRITEOUT mechanism, not an assumption
+ * to skip verifying: confirm PW_FLAT's own achieved II is still 1 (both
+ * FAST_WRITEOUT instances) before trusting this. */
 template<bool FAST_WRITEOUT>
 static void pw_flat_pipeline_impl(
     const LayerDescV2 &d,
     const wt_t w_base[],
+    const wt_t pw_weight_cache[],
+    bool pw_cached,
     const act_t pw_patch_full[MAX_CIN][MAC_PR][MAC_PC],
     const acc_t pw_bias_cache[MAX_PW_BIAS_CACHE],
     const wt_t pw_shift_cache[MAX_PW_BIAS_CACHE],
@@ -340,7 +357,30 @@ static void pw_flat_pipeline_impl(
             for (int dd = 0; dd < MAC_PD; dd++) {
                 #pragma HLS UNROLL
                 bool ch_valid = (ch_off + dd) < Cin;
-                lane_w[dd] = ch_valid ? w_base[d.w_off + w_ot_base + ch_off + dd] : (wt_t)0;
+                /* ZHR-92 round (2026-09-02): PW_FIX_WADDR -- timing-only probe,
+                 * values WILL be wrong. Forces every weight read to the same
+                 * address (d.w_off, always in-range) instead of the real
+                 * per-(ot,cbase,ch) address, with the read itself, its op
+                 * count, and every surrounding structure left untouched --
+                 * isolates "how much of PW's time is this address's own real
+                 * DRAM traffic" from "how much is the read operation's fixed
+                 * overhead regardless of address." Board-only, csim/
+                 * checkpoint NOT meaningful under this flag. Off by default. */
+                /* ZHR-92 round (2026-09-02): PW_CACHED is now a plain
+                 * runtime bool, not a template parameter -- see this
+                 * function's own header comment for why this is believed
+                 * safe (only one arm touches gmem_w, unlike FAST_WRITEOUT's
+                 * own same-port-two-writes trigger). See PW_WEIGHT_HOIST's
+                 * header comment above run_layer for sizing/partitioning. */
+                if (pw_cached) {
+                    lane_w[dd] = ch_valid ? pw_weight_cache[w_ot_base + ch_off + dd] : (wt_t)0;
+                } else {
+#ifdef PW_FIX_WADDR
+                    lane_w[dd] = ch_valid ? w_base[d.w_off] : (wt_t)0;
+#else
+                    lane_w[dd] = ch_valid ? w_base[d.w_off + w_ot_base + ch_off + dd] : (wt_t)0;
+#endif
+                }
                 for (int rr = 0; rr < MAC_PR; rr++) {
                     #pragma HLS UNROLL
                     for (int cw = 0; cw < MAC_PC; cw++) {
@@ -355,7 +395,20 @@ static void pw_flat_pipeline_impl(
                     #pragma HLS UNROLL
                     for (int cw = 0; cw < MAC_PC; cw++) {
                         #pragma HLS UNROLL
-                        acc_t prod = (acc_t)lane_in[dd][rr][cw] * (acc_t)lane_w[dd];
+                        acc_t prod;
+                        /* ZHR-92 round (2026-09-01): PW_FORCE_DSP -- untested
+                         * counterpart to DW's LB_FORCE_DSP (dw_raster_layer.cpp).
+                         * Conservative variant of the CLOSED DSP-packing line:
+                         * same MAC_PD=1/MAC_PR=4/MAC_PC=4=16-lane parallelism,
+                         * same datapath, only rebinding this existing 1:1
+                         * multiply from LUT to DSP -- no new gmem_w bandwidth
+                         * demand, unlike the closed MAC_PD-expansion attempt.
+                         * Off by default; measure isolated LUT release / DSP
+                         * cost / II before adopting. */
+#ifdef PW_FORCE_DSP
+#pragma HLS BIND_OP variable=prod op=mul impl=DSP
+#endif
+                        prod = (acc_t)lane_in[dd][rr][cw] * (acc_t)lane_w[dd];
                         acc[dd][rr][cw] = reset_acc ? prod : (acc_t)(acc[dd][rr][cw] + prod);
                     }
                 }
@@ -397,7 +450,14 @@ static void pw_flat_pipeline_impl(
              * physical instances. Ruled out, not a dead end: the real
              * owner of those two instances is still unidentified. */
             if (wr_row < r_sz) {
+                /* ZHR-92 round (2026-09-02): PW_FIX_OUTADDR -- timing-only
+                 * probe, mirrors PW_FIX_WADDR exactly (see its comment
+                 * above). d.out_off is always in-range. Off by default. */
+#ifdef PW_FIX_OUTADDR
+                int byte_addr = d.out_off;
+#else
                 int byte_addr = d.out_off + ot_out_ch_base + (rt * MAC_PR + wr_row) * d.w_out + colt * MAC_PC;
+#endif
                 if (FAST_WRITEOUT) {
                     row_word.range(wr_col * 8 + 7, wr_col * 8) = val;
                     if (wr_col == MAC_PC - 1) {
@@ -480,6 +540,8 @@ static void pw_flat_pipeline_impl(
 static void pw_flat_pipeline(
     const LayerDescV2 &d,
     const wt_t w_base[],
+    const wt_t pw_weight_cache[],
+    bool pw_cached,
     const act_t pw_patch_full[MAX_CIN][MAC_PR][MAC_PC],
     const acc_t pw_bias_cache[MAX_PW_BIAS_CACHE],
     const wt_t pw_shift_cache[MAX_PW_BIAS_CACHE],
@@ -487,7 +549,7 @@ static void pw_flat_pipeline(
     hls::burst_maxi<ap_uint<32> > &out_burst,
     int rt, int colt, int r_sz, int col_sz)
 {
-    pw_flat_pipeline_impl<true>(d, w_base, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
+    pw_flat_pipeline_impl<true>(d, w_base, pw_weight_cache, pw_cached, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
 }
 
 /* Serves only layers whose w_out isn't a multiple of MAC_PC -- verified
@@ -499,6 +561,8 @@ static void pw_flat_pipeline(
 static void pw_flat_pipeline_narrow(
     const LayerDescV2 &d,
     const wt_t w_base[],
+    const wt_t pw_weight_cache[],
+    bool pw_cached,
     const act_t pw_patch_full[MAX_CIN][MAC_PR][MAC_PC],
     const acc_t pw_bias_cache[MAX_PW_BIAS_CACHE],
     const wt_t pw_shift_cache[MAX_PW_BIAS_CACHE],
@@ -506,7 +570,7 @@ static void pw_flat_pipeline_narrow(
     hls::burst_maxi<ap_uint<32> > &out_burst,
     int rt, int colt, int r_sz, int col_sz)
 {
-    pw_flat_pipeline_impl<false>(d, w_base, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
+    pw_flat_pipeline_impl<false>(d, w_base, pw_weight_cache, pw_cached, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
 }
 
 /* ---- round 11: run_dwconv/run_pwconv are GONE. This is the only tile
@@ -533,6 +597,14 @@ static void run_layer(const LayerDescV2 &d,
                        hls::burst_maxi<ap_uint<32> > &out_burst,
                        hls::burst_maxi<ap_uint<32> > &in_burst)
 {
+    // ZHR-92 (2026-08-30): single consolidated shape-range check, csim-
+    // only (see mac_array.h's own header comment on
+    // mac_check_supported_shape for the full rationale and the three
+    // known instances it guards against). Checked once, here, at
+    // run_layer's very entry -- before either op_type branch below --
+    // rather than scattered per-mechanism.
+    mac_check_supported_shape(d);
+
     // ZHR-92 Phase 1 Step 2 integration (2026-08-28): DW is now an
     // independent top-level branch, one raster pass per layer per ot,
     // BEFORE the (rt,colt) tile loop below -- exactly the
@@ -598,6 +670,57 @@ static void run_layer(const LayerDescV2 &d,
         PW_SHIFT_HOIST: for (int oc = 0; oc < d.cout; oc++) {
             #pragma HLS PIPELINE II=1
             pw_shift_cache[oc] = w_base[d.shift_off + oc];
+        }
+    }
+
+    /* ZHR-92 round (2026-09-02): PW weight residency, RETRY of the
+     * 2026-08-22 pw_weight_cache revert (see that comment above) -- NOT a
+     * blind retry, a re-sized one. Board-measured 2026-09-02 (same round's
+     * own address-fix probes): weight-read address is 55.3% of a real PW
+     * layer's time (28.03ms/50.70ms, entry3), explaining ~67% of PW's
+     * total/internal "external cost" gap -- the OLD 1.3% figure was
+     * measured on the pre-PW_FLAT architecture (run_reduce_unified) and
+     * does not apply here; do not re-cite it as a reason to skip this.
+     *
+     * Sizing is the actual fix, not a different partition strategy (see
+     * below): the old cache was 442,368 elements (432KB), sized for the
+     * single worst-case layer -- 68.6% of the whole device's 630KB BRAM on
+     * its own, which is why it was ~89-95% of budget and the #2 worst P&R
+     * path regardless of today's much better LUT/DSP headroom (BRAM's
+     * 140-tile ceiling is a separate, fixed resource that other-resource
+     * headroom does not touch -- confirmed the hard way with DSP-packing/
+     * gmem_w bandwidth elsewhere in this file). This cache is instead sized
+     * at PW_WEIGHT_CACHE_ELEMS=147,456 (144KB, exactly layer_0040_pwconv's
+     * real weight count, cin=384*cout=384) -- the LARGEST of the 22 real PW
+     * layers whose weight fits this budget; the 4 layers that don't
+     * (layer 43/44/47/48, all cin*cout>144KB) fall back to the pre-existing
+     * direct-DRAM-read path unchanged, and are exactly the layers with the
+     * LEAST spatial redundancy to begin with (4.0x, vs up to 341.3x for the
+     * cached layers) -- least benefit foregone for the layers that don't
+     * fit. Real BRAM: 32 tiles for this buffer (147,456/4608 exactly),
+     * 34+32=66/140 (47.1%) against the deployed baseline's 34/140 today --
+     * comfortable, not the historical round's 89-95%.
+     *
+     * Partitioning: deliberately NONE. PW_FLAT reads exactly one weight
+     * element per pipeline step (lane_w[dd], dd only ranges over
+     * MAC_PD=1) -- a plain, unpartitioned BRAM array already provides one
+     * read per cycle, which is all PW_FLAT ever asks for. The historical
+     * revert's own diff does not show a `complete`/`cyclic` partition on
+     * pw_weight_cache, and 89-95% BRAM utilization for a 442,368-element
+     * array is not the signature complete-partitioning would leave (that
+     * would show up as a LUT explosion instead, this array being far too
+     * large to register-partition) -- the historical failure is attributed
+     * to sheer size against total device BRAM capacity, not partition
+     * choice; this round changes sizing, not partitioning, and this array
+     * carries no ARRAY_PARTITION pragma at all, on purpose. */
+#define PW_WEIGHT_CACHE_ELEMS 147456
+    static wt_t pw_weight_cache[PW_WEIGHT_CACHE_ELEMS];
+    bool pw_cacheable = ((long)d.cin * (long)d.cout <= PW_WEIGHT_CACHE_ELEMS);
+    if (d.op_type == LDESC_OP_PWCONV && pw_cacheable) {
+        int w_total = d.cin * d.cout;
+        PW_WEIGHT_HOIST: for (int i = 0; i < w_total; i++) {
+            #pragma HLS PIPELINE II=1
+            pw_weight_cache[i] = w_base[d.w_off + i];
         }
     }
 
@@ -911,9 +1034,20 @@ static void run_layer(const LayerDescV2 &d,
                         for (int cw = 0; cw < MAC_PC; cw++) {
                             #pragma HLS UNROLL
                             bool valid = (rr < r_sz) && (cw < col_sz);
+                            /* ZHR-92 round (2026-09-02): PW_FIX_ACTADDR --
+                             * timing-only probe, mirrors PW_FIX_WADDR exactly
+                             * (see its comment above). row_buf[rr][0] is
+                             * always in-range (rr itself is untouched/still
+                             * real). Off by default. */
+#ifdef PW_FIX_ACTADDR
+                            pw_patch_full[ci][rr][cw] = valid
+                                ? row_buf[rr][0]
+                                : (act_t)0;
+#else
                             pw_patch_full[ci][rr][cw] = valid
                                 ? row_buf[rr][flat_base + colt * MAC_PC + cw]
                                 : (act_t)0;
+#endif
                         }
                     }
                     flat_base += W;
@@ -1346,11 +1480,20 @@ static void run_layer(const LayerDescV2 &d,
                  * guard -- like the col_sz one above it -- costs nothing
                  * on the deployed network and exists purely to keep
                  * synthetic/future shapes correct. */
+                /* pw_narrow (FAST_WRITEOUT's own gate, template dispatch,
+                 * unchanged/untouched by this round) and pw_cacheable
+                 * (PW_WEIGHT_HOIST's own gate, now a runtime bool passed
+                 * INTO whichever pw_narrow instance gets picked) are two
+                 * INDEPENDENT conditions on two INDEPENDENT dimensions --
+                 * do not conflate them. The >144KB fallback logic
+                 * (pw_cacheable's own definition, above PW_WEIGHT_HOIST)
+                 * is completely untouched by this round's change from
+                 * template to runtime PW_CACHED. */
                 bool pw_narrow = (d.last_col_tile < MAC_PC) || ((d.out_off & 3) != 0);
                 if (pw_narrow) {
-                    pw_flat_pipeline_narrow(d, w_base, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
+                    pw_flat_pipeline_narrow(d, w_base, pw_weight_cache, pw_cacheable, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
                 } else {
-                    pw_flat_pipeline(d, w_base, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
+                    pw_flat_pipeline(d, w_base, pw_weight_cache, pw_cacheable, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
                 }
             }
         }
@@ -1503,24 +1646,38 @@ static void run_scale(const LayerDescV2 &d, const act_t in_base[], act_t out_bas
  * `desc` table is real A3 work, not needed just to get a first resource
  * number; m_axi on the same struct-array parameter is enough to see
  * whether AXI infrastructure fits the budget at all before doing that. */
+/* ZHR-92 (2026-08-29): desc/out_written moved OFF gmem_meta (m_axi) onto
+ * s_axilite, eliminating the gmem_meta master entirely. Confirmed safe by
+ * source read + a real board dispatch pattern (n_layers is ALWAYS 1 on
+ * every real call, mac_array_full_network_test.c / mac_array_single_op_
+ * test.c) -- desc[0] was the only entry ever consumed, so the n_layers
+ * loop and desc[] indexing were dead generality, not live architecture.
+ * Register mapping verified empirically with a standalone probe
+ * (probe_desc_axilite.cpp/.tcl) before this change, not assumed: a 28-int
+ * struct-by-value over s_axilite flattens into 28 consecutive 32-bit
+ * registers (one per field, declaration order, no padding), and a plain
+ * scalar output pointer over s_axilite (no m_axi) becomes a normal
+ * Read-only data register + a standard ap_vld handshake bit -- the same
+ * "value stable at ap_done" guarantee this function's own `return` value
+ * already relies on. See CLAUDE.md's gmem_meta-elimination entries and
+ * ZHR-92/ZHR-63 for the full recon. */
 void mac_array_top(
-    const LayerDescV2 desc[],
-    int n_layers,
+    LayerDescV2 desc,
     const act_t  in_base[],
     const wt_t   w_base[],
     const acc_t  b_base[],
     act_t        out_base[],
-    int          out_written[],
+    int          *out_written,
     const ap_uint<32> in_base_wide[],
     hls::burst_maxi<ap_uint<32> > out_burst,
     hls::burst_maxi<ap_uint<32> > in_burst)
 {
-#pragma HLS INTERFACE m_axi port=desc         offset=slave bundle=gmem_meta
+#pragma HLS INTERFACE s_axilite port=desc     bundle=control
 #pragma HLS INTERFACE m_axi port=in_base      offset=slave bundle=gmem_act
 #pragma HLS INTERFACE m_axi port=w_base       offset=slave bundle=gmem_w
 #pragma HLS INTERFACE m_axi port=b_base       offset=slave bundle=gmem_b
 #pragma HLS INTERFACE m_axi port=out_base     offset=slave bundle=gmem_act
-#pragma HLS INTERFACE m_axi port=out_written  offset=slave bundle=gmem_meta
+#pragma HLS INTERFACE s_axilite port=out_written bundle=control
 /* ZHR-92 angle-B step (2026-08-24): out_burst is hls::burst_maxi<ap_uint
  * <32>>, matching gmem_act's real 32-bit AXI width (forced by
  * in_base_wide already sharing this bundle) -- the previous attempt used
@@ -1561,13 +1718,10 @@ void mac_array_top(
  * also resolves the FSM->DSP critical path (see PW_PATCH_HOIST's comment)
  * is the thing THIS round's P&R actually tests, not assumed here. */
 #pragma HLS INTERFACE m_axi port=in_base_wide offset=slave bundle=gmem_act
-#pragma HLS INTERFACE s_axilite port=n_layers bundle=control
-#pragma HLS INTERFACE s_axilite port=desc bundle=control
 #pragma HLS INTERFACE s_axilite port=in_base bundle=control
 #pragma HLS INTERFACE s_axilite port=w_base bundle=control
 #pragma HLS INTERFACE s_axilite port=b_base bundle=control
 #pragma HLS INTERFACE s_axilite port=out_base bundle=control
-#pragma HLS INTERFACE s_axilite port=out_written bundle=control
 #pragma HLS INTERFACE s_axilite port=in_base_wide bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
     /* A3 round (2026-08-22, ZHR-92): option D (read desc[i] into a local
@@ -1585,17 +1739,18 @@ void mac_array_top(
      * physically far from run_layer's registers), not a fan-out problem.
      * That record was available and cited before option D was designed,
      * just not read carefully enough. See option E (pblock) for the actual
-     * distance-targeted fix. */
-    for (int i = 0; i < n_layers; i++) {
-        switch (desc[i].op_type) {
-            case LDESC_OP_ADD:     run_add(desc[i], in_base, out_base); break;
-            case LDESC_OP_GAP:     run_gap(desc[i], in_base, out_base); break;
-            case LDESC_OP_RELU:    run_relu(desc[i], in_base, out_base); break;
-            case LDESC_OP_SIGMOID: run_sigmoid(desc[i], in_base, out_base); break;
-            case LDESC_OP_SCALE:   run_scale(desc[i], in_base, out_base); break;
-            case LDESC_OP_GELU:    run_gelu(desc[i], in_base, out_base); break;
-            default:                run_layer(desc[i], in_base, w_base, b_base, out_base, in_base_wide, out_burst, in_burst); break;
-        }
-        out_written[i] = 1;
+     * distance-targeted fix -- SUPERSEDED 2026-08-29: gmem_meta itself is
+     * gone now (option F, desc/out_written moved to s_axilite, see the
+     * function-header comment above), so this whole distance-to-run_layer
+     * problem is moot for desc, not just mitigated. */
+    switch (desc.op_type) {
+        case LDESC_OP_ADD:     run_add(desc, in_base, out_base); break;
+        case LDESC_OP_GAP:     run_gap(desc, in_base, out_base); break;
+        case LDESC_OP_RELU:    run_relu(desc, in_base, out_base); break;
+        case LDESC_OP_SIGMOID: run_sigmoid(desc, in_base, out_base); break;
+        case LDESC_OP_SCALE:   run_scale(desc, in_base, out_base); break;
+        case LDESC_OP_GELU:    run_gelu(desc, in_base, out_base); break;
+        default:                run_layer(desc, in_base, w_base, b_base, out_base, in_base_wide, out_burst, in_burst); break;
     }
+    *out_written = 1;
 }

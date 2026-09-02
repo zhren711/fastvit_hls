@@ -62,6 +62,7 @@
 
 #include "ap_int.h"
 #include <cstdint>
+#include <cassert>
 #include <hls_burst_maxi.h>
 
 typedef ap_int<8>   act_t;   /* activation, matches fastvit_ip's act_t */
@@ -407,6 +408,95 @@ struct LayerDescV2 {
      * source(s), not a dead end. */
 };
 
+/* ================================================================
+ * SUPPORTED SHAPE RANGE -- consolidated, ZHR-92 2026-08-30.
+ *
+ * Three independently-discovered instances of the same failure class in
+ * this project's history -- "a compile-time/architectural assumption
+ * silently narrower than a runtime value's real range, invisible because
+ * the real network's own shapes happen to avoid it": fpg<=2 (2026-08-21
+ * fpg fix; `dw_raster_layer.cpp`'s active `dwr_consume` path hard-bounds
+ * every fpg-indexed array/loop at `DWR_MAX_FPG=2` regardless of runtime
+ * fpg -- confirmed 2026-08-29 to SIGSEGV at fpg=48, a synthetic stress
+ * shape no real layer uses), K<=MAX_K=7 (2026-08-21 MAX_K 3->7 fix, 13 of
+ * 52 real layers use K=7), and the raster DW mechanism's minimum cin /
+ * exact-tile-multiple spatial dims (2026-08-30 -- cin=8 with otherwise-
+ * safe 4-multiple dims fails silently, cin=48 with non-4-multiple dims
+ * crashes outright, confirmed as two INDEPENDENT triggers, not either/
+ * or; see CLAUDE.md's "known limitation" entry for the full isolation).
+ * Consolidated here instead of left scattered across per-file comments
+ * discovered after the fact, so the next person changing model or
+ * resolution sees every known boundary in one place, not five.
+ *
+ * `mac_check_supported_shape()` fires these as plain `assert()`, guarded
+ * by `#ifndef __SYNTHESIS__` (the standard Xilinx idiom -- Vitis HLS
+ * defines `__SYNTHESIS__` only during csynth_design, so this code is
+ * PRESENT and firing in csim, and ABSENT from synthesized RTL: zero real
+ * hardware cost, and it cannot affect any deployed bitstream). The goal
+ * is a LOUD, immediate csim failure if a future model/resolution change
+ * ever crosses one of these lines -- this project has been burned
+ * repeatedly by the alternative (silently wrong results that only show
+ * up on real hardware, or not at all, since csim wasn't run against the
+ * shape that mattered -- see CLAUDE.md's "check what a claimed
+ * validation actually consumed" and "runtime value gating a hardware
+ * region" entries).
+ *
+ * DW_CIN_MIN_SAFE=48 is an EMPIRICAL lower bound, not a theoretical one
+ * (the user's own framing: measured floor, not derived from first
+ * principles) -- cin=8 (with otherwise-safe 4-multiple spatial dims) was
+ * directly confirmed to fail; cin=48 was directly confirmed to pass (the
+ * wiring tb's own real-layer cases, and every real network DW layer).
+ * The true minimum was not narrowed further between 8 and 48 -- do not
+ * lower this constant without new evidence from an actual csim run at
+ * the proposed lower value. */
+#define MAC_SUPPORTED_FPG_MAX  2
+#define DW_CIN_MIN_SAFE        48  /* empirical, not theoretical -- see above */
+
+static inline void mac_check_supported_shape(const LayerDescV2 &d) {
+#ifndef __SYNTHESIS__
+    if (d.op_type == LDESC_OP_DWCONV) {
+        assert(d.fpg <= MAC_SUPPORTED_FPG_MAX &&
+               "DW fpg exceeds MAC_SUPPORTED_FPG_MAX=2 -- dw_raster_layer.cpp's dwr_consume hard-"
+               "bounds every fpg-indexed array/loop at DWR_MAX_FPG=2 regardless of runtime fpg "
+               "(ZHR-92 2026-08-29, SIGSEGV confirmed at fpg=48; no real layer needs fpg>2).");
+        assert(d.k <= MAX_K &&
+               "DW k exceeds MAX_K -- PATCH_R_MAX/PATCH_C_MAX and dw_wtile's per-channel storage "
+               "are sized from MAX_K, not the real per-layer K.");
+        assert(d.stride <= MAX_STRIDE &&
+               "DW stride exceeds MAX_STRIDE -- PATCH_R_MAX/PATCH_C_MAX sizing assumes this bound.");
+        assert(d.cin >= DW_CIN_MIN_SAFE &&
+               "DW cin is below the empirically-confirmed-safe minimum (48) -- the raster DW "
+               "mechanism was confirmed to silently produce near-all-zero output below this "
+               "(ZHR-92 2026-08-30: cin=8 with safe spatial dims still failed, 1621/4096 "
+               "mismatches). This does not affect the real network (every real DW layer has "
+               "cin>=48) -- only a future model/resolution change could trip this.");
+        assert((d.h_in % MAC_PR == 0) && (d.w_in % MAC_PC == 0) &&
+               "DW h_in/w_in is not an exact multiple of MAC_PR/MAC_PC -- the raster DW mechanism "
+               "was confirmed to CRASH outright on non-multiple spatial dims, even at safe cin "
+               "(ZHR-92 2026-08-30: cin=48/h_in=w_in=15 crashed with an unknown-error abort). "
+               "Every real DW layer's h_in/w_in is an exact multiple of 4, so this does not "
+               "affect the real network -- only a future model/resolution change could trip it.");
+    }
+    if (d.op_type == LDESC_OP_PWCONV) {
+        /* run_layer's ROW_READ_FILL loop (PW's row-hoist fast path) is
+         * bounded by the compile-time MAX_WORDS_PER_CH=17, but the real
+         * word count it needs is a RUNTIME value ((r+w_in+3)>>2, worst
+         * case r=3) -- currently exactly tight against the real network's
+         * worst case (w_in=64 -> 17 words exactly, verified against every
+         * real PWCONV layer's w_in in tools/layer_descriptor_256.json,
+         * zero margin). A w_in this bound doesn't cover would silently
+         * truncate the row read, not crash -- the same failure shape as
+         * the DW cin/dims bug above, just not yet independently exercised
+         * by a synthetic test the way DW's was (flagged from the
+         * derivation alone, not confirmed via a failing csim run). */
+        assert(((3 + d.w_in + 3) >> 2) <= MAX_WORDS_PER_CH &&
+               "PW w_in requires more words per row than MAX_WORDS_PER_CH=17 covers -- "
+               "ROW_READ_FILL would silently truncate the row read (derivation-only, ZHR-92 "
+               "2026-08-30; every real PWCONV layer's w_in<=64 stays exactly at this bound).");
+    }
+#endif
+}
+
 /* Host-side utility (stands in for the real descriptor generator). NOT
  * called from mac_array_top / not part of the synthesized design.
  * tools/verify_mac_array_mapping.py independently re-derives the same
@@ -435,21 +525,27 @@ struct MacArrayParams {
 };
 MacArrayParams derive_mac_array_params(const LayerDescV2 &d);
 
-/* Layer controller + MAC array top function. Executes n_layers descriptors
- * back-to-back against the shared flat DRAM-model arrays. out_written[i]
- * is set to 1 by this function once (and only once) it has performed the
- * real output write for layer i -- mac_array_tb.cpp's Phase 2 overrides
- * the DRAM contents afterward (not this function) to reproduce the Add
- * defect's symptom (IP completes, output silently not written) so the
- * testbench's independent verification step can be proven to catch it. */
+/* Layer controller + MAC array top function. Executes ONE descriptor per
+ * call -- ZHR-92 (2026-08-29): desc/n_layers/out_written[] moved off the
+ * gmem_meta m_axi master onto s_axilite (single by-value desc, scalar
+ * out_written), eliminating gmem_meta entirely. Every real dispatch was
+ * already n_layers=1 (confirmed via source read of the board test
+ * harnesses before this change), so this matches real hardware usage
+ * exactly; a caller that wants to run N layers back-to-back now calls this
+ * function N times, once per descriptor (mac_array_tb.cpp's multi-layer
+ * phases were converted to this shape). out_written is set to 1 once (and
+ * only once) this function has performed the real output write --
+ * mac_array_tb.cpp's Phase 2 overrides the DRAM contents afterward (not
+ * this function) to reproduce the Add defect's symptom (IP completes,
+ * output silently not written) so the testbench's independent
+ * verification step can be proven to catch it. */
 void mac_array_top(
-    const LayerDescV2 desc[],
-    int n_layers,
+    LayerDescV2 desc,
     const act_t  in_base[],
     const wt_t   w_base[],
     const acc_t  b_base[],
     act_t        out_base[],
-    int          out_written[],
+    int          *out_written,
     const ap_uint<32> in_base_wide[],
     hls::burst_maxi<ap_uint<32> > out_burst,
     hls::burst_maxi<ap_uint<32> > in_burst

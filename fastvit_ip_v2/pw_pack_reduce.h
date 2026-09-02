@@ -1,4 +1,9 @@
-// pw_pack_reduce.h -- ZHR-92 DSP-packing Step 1 (2026-08-29). Real,
+// pw_pack_reduce.h -- ZHR-92 DSP-packing Step 1 (2026-08-29). NOT ADOPTED
+// -- this Step 1 result is real (see below), but the whole DSP-packing
+// line was later closed; see pw_pack_pipeline.h's own header for the full
+// close-out writeup and CLAUDE.md's hard-stop-list for the final,
+// 2026-08-31 unification with MAC_PD under the same gmem_w root cause.
+// Real,
 // descriptor-shaped packed-vs-unpacked PW reduction, csim only (no
 // csynth, no P&R this round -- see the plan comment). Isolates exactly
 // the risk the plan's own review flagged: array-wiring/pairing

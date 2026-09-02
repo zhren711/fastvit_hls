@@ -71,6 +71,8 @@ out_ch_stride = h_out * w_out
 assert h_out == 64 and w_out == 64
 assert len(ref_out) == cout * fpg * h_out * w_out
 
+# ZHR-92 (2026-08-31): 27->28, use_wide_path appended (zero-fill), matching
+# MacLayerDesc's real current layout -- see CLAUDE.md's note on this field.
 fields = [
     OP_DWCONV, cin, cout,
     h_in, w_in,
@@ -85,9 +87,10 @@ fields = [
     1,          # use_shift_table
     shift_off_relocated,
     in_ch_stride, out_ch_stride,
+    0,          # use_wide_path -- dead code in the active dispatch path
 ]
-assert len(fields) == 27, len(fields)
-desc_bytes = struct.pack("<27i", *fields)
+assert len(fields) == 28, len(fields)
+desc_bytes = struct.pack("<28i", *fields)
 
 with open(os.path.join(OUT_DIR, "desc.bin"), "wb") as f:
     f.write(desc_bytes)

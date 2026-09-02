@@ -1471,24 +1471,30 @@ static void run_scale(const LayerDescV2 &d, const act_t in_base[], act_t out_bas
  * `desc` table is real A3 work, not needed just to get a first resource
  * number; m_axi on the same struct-array parameter is enough to see
  * whether AXI infrastructure fits the budget at all before doing that. */
+/* ZHR-92 (2026-08-30): desc/out_written moved OFF gmem_meta (m_axi) onto
+ * s_axilite, mirroring mac_array_raster_integrated.cpp's own change
+ * (2026-08-29) -- mac_array.cpp shares mac_array_top's declaration in
+ * mac_array.h with the raster file, so this update is required just to
+ * keep this file buildable as the golden-rollback reference, not a new
+ * independent decision. Same rationale as the raster file's own header
+ * comment: n_layers is ALWAYS 1 on every real dispatch. */
 void mac_array_top(
-    const LayerDescV2 desc[],
-    int n_layers,
+    LayerDescV2 desc,
     const act_t  in_base[],
     const wt_t   w_base[],
     const acc_t  b_base[],
     act_t        out_base[],
-    int          out_written[],
+    int          *out_written,
     const ap_uint<32> in_base_wide[],
     hls::burst_maxi<ap_uint<32> > out_burst,
     hls::burst_maxi<ap_uint<32> > in_burst)
 {
-#pragma HLS INTERFACE m_axi port=desc         offset=slave bundle=gmem_meta
+#pragma HLS INTERFACE s_axilite port=desc     bundle=control
 #pragma HLS INTERFACE m_axi port=in_base      offset=slave bundle=gmem_act
 #pragma HLS INTERFACE m_axi port=w_base       offset=slave bundle=gmem_w
 #pragma HLS INTERFACE m_axi port=b_base       offset=slave bundle=gmem_b
 #pragma HLS INTERFACE m_axi port=out_base     offset=slave bundle=gmem_act
-#pragma HLS INTERFACE m_axi port=out_written  offset=slave bundle=gmem_meta
+#pragma HLS INTERFACE s_axilite port=out_written bundle=control
 /* ZHR-92 angle-B step (2026-08-24): out_burst is hls::burst_maxi<ap_uint
  * <32>>, matching gmem_act's real 32-bit AXI width (forced by
  * in_base_wide already sharing this bundle) -- the previous attempt used
@@ -1529,13 +1535,10 @@ void mac_array_top(
  * also resolves the FSM->DSP critical path (see PW_PATCH_HOIST's comment)
  * is the thing THIS round's P&R actually tests, not assumed here. */
 #pragma HLS INTERFACE m_axi port=in_base_wide offset=slave bundle=gmem_act
-#pragma HLS INTERFACE s_axilite port=n_layers bundle=control
-#pragma HLS INTERFACE s_axilite port=desc bundle=control
 #pragma HLS INTERFACE s_axilite port=in_base bundle=control
 #pragma HLS INTERFACE s_axilite port=w_base bundle=control
 #pragma HLS INTERFACE s_axilite port=b_base bundle=control
 #pragma HLS INTERFACE s_axilite port=out_base bundle=control
-#pragma HLS INTERFACE s_axilite port=out_written bundle=control
 #pragma HLS INTERFACE s_axilite port=in_base_wide bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
     /* A3 round (2026-08-22, ZHR-92): option D (read desc[i] into a local
@@ -1553,17 +1556,18 @@ void mac_array_top(
      * physically far from run_layer's registers), not a fan-out problem.
      * That record was available and cited before option D was designed,
      * just not read carefully enough. See option E (pblock) for the actual
-     * distance-targeted fix. */
-    for (int i = 0; i < n_layers; i++) {
-        switch (desc[i].op_type) {
-            case LDESC_OP_ADD:     run_add(desc[i], in_base, out_base); break;
-            case LDESC_OP_GAP:     run_gap(desc[i], in_base, out_base); break;
-            case LDESC_OP_RELU:    run_relu(desc[i], in_base, out_base); break;
-            case LDESC_OP_SIGMOID: run_sigmoid(desc[i], in_base, out_base); break;
-            case LDESC_OP_SCALE:   run_scale(desc[i], in_base, out_base); break;
-            case LDESC_OP_GELU:    run_gelu(desc[i], in_base, out_base); break;
-            default:                run_layer(desc[i], in_base, w_base, b_base, out_base, in_base_wide, out_burst, in_burst); break;
-        }
-        out_written[i] = 1;
+     * distance-targeted fix -- SUPERSEDED 2026-08-30: gmem_meta itself is
+     * gone now (desc/out_written moved to s_axilite, see the function-
+     * header comment above), so this whole distance-to-run_layer problem
+     * is moot for desc, not just mitigated. */
+    switch (desc.op_type) {
+        case LDESC_OP_ADD:     run_add(desc, in_base, out_base); break;
+        case LDESC_OP_GAP:     run_gap(desc, in_base, out_base); break;
+        case LDESC_OP_RELU:    run_relu(desc, in_base, out_base); break;
+        case LDESC_OP_SIGMOID: run_sigmoid(desc, in_base, out_base); break;
+        case LDESC_OP_SCALE:   run_scale(desc, in_base, out_base); break;
+        case LDESC_OP_GELU:    run_gelu(desc, in_base, out_base); break;
+        default:                run_layer(desc, in_base, w_base, b_base, out_base, in_base_wide, out_burst, in_burst); break;
     }
+    *out_written = 1;
 }

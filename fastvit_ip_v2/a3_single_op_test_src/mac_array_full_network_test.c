@@ -45,8 +45,12 @@
 #define ARENA_OFF       0x000000UL   /* activation arena, TOTAL_BYTES=1,819,392 real need */
 #define W_OFF           0x200000UL   /* weights, ckpt_weights_flat.bin = 3,028,176 bytes */
 #define B_OFF           0x500000UL   /* bias, ckpt_bias_flat.bin = 54,528 bytes */
-#define DESC_OFF        0x510000UL   /* 82 x MacLayerDesc = 8,856 bytes */
-#define OUT_WRITTEN_OFF 0x520000UL   /* 82 x int32 = 328 bytes */
+/* ZHR-92 (2026-08-30): DESC_OFF/OUT_WRITTEN_OFF DRAM regions RETIRED --
+ * gmem_meta elimination means desc is written straight into s_axi_control
+ * registers (mac_write_desc(), no DRAM staging) and out_written is read
+ * back from a single register (no DRAM array). desc_all.bin itself is
+ * STILL needed (see below, host_desc[] is loaded from it) -- only the
+ * DRAM COPY of it that used to exist at this offset is gone. */
 #define MAP_SIZE        0x600000UL   /* 6MB window, generous margin over all regions */
 
 #define N_HW_SEQ 82
@@ -144,8 +148,6 @@ int main(int argc, char **argv) {
     uint8_t *arena_v      = (uint8_t*)dma_virt + ARENA_OFF;
     uint8_t *w_v          = (uint8_t*)dma_virt + W_OFF;
     uint8_t *b_v          = (uint8_t*)dma_virt + B_OFF;
-    uint8_t *desc_v       = (uint8_t*)dma_virt + DESC_OFF;
-    int32_t *out_written_v= (int32_t*)((uint8_t*)dma_virt + OUT_WRITTEN_OFF);
 
     /* Poison the whole arena so "output changed" is a real check for
      * every entry, not a coincidence -- same discipline as the single-op
@@ -154,8 +156,10 @@ int main(int argc, char **argv) {
     load_file(stem_path, arena_v, stem_size);
     load_file(w_path, w_v, w_size);
     load_file(b_path, b_v, b_size);
-    memcpy(desc_v, host_desc, desc_size);
-    memset(out_written_v, 0, (size_t)N_HW_SEQ * sizeof(int32_t));
+    /* desc is dispatched straight from host_desc[] via mac_write_desc()
+     * per-entry below -- no DRAM copy/flush needed anymore (gmem_meta is
+     * gone). out_written is read back per-entry from a register, no DRAM
+     * array to zero-init either. */
 
     if (mac_driver_init() != 0) { fprintf(stderr, "mac_driver_init failed\n"); return 1; }
     int fd_ctrl = open("/dev/mem", O_RDONLY | O_SYNC);
@@ -169,13 +173,10 @@ int main(int argc, char **argv) {
     uintptr_t arena_phys       = FV_DDR_BASE + ARENA_OFF;
     uintptr_t w_phys           = FV_DDR_BASE + W_OFF;
     uintptr_t b_phys           = FV_DDR_BASE + B_OFF;
-    uintptr_t desc_phys        = FV_DDR_BASE + DESC_OFF;
-    uintptr_t out_written_phys = FV_DDR_BASE + OUT_WRITTEN_OFF;
 
     /* Flushed ONCE, up front -- none of these are modified again during
-     * the 82-entry loop (desc_all is read-only once written; weights/bias/
-     * stem input are the network's fixed initial state). */
-    mac_cache_flush(desc_phys, desc_size);
+     * the 82-entry loop (weights/bias/stem input are the network's fixed
+     * initial state). desc no longer needs a flush at all (see above). */
     mac_cache_flush(w_phys, w_size);
     mac_cache_flush(b_phys, b_size);
     mac_cache_flush(arena_phys, 0x1D0000UL);
@@ -184,6 +185,7 @@ int main(int argc, char **argv) {
     volatile void *ctrl = mmap(NULL, MAC_ARRAY_MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd2, MAC_ARRAY_CTRL_PHYS);
     if (ctrl == MAP_FAILED) { perror("mmap ctrl rw"); return 1; }
     #define W32(off, val) (*(volatile uint32_t*)((char*)ctrl + (off)) = (uint32_t)(val))
+    #define R32(off) (*(volatile uint32_t*)((char*)ctrl + (off)))
     #define W64(lo, hi, addr) do { W32(lo, (uint32_t)(addr)); W32(hi, (uint32_t)((uint64_t)(addr) >> 32)); } while (0)
 
     int written_ok[N_HW_SEQ];
@@ -195,16 +197,17 @@ int main(int argc, char **argv) {
     clock_gettime(CLOCK_MONOTONIC, &t0);
 
     for (int i = 0; i < n_limit; i++) {
-        uintptr_t this_desc_phys = desc_phys + (uintptr_t)i * sizeof(MacLayerDesc);
-        uintptr_t this_written_phys = out_written_phys + (uintptr_t)i * sizeof(int32_t);
-
-        W64(MAC_DESC_LO, MAC_DESC_HI, this_desc_phys);
-        W32(MAC_N_LAYERS, 1);
+        /* ZHR-92 (2026-08-30): desc dispatched straight from host_desc[i]
+         * via mac_write_desc() -- no DRAM pointer, no n_layers (gmem_meta
+         * is gone). mac_driver_init() above already mmap'd mac_ctrl;
+         * mac_write_desc() writes through that mapping, this loop's own
+         * W32/W64 macros write through a separate mapping to the SAME
+         * physical control region (harmless -- MMIO, not cached RAM). */
+        mac_write_desc(&host_desc[i]);
         W64(MAC_IN_BASE_LO, MAC_IN_BASE_HI, arena_phys);
         W64(MAC_W_BASE_LO, MAC_W_BASE_HI, w_phys);
         W64(MAC_B_BASE_LO, MAC_B_BASE_HI, b_phys);
         W64(MAC_OUT_BASE_LO, MAC_OUT_BASE_HI, arena_phys);
-        W64(MAC_OUT_WRITTEN_LO, MAC_OUT_WRITTEN_HI, this_written_phys);
         W64(MAC_IN_BASE_WIDE_LO, MAC_IN_BASE_WIDE_HI, arena_phys);
         /* A3 row-hoist round (2026-08-25, ZHR-92): in_burst -- ROW_READ's
          * read-side counterpart to out_burst, same physical region as
@@ -261,13 +264,16 @@ int main(int argc, char **argv) {
             break;
         }
 
-        mac_cache_invalidate(this_written_phys, sizeof(int32_t));
-        written_ok[i] = (out_written_v[i] != 0);
+        /* out_written is a plain register now -- read directly, no DRAM
+         * invalidate needed (MMIO device space is never CPU-cached the
+         * way DRAM is). */
+        uint32_t out_written_val = R32(MAC_OUT_WRITTEN_DATA);
+        written_ok[i] = (out_written_val != 0);
         /* ZHR-92 (2026-08-24): print+flush immediately after EVERY entry,
          * not just checkpoint hits -- if the NEXT entry hangs, this is
          * the last line we're guaranteed to have seen. */
-        printf(">>> [%2d] done: %.2fms, out_written=%d%s\n",
-               i, entry_ms[i], out_written_v[i], written_ok[i] ? "" : "  <-- FAIL (defect-5 symptom)");
+        printf(">>> [%2d] done: %.2fms, out_written=%u%s\n",
+               i, entry_ms[i], out_written_val, written_ok[i] ? "" : "  <-- FAIL (defect-5 symptom)");
         fflush(stdout);
         if (!written_ok[i]) {
             fprintf(stderr, ">>> entry %d: out_written[%d]=0 -- defect-5 symptom (ap_done set, write never happened)\n", i, i);

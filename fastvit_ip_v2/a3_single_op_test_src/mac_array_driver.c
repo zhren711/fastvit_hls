@@ -64,29 +64,43 @@ static void w64(uint32_t lo_off, uint32_t hi_off, uintptr_t phys_addr) {
     REG_WR(mac_ctrl, hi_off, (uint32_t)((uint64_t)phys_addr >> 32));
 }
 
-void mac_run_layers(
-    uintptr_t desc_phys, int n_layers,
+/* ZHR-92 (2026-08-30): writes desc's 28 fields directly to the
+ * MAC_DESC_BASE register block, one 32-bit register per field, in
+ * MacLayerDesc's own declaration order -- mirrors exactly how HLS
+ * flattened the struct-by-value s_axilite port (confirmed empirically via
+ * a standalone probe before this was written, see ZHR-92's recon comment:
+ * field k lands at MAC_DESC_BASE+4*k, no padding, since every field is
+ * int32_t). Treating the struct as a raw int32_t array relies on the
+ * _Static_assert in mac_array_driver.h (sizeof(MacLayerDesc) ==
+ * MAC_DESC_NUM_FIELDS*4) to catch any future field-count drift at compile
+ * time instead of silently writing the wrong number of registers. */
+void mac_write_desc(const MacLayerDesc *desc) {
+    const int32_t *fields = (const int32_t *)desc;
+    for (int k = 0; k < MAC_DESC_NUM_FIELDS; k++) {
+        REG_WR(mac_ctrl, MAC_DESC_BASE + 4 * k, (uint32_t)fields[k]);
+    }
+}
+
+int mac_run_layers(
+    const MacLayerDesc *desc,
     uintptr_t in_base_phys,  size_t in_flush_size,
     uintptr_t w_base_phys,   size_t w_flush_size,
     uintptr_t b_base_phys,   size_t b_flush_size,
     uintptr_t out_base_phys,
-    uintptr_t out_written_phys,
     uintptr_t out_check_off_phys, size_t out_check_size)
 {
-    /* CPU -> FPGA: every buffer the IP's own m_axi masters will read,
-     * including desc[] itself (gmem_meta) -- the one handoff the old
-     * architecture never had, per mac_array_driver.h's header note. */
-    mac_cache_flush(desc_phys, (size_t)n_layers * sizeof(MacLayerDesc));
+    /* CPU -> FPGA: every buffer the IP's own m_axi masters will read.
+     * desc itself no longer needs a flush -- it's written straight into
+     * s_axi_control registers below, never touches DRAM at all (the
+     * gmem_meta master this used to require is gone). */
     mac_cache_flush(in_base_phys, in_flush_size);
     mac_cache_flush(w_base_phys,  w_flush_size);
     mac_cache_flush(b_base_phys,  b_flush_size);
-    w64(MAC_DESC_LO, MAC_DESC_HI, desc_phys);
-    REG_WR(mac_ctrl, MAC_N_LAYERS, (uint32_t)n_layers);
+    mac_write_desc(desc);
     w64(MAC_IN_BASE_LO, MAC_IN_BASE_HI, in_base_phys);
     w64(MAC_W_BASE_LO, MAC_W_BASE_HI, w_base_phys);
     w64(MAC_B_BASE_LO, MAC_B_BASE_HI, b_base_phys);
     w64(MAC_OUT_BASE_LO, MAC_OUT_BASE_HI, out_base_phys);
-    w64(MAC_OUT_WRITTEN_LO, MAC_OUT_WRITTEN_HI, out_written_phys);
     /* A3 MERGE round (2026-08-23, ZHR-92): in_base_wide -- always the same
      * physical region as in_base (harmless to set even for op types, e.g.
      * Add, that never read it). */
@@ -128,11 +142,10 @@ void mac_run_layers(
 
     /* FPGA -> CPU: invalidate before the ARM trusts anything the IP wrote. */
     mac_cache_invalidate(out_check_off_phys, out_check_size);
-    mac_cache_invalidate(out_written_phys, (size_t)n_layers * sizeof(int32_t));
-}
-
-int mac_check_written(const int32_t *out_written_virt, int n_layers) {
-    for (int i = 0; i < n_layers; i++)
-        if (out_written_virt[i] == 0) return 0;
-    return 1;
+    /* out_written is a plain s_axi_control register now, not a DRAM
+     * pointer -- no cache invalidate needed for it at all (mmap'd
+     * register space is never CPU-cached the way DRAM is). Read directly;
+     * ap_done already implies the IP's own write to this register
+     * happened, same guarantee `return` values rely on generally. */
+    return (int)REG_RD(mac_ctrl, MAC_OUT_WRITTEN_DATA);
 }

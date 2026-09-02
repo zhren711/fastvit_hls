@@ -11,11 +11,20 @@ by a bundle-verification tool after a board failure).
 
 Computes h_out/w_out/n_row_tiles/n_col_tiles/n_ch_tiles/last_*_tile/
 in_ch_stride/out_ch_stride the same way derive_mac_array_params() does
-(ported verbatim), packs each entry into MacLayerDesc's exact 27-int
-layout (mac_array_driver.h), and writes ONE flat desc_all.bin (82*27*4
+(ported verbatim), packs each entry into MacLayerDesc's exact 28-int
+layout (mac_array_driver.h), and writes ONE flat desc_all.bin (82*28*4
 bytes) for the board harness to load and dispatch entry-by-entry, using
 REAL (not relocated) in_off/out_off/w_off/b_off -- this is a single flat
 arena shared across all 82 entries (Route C), not 82 independent bundles.
+
+ZHR-92 (2026-08-30): field count updated 27->28 (use_wide_path appended,
+zero-filled) to match MacLayerDesc's real current layout -- the struct's
+own 28th field (added 2026-08-23) was never mirrored into this generator,
+a latent mismatch caught while implementing the gmem_meta-to-s_axilite
+conversion (which needs every field explicit; the old DMA path silently
+tolerated the 1-field-short mismatch since use_wide_path is dead code in
+the active dispatch path -- see CLAUDE.md's "a comment asserting an
+invariant..." entry).
 """
 import re
 import struct
@@ -83,12 +92,15 @@ for i, r in enumerate(rows):
         last_row_tile, last_col_tile, last_ch_tile,
         use_shift_table, shift_off,
         in_ch_stride, out_ch_stride,
+        0,  # use_wide_path -- dead code in the active dispatch path, zero-fill is
+            # the established "backward compatible by construction" convention
+            # (see LayerDescV2's own field comment in mac_array.h).
     ]
-    assert len(fields) == 27, len(fields)
-    all_desc_bytes += struct.pack("<27i", *fields)
+    assert len(fields) == 28, len(fields)
+    all_desc_bytes += struct.pack("<28i", *fields)
     summary.append((i, op_type, cin, cout, h_in, w_in, in_off, out_off))
 
-assert len(all_desc_bytes) == N_HW_SEQ * 27 * 4
+assert len(all_desc_bytes) == N_HW_SEQ * 28 * 4
 
 OUT_DIR = os.path.join(ROOT, "accuracy_test_imgs_256", "board_test_full_network")
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -96,7 +108,7 @@ with open(os.path.join(OUT_DIR, "desc_all.bin"), "wb") as f:
     f.write(all_desc_bytes)
 
 print(f">>> parsed {N_HW_SEQ} real entries from mac_array_ckpt_desc.h")
-print(f">>> desc_all.bin: {len(all_desc_bytes)} bytes ({N_HW_SEQ} x 27 x 4)")
+print(f">>> desc_all.bin: {len(all_desc_bytes)} bytes ({N_HW_SEQ} x 28 x 4)")
 for i, op_type, cin, cout, h_in, w_in, in_off, out_off in summary[:5]:
     print(f"    [{i:2d}] op={op_type} cin={cin} cout={cout} h={h_in} w={w_in} in_off={in_off} out_off={out_off}")
 print("    ...")

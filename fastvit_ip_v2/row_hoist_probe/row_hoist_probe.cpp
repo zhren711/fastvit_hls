@@ -50,6 +50,16 @@ void row_hoist_probe_top(
 #pragma HLS INTERFACE s_axilite port=pw_patch_out bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
 
+    /* ZHR-92 (2026-08-25) round 2 correction: the real II=16 bottleneck,
+     * per csynth's own "II Violation ... due to limited memory ports"
+     * warnings, was pw_patch_out -- NOT row_buf as first (wrongly)
+     * diagnosed. pw_patch_out had no ARRAY_PARTITION at all in round 1's
+     * probe, an oversight -- the real mac_array.cpp's own analogous
+     * destination buffer (lane_in[MAC_PD][MAC_PR][MAC_PC], same shape,
+     * see run_reduce_unified) has always used a single
+     * "complete dim=0" pragma. Matching that here. */
+    #pragma HLS ARRAY_PARTITION variable=pw_patch_out complete dim=0
+
     /* Item 2: flat row buffer -- complete-partitioned on MAC_PR (dim1,
      * compile-time constant, cheap 4-way split) but NOT on the large
      * dimension. This is the whole question: does leaving it un-
@@ -58,6 +68,17 @@ void row_hoist_probe_top(
      * accessed force per-element muxing anyway? */
     static act_t row_buf[MAC_PR][MAX_CIN_TIMES_W];
     #pragma HLS ARRAY_PARTITION variable=row_buf complete dim=1
+    /* ZHR-92 (2026-08-25): cyclic factor=MAC_PC on the large dimension --
+     * the COPY loop's 4-wide unrolled cw access reads 4 CONSECUTIVE
+     * flat_idx values in the same cycle (colt*MAC_PC+cw for cw=0..3,
+     * and colt*MAC_PC is always a multiple of MAC_PC=4) -- cyclic
+     * factor=4 puts those 4 consecutive addresses in 4 DIFFERENT banks
+     * (bank = flat_idx % 4), resolving the single-port contention that
+     * measured as achieved II=16 with no partitioning on this dimension
+     * at all (round 1 of this probe). This is a split, not a
+     * duplication -- total storage is unchanged, each of the 4 banks is
+     * 1/4 the depth. */
+    #pragma HLS ARRAY_PARTITION variable=row_buf cyclic factor=MAC_PC dim=2
 
     int total_words = (cin * w_real + 3) / 4;   /* runtime value */
 

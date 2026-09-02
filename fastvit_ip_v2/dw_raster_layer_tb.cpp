@@ -66,8 +66,8 @@ static bool run_case(const char *tag, int cin, int cout, int h_in, int w_in,
         bbuf[c] = acc_t(bv);
     }
 
-    int written[1] = {0};
-    mac_array_top(&d, 1, feat.data(), wbuf.data(), bbuf.data(), feat.data(), written,
+    int written = 0;
+    mac_array_top(d, feat.data(), wbuf.data(), bbuf.data(), feat.data(), &written,
                   reinterpret_cast<const ap_uint<32>*>(feat.data()),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())));

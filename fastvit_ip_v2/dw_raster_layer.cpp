@@ -151,10 +151,33 @@ static void dwr_writeout_impl(act_t out_base[], int base_addr, int start, act_t 
 }
 
 #ifdef DWR_ENABLE_FPG_SPECIALIZATION
-// Option A -- true II=1 for fpg=1, but real measured cost is 93.6% DSP
-// (206/220) on this chip once both instantiations coexist -- rejected
-// this round (WNS=+0.003ns, and this project's own >=95%-BRAM
-// unroutable-pins precedent). Kept for when DSP budget allows it.
+// Option A -- ORIGINAL CLAIM (superseded, see correction below): true
+// II=1 for fpg=1, but real measured cost is 93.6% DSP (206/220) on this
+// chip once both instantiations coexist -- rejected that round (WNS=
+// +0.003ns, and this project's own >=95%-BRAM unroutable-pins
+// precedent). Kept for when DSP budget allows it.
+//
+// CORRECTION, 2026-09-01 (ZHR-92/ZHR-63, PW tiling "make room" round):
+// RE-MEASURED, does NOT reproduce. Fresh isolated csynth (this file
+// unchanged in its own FPG-specialization logic, but several other
+// rounds touched this file since Option A was last measured --
+// DWR_HOIST_BASE_ADDR, LB_FORCE_DSP, the writeout template<bool> split
+// -- none independently re-verified against this flag until now) shows
+// BOTH instantiations regressed, not just FPG_MODE=2: run_dw_layer_
+// raster's own isolated LUT went 11,543 -> 28,017 (+143%, the opposite
+// of the intended saving), and CROW_CCOL's achieved II is 4 for
+// FPG_MODE=1 (not the claimed II=1) and 8 for FPG_MODE=2 -- both worse
+// than the deployed default's own II=1. csim stays clean (wiring tb
+// 4/4, dw_raster_layer_tb 5/5 including 2 real fpg=2 shapes), so this
+// is a real synthesis-quality regression, not a correctness one. Root
+// cause NOT investigated this round (closing this whole line, not
+// worth the further rounds a root-cause chase would cost -- see ZHR-63
+// PW-tiling closeout). This is the highest-cost instance yet of this
+// project's own "a comment asserting a test result needs re-
+// verification before being relied on" lesson -- an entire round's
+// experiment design (ZHR-92, 2026-09-01) was built on this stale
+// number before it was ever re-checked. Do not cite the "93.6% DSP,
+// true II=1" claim above without re-running this flag fresh first.
 template<int FPG_MODE>
 static void dwr_consume_impl(
     const wt_t w_base[], int w_off, int shift_off, const acc_t b_base[], int b_off,
@@ -204,6 +227,17 @@ static void dwr_consume_impl(
                         for (int c = 0; c < DWR_MAX_K; c++) {
                             bool active = (r >= off) && (c >= off);
                             acc_t prod;
+                            /* NOT ADOPTED: forced-DSP real P&R failed
+                             * timing (WNS=-0.108ns) vs. the default
+                             * LUT-mode build meeting it (WNS=+0.021ns) on
+                             * matching resource totals -- see CLAUDE.md's
+                             * "HLS-level resource-binding choice ...
+                             * does not reliably determine ... resource
+                             * distribution, but can still change real
+                             * placement/timing" entry. LB_FORCE_DSP stays
+                             * undefined by default; run_csim_gmem_meta_
+                             * elim.tcl documents the deployed baseline's
+                             * build flags explicitly for this reason. */
 #ifdef LB_FORCE_DSP
 #pragma HLS BIND_OP variable=prod op=mul impl=DSP
 #endif
@@ -323,6 +357,17 @@ static void dwr_consume(
                         for (int c = 0; c < DWR_MAX_K; c++) {
                             bool active = (r >= off) && (c >= off);
                             acc_t prod;
+                            /* NOT ADOPTED: forced-DSP real P&R failed
+                             * timing (WNS=-0.108ns) vs. the default
+                             * LUT-mode build meeting it (WNS=+0.021ns) on
+                             * matching resource totals -- see CLAUDE.md's
+                             * "HLS-level resource-binding choice ...
+                             * does not reliably determine ... resource
+                             * distribution, but can still change real
+                             * placement/timing" entry. LB_FORCE_DSP stays
+                             * undefined by default; run_csim_gmem_meta_
+                             * elim.tcl documents the deployed baseline's
+                             * build flags explicitly for this reason. */
 #ifdef LB_FORCE_DSP
 #pragma HLS BIND_OP variable=prod op=mul impl=DSP
 #endif

@@ -52,12 +52,20 @@
  * most); only IN/W/OUT need to be large. */
 #define FV_MAP_SIZE   0x400000UL   /* 4MB window */
 
-#define DESC_OFF          0x000000UL
+/* ZHR-92 (2026-08-30): DESC_OFF/OUT_WRITTEN_OFF DRAM regions RETIRED --
+ * gmem_meta elimination means desc.bin is loaded straight into a host
+ * MacLayerDesc struct and dispatched via mac_write_desc() (s_axi_control
+ * registers, no DRAM), and out_written is read back from a register, no
+ * DRAM array. NOTE: existing desc.bin bundles built by the various
+ * tools/build_single_op_test_entry*.py generators still pack the OLD
+ * 27-int MacLayerDesc layout (108 bytes) -- this file now expects 28
+ * ints (112 bytes, matching the corrected struct). Those generators were
+ * NOT updated this round (out of scope -- no board testing this round);
+ * regenerate the specific bundle before running this program again. */
 #define IN_OFF            0x010000UL
 #define W_OFF             0x110000UL
 #define B_OFF             0x210000UL
 #define OUT_OFF           0x220000UL
-#define OUT_WRITTEN_OFF   0x320000UL
 
 static size_t file_size(const char *path) {
     FILE *f = fopen(path, "rb");
@@ -111,15 +119,20 @@ int main(int argc, char **argv) {
                            MAP_SHARED, fd_dma, FV_DDR_BASE);
     if (dma_virt == MAP_FAILED) { perror("mmap dma region"); return 1; }
 
-    uint8_t *desc_v = (uint8_t*)dma_virt + DESC_OFF;
     uint8_t *in_v   = (uint8_t*)dma_virt + IN_OFF;
     uint8_t *w_v    = (uint8_t*)dma_virt + W_OFF;
     uint8_t *b_v    = (uint8_t*)dma_virt + B_OFF;
     uint8_t *out_v  = (uint8_t*)dma_virt + OUT_OFF;
-    int32_t *out_written_v = (int32_t*)((uint8_t*)dma_virt + OUT_WRITTEN_OFF);
 
+    MacLayerDesc host_desc;
+    if (desc_size != sizeof(MacLayerDesc)) {
+        fprintf(stderr, "desc.bin size %zu != expected %zu (sizeof(MacLayerDesc)) -- "
+                "bundle needs regenerating against the current 28-field layout\n",
+                desc_size, sizeof(MacLayerDesc));
+        return 1;
+    }
     snprintf(path, sizeof(path), "%s/desc.bin", dir);
-    load_file(path, desc_v, desc_size);
+    load_file(path, &host_desc, desc_size);
     snprintf(path, sizeof(path), "%s/in.bin", dir);
     load_file(path, in_v, in_size);
     snprintf(path, sizeof(path), "%s/w.bin", dir);
@@ -131,12 +144,11 @@ int main(int argc, char **argv) {
      * real check, not a coincidence of a zero-filled page -- 0xA5 is not
      * a plausible int8 conv output pattern (every byte identical). */
     memset(out_v, 0xA5, ref_size);
-    out_written_v[0] = 0;
-    /* Flush the poison pattern + written=0 too -- otherwise a stale cache
-     * line could make the post-dispatch invalidate look like a false
-     * pass by accident. */
+    /* Flush the poison pattern too -- otherwise a stale cache line could
+     * make the post-dispatch invalidate look like a false pass by
+     * accident. out_written no longer needs this -- it's a register now,
+     * not a DRAM location. */
     mac_cache_flush(FV_DDR_BASE + OUT_OFF, ref_size);
-    mac_cache_flush(FV_DDR_BASE + OUT_WRITTEN_OFF, sizeof(int32_t));
 
     /* ---- map + probe the IP's control register BEFORE dispatch (ZHR-5:
      * bitstream loaded? clock enabled? base address right? -- cheaper to
@@ -163,23 +175,22 @@ int main(int argc, char **argv) {
     else
         printf("  <-- nonzero, non-all-F: IP is responding\n");
 
-    uintptr_t desc_phys = FV_DDR_BASE + DESC_OFF;
     uintptr_t in_phys    = FV_DDR_BASE + IN_OFF;
     uintptr_t w_phys     = FV_DDR_BASE + W_OFF;
     uintptr_t b_phys     = FV_DDR_BASE + B_OFF;
     uintptr_t out_phys   = FV_DDR_BASE + OUT_OFF;
-    uintptr_t out_written_phys = FV_DDR_BASE + OUT_WRITTEN_OFF;
 
     struct timespec tf0, tf1;
     clock_gettime(CLOCK_MONOTONIC, &tf0);
-    mac_cache_flush(desc_phys, desc_size);
+    /* desc no longer needs a flush -- it never touches DRAM (written
+     * straight into s_axi_control registers below via mac_write_desc()). */
     mac_cache_flush(in_phys, in_size);
     mac_cache_flush(w_phys, w_size);
     mac_cache_flush(b_phys, b_size);
     clock_gettime(CLOCK_MONOTONIC, &tf1);
     double flush_ms = (tf1.tv_sec - tf0.tv_sec) * 1000.0 + (tf1.tv_nsec - tf0.tv_nsec) / 1e6;
-    printf(">>> cache_flush(desc+in+w+b, total %zu bytes): %.3f ms\n",
-           desc_size + in_size + w_size + b_size, flush_ms);
+    printf(">>> cache_flush(in+w+b, total %zu bytes): %.3f ms\n",
+           in_size + w_size + b_size, flush_ms);
 
     /* ---- dispatch, by hand (not mac_run_layers) so we get the BOUNDED
      * wait for this first-ever call. ---- */
@@ -194,15 +205,19 @@ int main(int argc, char **argv) {
         if (ctrl == MAP_FAILED) { perror("mmap ctrl rw"); return 1; }
     }
     #define W32(off, val) (*(volatile uint32_t*)((char*)ctrl + (off)) = (uint32_t)(val))
+    #define R32(off) (*(volatile uint32_t*)((char*)ctrl + (off)))
     #define W64(lo, hi, addr) do { W32(lo, (uint32_t)(addr)); W32(hi, (uint32_t)((uint64_t)(addr) >> 32)); } while (0)
 
-    W64(MAC_DESC_LO, MAC_DESC_HI, desc_phys);
-    W32(MAC_N_LAYERS, 1);
+    /* ZHR-92 (2026-08-30): desc dispatched straight from host_desc via
+     * mac_write_desc() -- writes through mac_ctrl (mmap'd by
+     * mac_driver_init() above), a separate virtual mapping to the same
+     * physical control region as this file's own `ctrl` (harmless --
+     * MMIO, not cached RAM). No n_layers (gmem_meta is gone). */
+    mac_write_desc(&host_desc);
     W64(MAC_IN_BASE_LO, MAC_IN_BASE_HI, in_phys);
     W64(MAC_W_BASE_LO, MAC_W_BASE_HI, w_phys);
     W64(MAC_B_BASE_LO, MAC_B_BASE_HI, b_phys);
     W64(MAC_OUT_BASE_LO, MAC_OUT_BASE_HI, out_phys);
-    W64(MAC_OUT_WRITTEN_LO, MAC_OUT_WRITTEN_HI, out_written_phys);
     /* A3 MERGE round (2026-08-23, ZHR-92): in_base_wide -- PW_PATCH_HOIST
      * now unconditionally reads through this port (see mac_array.cpp), so
      * every PW dispatch needs it set, not just use_wide_path=1 layers.
@@ -258,18 +273,18 @@ int main(int argc, char **argv) {
     struct timespec ti0, ti1;
     clock_gettime(CLOCK_MONOTONIC, &ti0);
     mac_cache_invalidate(out_phys, ref_size);
-    mac_cache_invalidate(out_written_phys, sizeof(int32_t));
+    /* out_written is a register, not DRAM -- no invalidate needed. */
     clock_gettime(CLOCK_MONOTONIC, &ti1);
     double inval_ms = (ti1.tv_sec - ti0.tv_sec) * 1000.0 + (ti1.tv_nsec - ti0.tv_nsec) / 1e6;
-    printf(">>> cache_invalidate(out+out_written, total %zu bytes): %.3f ms\n",
-           ref_size + sizeof(int32_t), inval_ms);
+    printf(">>> cache_invalidate(out, %zu bytes): %.3f ms\n", ref_size, inval_ms);
     printf(">>> ns/byte over dispatch window (in+w+b+out=%zu bytes): %.1f ns/byte\n",
            in_size + w_size + b_size + ref_size,
            (elapsed_ms * 1e6) / (double)(in_size + w_size + b_size + ref_size));
 
-    printf(">>> out_written[0] = %d\n", out_written_v[0]);
-    if (out_written_v[0] == 0) {
-        printf(">>> FAIL: out_written[0] is still 0 -- IP reported done but never performed the "
+    uint32_t out_written_val = R32(MAC_OUT_WRITTEN_DATA);
+    printf(">>> out_written = %u\n", out_written_val);
+    if (out_written_val == 0) {
+        printf(">>> FAIL: out_written is still 0 -- IP reported done but never performed the "
                "write-back (this is exactly defect-5's symptom class). Do not trust out.bin.\n");
         return 3;
     }

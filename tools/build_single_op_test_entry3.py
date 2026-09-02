@@ -90,7 +90,9 @@ out_ch_stride = h_out * w_out
 assert h_out == 64 and w_out == 64
 assert len(ref_out) == cout * h_out * w_out
 
-# ---- pack MacLayerDesc (mac_array_driver.h field order, 27x int32 LE) ----
+# ---- pack MacLayerDesc (mac_array_driver.h field order, 28x int32 LE) ----
+# ZHR-92 (2026-08-31): 27->28, use_wide_path appended (zero-fill), matching
+# MacLayerDesc's real current layout -- see CLAUDE.md's note on this field.
 fields = [
     OP_PWCONV, cin, cout,
     h_in, w_in,
@@ -105,9 +107,10 @@ fields = [
     1,          # use_shift_table
     shift_off_relocated,
     in_ch_stride, out_ch_stride,
+    0,          # use_wide_path -- dead code in the active dispatch path
 ]
-assert len(fields) == 27, len(fields)
-desc_bytes = struct.pack("<27i", *fields)
+assert len(fields) == 28, len(fields)
+desc_bytes = struct.pack("<28i", *fields)
 
 with open(os.path.join(OUT_DIR, "desc.bin"), "wb") as f:
     f.write(desc_bytes)
@@ -120,7 +123,7 @@ with open(os.path.join(OUT_DIR, "b.bin"), "wb") as f:
 with open(os.path.join(OUT_DIR, "ref_out.bin"), "wb") as f:
     f.write(ref_out)
 
-print(f">>> desc.bin: {len(desc_bytes)} bytes (27 int32 fields)")
+print(f">>> desc.bin: {len(desc_bytes)} bytes (28 int32 fields)")
 print(f">>> in.bin: {len(in_buf)} bytes (cin={cin} h={h_in} w={w_in})")
 print(f">>> w.bin: {len(w_base_buf)} bytes ({W_SLICE_BYTES} weight + {SHIFT_SLICE_BYTES} shift, shift_off={shift_off_relocated})")
 print(f">>> b.bin: {len(b_slice)} bytes ({B_SLICE_ELEMS} int32)")

@@ -26,10 +26,11 @@
 #define FV_DDR_BASE   0x10000000UL
 #define FV_MAP_SIZE   0x100000UL
 
-#define DESC_OFF          0x00000UL
+/* ZHR-92 (2026-08-30): DESC_OFF/OUT_WRITTEN_OFF DRAM regions RETIRED --
+ * see mac_array_single_op_test.c's own header note on the gmem_meta
+ * elimination; same NOTE about desc.bin's stale 27-int bundles applies. */
 #define IN_OFF            0x10000UL   /* holds op0 then op1, concatenated */
 #define OUT_OFF           0x70000UL
-#define OUT_WRITTEN_OFF   0xB0000UL
 
 static size_t file_size(const char *path) {
     FILE *f = fopen(path, "rb");
@@ -74,50 +75,52 @@ int main(int argc, char **argv) {
                            MAP_SHARED, fd_dma, FV_DDR_BASE);
     if (dma_virt == MAP_FAILED) { perror("mmap dma region"); return 1; }
 
-    uint8_t *desc_v = (uint8_t*)dma_virt + DESC_OFF;
     uint8_t *in_v   = (uint8_t*)dma_virt + IN_OFF;
     uint8_t *out_v  = (uint8_t*)dma_virt + OUT_OFF;
-    int32_t *out_written_v = (int32_t*)((uint8_t*)dma_virt + OUT_WRITTEN_OFF);
 
+    MacLayerDesc host_desc;
+    if (desc_size != sizeof(MacLayerDesc)) {
+        fprintf(stderr, "desc.bin size %zu != expected %zu (sizeof(MacLayerDesc)) -- "
+                "bundle needs regenerating against the current 28-field layout\n",
+                desc_size, sizeof(MacLayerDesc));
+        return 1;
+    }
     snprintf(path, sizeof(path), "%s/desc.bin", dir);
-    load_file(path, desc_v, desc_size);
+    load_file(path, &host_desc, desc_size);
     snprintf(path, sizeof(path), "%s/in.bin", dir);
     load_file(path, in_v, in_size);
 
     memset(out_v, 0xA5, ref_size);
-    out_written_v[0] = 0;
 
     if (mac_driver_init() != 0) {
         fprintf(stderr, "mac_driver_init failed\n");
         return 1;
     }
 
-    uintptr_t desc_phys = FV_DDR_BASE + DESC_OFF;
     uintptr_t in_phys    = FV_DDR_BASE + IN_OFF;
     uintptr_t out_phys   = FV_DDR_BASE + OUT_OFF;
-    uintptr_t out_written_phys = FV_DDR_BASE + OUT_WRITTEN_OFF;
 
-    mac_cache_flush(desc_phys, desc_size);
+    /* desc no longer needs a flush -- it never touches DRAM. */
     mac_cache_flush(in_phys, in_size);
     mac_cache_flush(out_phys, ref_size);           /* the poison pattern */
-    mac_cache_flush(out_written_phys, sizeof(int32_t));
 
     int fd2 = open("/dev/mem", O_RDWR | O_SYNC);
     volatile void *ctrl = mmap(NULL, MAC_ARRAY_MAP_SIZE, PROT_READ | PROT_WRITE,
                                 MAP_SHARED, fd2, MAC_ARRAY_CTRL_PHYS);
     if (ctrl == MAP_FAILED) { perror("mmap ctrl rw"); return 1; }
     #define W32(off, val) (*(volatile uint32_t*)((char*)ctrl + (off)) = (uint32_t)(val))
+    #define R32(off) (*(volatile uint32_t*)((char*)ctrl + (off)))
     #define W64(lo, hi, addr) do { W32(lo, (uint32_t)(addr)); W32(hi, (uint32_t)((uint64_t)(addr) >> 32)); } while (0)
 
     /* ADD never touches w_base/b_base -- point them at the same region as
-     * in_base (harmless, never dereferenced by run_add). */
-    W64(MAC_DESC_LO, MAC_DESC_HI, desc_phys);
-    W32(MAC_N_LAYERS, 1);
+     * in_base (harmless, never dereferenced by run_add). desc dispatched
+     * straight from host_desc via mac_write_desc() -- no n_layers, no
+     * DRAM (gmem_meta is gone). */
+    mac_write_desc(&host_desc);
     W64(MAC_IN_BASE_LO, MAC_IN_BASE_HI, in_phys);
     W64(MAC_W_BASE_LO, MAC_W_BASE_HI, in_phys);
     W64(MAC_B_BASE_LO, MAC_B_BASE_HI, in_phys);
     W64(MAC_OUT_BASE_LO, MAC_OUT_BASE_HI, out_phys);
-    W64(MAC_OUT_WRITTEN_LO, MAC_OUT_WRITTEN_HI, out_written_phys);
     /* ZHR-92 (2026-08-25): in_base_wide/out_burst were both added in later
      * rounds than this file -- ADD's own dispatch (run_add) never reads
      * either, so leaving them unset was functionally harmless for ADD
@@ -158,11 +161,12 @@ int main(int argc, char **argv) {
     printf(">>> ap_done set after %.2f ms\n", elapsed_ms);
 
     mac_cache_invalidate(out_phys, ref_size);
-    mac_cache_invalidate(out_written_phys, sizeof(int32_t));
+    /* out_written is a register, not DRAM -- no invalidate needed. */
 
-    printf(">>> out_written[0] = %d\n", out_written_v[0]);
-    if (out_written_v[0] == 0) {
-        printf(">>> FAIL: out_written[0] is still 0 -- IP reported done but never performed the "
+    uint32_t out_written_val = R32(MAC_OUT_WRITTEN_DATA);
+    printf(">>> out_written = %u\n", out_written_val);
+    if (out_written_val == 0) {
+        printf(">>> FAIL: out_written is still 0 -- IP reported done but never performed the "
                "write-back. THIS IS DEFECT-5'S EXACT SYMPTOM. Do not trust out.bin.\n");
         return 3;
     }

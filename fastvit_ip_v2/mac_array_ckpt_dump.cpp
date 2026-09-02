@@ -90,8 +90,17 @@ int main() {
                i, g_hw_seq[i].op_type, g_hw_seq[i].cin, g_hw_seq[i].cout, g_hw_seq[i].h_in, g_hw_seq[i].w_in,
                g_hw_seq[i].k, g_hw_seq[i].in_off, g_hw_seq[i].w_off, g_hw_seq[i].b_off, g_hw_seq[i].out_off, g_hw_seq[i].in2_off);
         int written[1] = {0};
-        mac_array_top(&g_hw_seq[i], 1, act_buf.data(), w_buf.data(), b_buf.data(), act_buf.data(), written,
-                      reinterpret_cast<const ap_uint<32>*>(act_buf.data()));
+        /* ZHR-92 (2026-09-02): call site updated to match mac_array_top's
+         * current interface (single by-value desc, no n_layers, plus
+         * in_base_wide/out_burst/in_burst -- see mac_array.h:542) -- this
+         * testbench predates the gmemmeta_elim1 interface change and was
+         * never updated since it wasn't in that round's own scope. Fixed
+         * here only to regenerate missing entry dumps (entry64), not a
+         * broader change. */
+        mac_array_top(g_hw_seq[i], act_buf.data(), w_buf.data(), b_buf.data(), act_buf.data(), written,
+                      reinterpret_cast<const ap_uint<32>*>(act_buf.data()),
+                      hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(act_buf.data())),
+                      hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(act_buf.data())));
 
         // A2 Phase C diagnostic (2026-08-21, ZHR-92): dump EVERY entry's
         // full output in the stem.1..stage1 span (entries 0-16) for a
@@ -104,7 +113,12 @@ int main() {
         // board test bundles for the three ops (GAP/RELU/SIGMOID/SCALE via
         // the SE flow, GELU already covered by entries 0-16) never board-
         // tested on this architecture.
-        if (i <= 16 || (i >= 74 && i <= 80)) {
+        /* ZHR-92 (2026-09-02): added i==63,64 -- entry64 (layer_0043_pwconv,
+         * cin=384/cout=1152, real >144KB weight-hoist fallback layer) needs
+         * a real-chain input (entry63's output) and reference (entry64's
+         * output) for a board test of PW_WEIGHT_HOIST's cache-cutoff
+         * fallback path, which never had real-chain dump coverage before. */
+        if (i <= 16 || (i >= 63 && i <= 64) || (i >= 74 && i <= 80)) {
             /* A3 round (2026-08-23, ZHR-92): real output size differs by
              * op_type -- the original cout*h_out*w_out formula is only
              * correct for DWCONV/PWCONV. GAP collapses spatial entirely
