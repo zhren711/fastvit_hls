@@ -468,6 +468,19 @@ supposedly standing in for.
   outer-chunk loop plus a fresh re-verification of "activation read costs ~0%" (board-confirmed only
   under the current non-chunked design; chunking would make each of these 4 layers' `COPY_FROM_ROW`
   re-run 3x, an assumption never tested). Not attempted this round.
+  **PREREQUISITE PROBE DONE, same day (2026-09-02), before writing the chunked loop as instructed:**
+  `PW_FIX_ACTADDR` on the same 4 entries (WNS=+0.129376ns, clean, no cross-validation needed) measured
+  current activation-read contribution at **1.32ms combined / 446.42ms baseline (0.30%)** -- confirms
+  the "~0%" finding transfers to these small-spatial/large-channel layers, not assumed from entry3.
+  Extrapolating x3 (chunking triples `COPY_FROM_ROW`'s re-runs, explicitly flagged as extrapolation not
+  measurement) adds ~2.64ms. Chunked-load overhead, via the established `PW_WEIGHT_HOIST` cost model
+  (~1.475ms per 144KB chunk at II=1/100MHz, proportional to bytes moved): L43/L44 each need exactly 3
+  chunks (442,368B = 3x144KB) = 4.425ms each; L47/L48 each need 2.5 chunks' worth of bytes (368,640B) =
+  3.6875ms each; **total load overhead = 16.225ms** (currently zero -- the direct-read fallback has no
+  separate load phase). **Net benefit = 351.44 − 2.64 − 16.225 ≈ 332.6ms**, clearing this round's own
+  pre-registered >200ms "write the chunked loop" threshold by a wide margin. Chunked loading is now the
+  pre-registered next implementation target -- not yet attempted, awaiting a checkpoint per this
+  project's own one-round-at-a-time discipline (see the entry directly below).
 - **One round = one hypothesis + one measurement + one conclusion.** Report the result and stop —
   do not chain straight into the next round without a human checkpoint. This is not a suggestion:
   ZHR-16's round 3→4→5→6 ran back-to-back with no checkpoint and the user identified that as the

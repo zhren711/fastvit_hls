@@ -755,6 +755,25 @@ static void run_layer(const LayerDescV2 &d,
      * make `COPY_FROM_ROW` re-run 3x per layer, an assumption never yet
      * tested). Not attempted this round.
      *
+     * PREREQUISITE PROBE DONE, 2026-09-02 (PW_FIX_ACTADDR on the same 4
+     * entries, WNS=+0.129376ns, clean/no cross-validation needed): current
+     * activation-read contribution measured at just 1.32ms combined /
+     * 446.42ms baseline (0.30%) -- confirms entry3's "~0%" finding
+     * transfers to these small-spatial/large-channel layers too, not
+     * assumed. Extrapolating x3 (chunking triples COPY_FROM_ROW's re-runs)
+     * adds ~2.64ms. Chunked-load overhead, using the established
+     * PW_WEIGHT_HOIST cost model (~1.475ms per 144KB chunk at II=1/100MHz,
+     * proportional to bytes moved): L43/L44 each need 3 chunks (442,368B =
+     * exactly 3x144KB) = 4.425ms each; L47/L48 each need 2.5 chunks worth
+     * of bytes (368,640B) = 3.6875ms each; total load overhead = 16.225ms
+     * (currently zero -- the direct-read fallback has no separate load
+     * phase). Net = 351.44 - 2.64 - 16.225 = ~332.6ms, clearing this
+     * round's own pre-registered >200ms "write the chunked loop" threshold
+     * by a wide margin. Chunked loading (option b) is now the pre-
+     * registered next round's actual implementation target -- not
+     * attempted yet, awaiting a checkpoint per this project's own
+     * one-round-at-a-time discipline.
+     *
      * Partitioning: deliberately NONE, unchanged from the 144KB round.
      * PW_FLAT reads exactly one weight element per pipeline step
      * (lane_w[dd], dd only ranges over MAC_PD=1) -- a plain, unpartitioned
