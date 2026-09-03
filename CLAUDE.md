@@ -421,6 +421,53 @@ supposedly standing in for.
   needed) -- this specific form (PW_CACHED as a runtime bool, FAST_WRITEOUT the only remaining
   template dimension, 2 instances) is a real, P&R-verified, deployable-quality result on the weight-
   residency line, not just an isolated-csynth number to distrust.
+  **PRECISE FOLLOW-UP, 2026-09-02, same day: confirmed the real BRAM delta is single-copy, not
+  double, which corrects the "ANY array parameter read from 2+ instantiations gets a physical copy
+  per instantiation" rule stated above -- that rule is accurate at the ISOLATED CSYNTH level (already
+  confirmed there, +128 BRAM_18K for the abandoned template-`PW_CACHED` design) but does NOT reliably
+  hold at the REAL SYNTHESIS level.** 144KB's theoretical minimum is exactly 32 tiles
+  (147,456 bytes / 4,608 bytes-per-RAMB36E1); the real measured delta is 40 tiles (74-34) -- a 1.25x
+  packing/routing overhead, nowhere near the 2x (64 tiles) a genuine duplicate would show. Real
+  Vivado `synth_design` evidently CAN share (or at least avoid duplicating) a single logical BRAM
+  array across 2 HLS-level function instances that each treat it as their own parameter, even though
+  HLS's own isolated csynth reports them as needing separate physical copies. **Corrected rule: an
+  array parameter read from 2+ independently-synthesized function instantiations is GUARANTEED to
+  show as duplicated in isolated csynth, but real whole-IP synthesis may or may not actually
+  duplicate it in the final implementation -- this is now confirmed to differ (isolated says "yes,
+  duplicated," real P&R says "no, effectively single-copy") for at least one real case on this
+  project, so treat isolated csynth's verdict on THIS specific question the same way every other
+  isolated-csynth number on this project is already treated: a hypothesis to test with real P&R, not
+  a fact.** This is the same "isolated vs real, direction not consistent" pattern as the BRAM
+  percentage finding directly above, just narrowed to a more specific mechanism (array-parameter
+  sharing across instances) rather than the aggregate resource total.
+  **FOLLOW-UP ATTEMPT, same day, CLOSED with a real negative result: raising the cutoff to 432KB
+  (covering all 26 real PW layers, eliminating the fallback path entirely) does NOT fit.** Motivated
+  by real board evidence first (not a guess): the 4 layers that fall back to direct-DRAM-read at the
+  144KB cutoff (layer 43/44/47/48) were board-measured, via the SAME `PW_FIX_WADDR` probe + two-
+  implementation cross-validation technique described above (confirmed a 2nd time on this exact
+  measurement -- see that entry), saving 351.44ms combined (78.7% of their own 446.42ms, a
+  remarkably consistent 77.9-79.3% across all four) if cached -- 16.65% of the full network. This
+  REFUTES an unchecked intuition that these much-larger-cin/cout layers would be more compute-bound
+  (and therefore have a SMALLER weight-time fraction than the small entry3-scale layers the cache
+  was originally sized around) -- measured, their weight-time fraction (78.7%) is HIGHER than
+  entry3's own 55.3%, not lower, because these are small-spatial-extent (h=w=8, 4 tiles)/large-
+  channel-count layers where weight volume (scales with cin*cout) dominates more, not less, than
+  compute per tile. Given this real, substantial, measured opportunity, raising
+  `PW_WEIGHT_CACHE_ELEMS` to 442,368 (432KB, the real max across all 26 layers) was tried: isolated
+  csynth projected 115% BRAM (323/280 BRAM_18K) -- below this round's own pre-registered 130%
+  "definitely won't fit" cutoff, so real P&R was run anyway (per the same "isolated is unreliable,
+  direction not consistent" discipline already established) rather than trusting the isolated number
+  either way. **Real P&R: Block RAM Tile 140/140 (100.00%, the device's absolute ceiling, zero
+  margin) and WNS=-1.075730ns (a real violation, not closed).** Both land squarely in this project's
+  own pre-registered stop-loss zone -- reverted immediately (`PW_WEIGHT_CACHE_ELEMS` back to 147,456/
+  144KB, the real deployed, closed-timing configuration) without attempting a pblock or other tuning
+  fix, per this file's own hard-stop-list precedent on pblock-rescue attempts for this class of
+  signature. **The 351.44ms opportunity is real and not yet captured** -- the pre-registered next
+  candidate is chunked loading (same 144KB buffer, the 4 big layers load their weight in <=144KB
+  pieces reusing the cache across chunks, BRAM-neutral by construction) but needs its own new
+  outer-chunk loop plus a fresh re-verification of "activation read costs ~0%" (board-confirmed only
+  under the current non-chunked design; chunking would make each of these 4 layers' `COPY_FROM_ROW`
+  re-run 3x, an assumption never tested). Not attempted this round.
 - **One round = one hypothesis + one measurement + one conclusion.** Report the result and stop —
   do not chain straight into the next round without a human checkpoint. This is not a suggestion:
   ZHR-16's round 3→4→5→6 ran back-to-back with no checkpoint and the user identified that as the
@@ -561,6 +608,14 @@ supposedly standing in for.
   signal, this two-implementation bit-identity check is a cheap (no new synthesis, just re-place/route
   or re-run `phys_opt_design` on the same checkpoint) way to tell a real effect from a timing artifact
   before either trusting or discarding the number.
+  **Confirmed a SECOND time, same day (ZHR-92, fallback-4 PW_FIX_WADDR probe, entries 64/66/70/72):**
+  same technique, different build (WNS=-0.969ns route-only vs. -0.464ns after `phys_opt_design`,
+  again a measurably different physical implementation) -- all 4 entries board-tested on both builds
+  came back with matching timing (24.82/25.90/21.59/22.67ms both times) and identical mismatch counts
+  (18450/19135/11983/2106, every digit). This is now a repeatable, general-purpose technique on this
+  project, not a one-off -- reach for it by default whenever a timing-only probe (values allowed to be
+  wrong, timing is the real question) comes back WNS-negative, rather than treating a negative-WNS
+  probe result as automatically unusable.
 - Any Vivado run: **background + poll logs, never wait on a full P&R in the foreground.**
   `phys_opt_design` gets silently killed under foreground execution in this environment (see ZHR-17)
   with no crash log — if a run needs `phys_opt_design`, especially post-route, split into two batch

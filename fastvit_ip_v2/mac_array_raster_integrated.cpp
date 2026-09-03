@@ -689,30 +689,84 @@ static void run_layer(const LayerDescV2 &d,
      * path regardless of today's much better LUT/DSP headroom (BRAM's
      * 140-tile ceiling is a separate, fixed resource that other-resource
      * headroom does not touch -- confirmed the hard way with DSP-packing/
-     * gmem_w bandwidth elsewhere in this file). This cache is instead sized
-     * at PW_WEIGHT_CACHE_ELEMS=147,456 (144KB, exactly layer_0040_pwconv's
-     * real weight count, cin=384*cout=384) -- the LARGEST of the 22 real PW
-     * layers whose weight fits this budget; the 4 layers that don't
-     * (layer 43/44/47/48, all cin*cout>144KB) fall back to the pre-existing
-     * direct-DRAM-read path unchanged, and are exactly the layers with the
-     * LEAST spatial redundancy to begin with (4.0x, vs up to 341.3x for the
-     * cached layers) -- least benefit foregone for the layers that don't
-     * fit. Real BRAM: 32 tiles for this buffer (147,456/4608 exactly),
-     * 34+32=66/140 (47.1%) against the deployed baseline's 34/140 today --
-     * comfortable, not the historical round's 89-95%.
+     * gmem_w bandwidth elsewhere in this file). First deployed round sized
+     * this cache at 147,456 (144KB, layer_0040_pwconv's own weight count),
+     * covering only 22 of 26 real PW layers -- see below for why that was
+     * upgraded.
      *
-     * Partitioning: deliberately NONE. PW_FLAT reads exactly one weight
-     * element per pipeline step (lane_w[dd], dd only ranges over
-     * MAC_PD=1) -- a plain, unpartitioned BRAM array already provides one
-     * read per cycle, which is all PW_FLAT ever asks for. The historical
-     * revert's own diff does not show a `complete`/`cyclic` partition on
-     * pw_weight_cache, and 89-95% BRAM utilization for a 442,368-element
-     * array is not the signature complete-partitioning would leave (that
-     * would show up as a LUT explosion instead, this array being far too
-     * large to register-partition) -- the historical failure is attributed
-     * to sheer size against total device BRAM capacity, not partition
-     * choice; this round changes sizing, not partitioning, and this array
-     * carries no ARRAY_PARTITION pragma at all, on purpose. */
+     * UPGRADED 2026-09-02 (ZHR-92, real board evidence, same round the
+     * first 144KB version deployed): the 4 layers that fell back to direct
+     * DRAM read (layer 43/44/47/48, cin*cout>144KB) were board-measured
+     * (PW_FIX_WADDR probe, cross-validated on two physically different P&R
+     * implementations per this file's own methodology) saving 351.44ms
+     * combined (78.7% of their own 446.42ms, remarkably consistent
+     * 77.9-79.3% across all four) if their weight read were also cached --
+     * 16.65% of the full network's own 2,111.27ms. This REFUTES an
+     * intuition that had gone unchecked until measured: these 4 layers have
+     * much larger cin/cout than the small cached layers, so "deeper/wider
+     * layers are more compute-bound, weight-read is a smaller fraction of
+     * their time" seemed plausible going in -- measured, the opposite
+     * holds: their weight-read time fraction (78.7%) is HIGHER than
+     * entry3's own 55.3%, not lower. Mechanism: these are late-network
+     * layers with SMALL spatial extent (h=w=8, only 4 tiles) and LARGE
+     * channel counts -- weight volume scales with cin*cout while compute
+     * work per tile is comparatively modest at this spatial size, so
+     * weight traffic dominates more, not less, than in the shallow/wide
+     * layers the cache was originally sized around. Real full-network
+     * P&R (BRAM 74/140=52.86% at 144KB, vs. an isolated-csynth projection
+     * of 98/140=70% -- isolated was pessimistic here, not optimistic; see
+     * this file's own "isolated vs real, direction not consistent" entries)
+     * gave grounds to test whether 144KB's own real single-copy BRAM cost
+     * (40 tiles measured vs. 32 theoretical, 1.25x overhead -- confirming
+     * real synthesis does NOT duplicate this array across the 2
+     * FAST_WRITEOUT instances the way isolated csynth predicted) would
+     * extrapolate favorably to covering all 26 real PW layers at once.
+     *
+     * ATTEMPTED AND REVERTED, same day: raised PW_WEIGHT_CACHE_ELEMS to
+     * 442,368 (432KB, cin*cout=384*1152, the real max across all 26 real
+     * PW layers) to make every real PW layer cacheable at once. Real whole-
+     * IP P&R: BRAM Block RAM Tile 140/140 (100.00%, the device's absolute
+     * ceiling, zero margin) and WNS=-1.075730ns (a real timing violation,
+     * not closed) -- both numbers land in the "stop, don't tune pblock,
+     * switch approaches" zone this project's own hard-stop-list already
+     * established for pblock-based timing rescue attempts on THIS kind of
+     * signature. Isolated csynth had projected 115% BRAM (323/280
+     * BRAM_18K) for this exact change, below the round's own 130%
+     * pre-registered "definitely won't fit" cutoff, so real P&R was run
+     * anyway per that pre-registration -- it answered definitively: this
+     * specific single-cutoff-covers-everything approach does not fit.
+     * Reverted PW_WEIGHT_CACHE_ELEMS back to 147,456 (144KB,
+     * layer_0040_pwconv's own weight count) -- the real, P&R-verified,
+     * currently-deployed configuration (WNS=+0.153200ns closed, BRAM
+     * 74/140=52.86%) -- covering 22 of 26 real PW layers; layer
+     * 43/44/47/48 (cin*cout>144KB) fall back to the pre-existing direct-
+     * DRAM-read path, unchanged. Real board evidence (PW_FIX_WADDR probe,
+     * 2026-09-02) confirms these 4 layers would save 351.44ms combined
+     * (78.7% of their own 446.42ms, 16.65% of the full network) if
+     * cached -- a real, substantial, NOT-YET-CAPTURED opportunity that
+     * this specific attempt (raise the cutoff to cover them directly)
+     * failed to realize. The pre-registered next candidate is chunked
+     * loading (cutoff unchanged, the 4 big layers load their weight in
+     * <=144KB pieces, reusing pw_weight_cache across chunks instead of
+     * needing a bigger buffer) -- BRAM-neutral by construction (same
+     * 144KB buffer), but needs its own new outer-chunk loop AND a fresh
+     * re-verification of "activation read costs ~0%" (board-confirmed
+     * under the CURRENT non-chunked design; chunking these 4 layers would
+     * make `COPY_FROM_ROW` re-run 3x per layer, an assumption never yet
+     * tested). Not attempted this round.
+     *
+     * Partitioning: deliberately NONE, unchanged from the 144KB round.
+     * PW_FLAT reads exactly one weight element per pipeline step
+     * (lane_w[dd], dd only ranges over MAC_PD=1) -- a plain, unpartitioned
+     * BRAM array already provides one read per cycle, which is all
+     * PW_FLAT ever asks for, regardless of the array's total depth. The
+     * historical revert's own diff does not show a `complete`/`cyclic`
+     * partition on pw_weight_cache, and 89-95% BRAM utilization for a
+     * 442,368-element array is not the signature complete-partitioning
+     * would leave (that would show up as a LUT explosion instead, this
+     * array being far too large to register-partition) -- the historical
+     * failure is attributed to sheer size against total device BRAM
+     * capacity, not partition choice. */
 #define PW_WEIGHT_CACHE_ELEMS 147456
     static wt_t pw_weight_cache[PW_WEIGHT_CACHE_ELEMS];
     bool pw_cacheable = ((long)d.cin * (long)d.cout <= PW_WEIGHT_CACHE_ELEMS);

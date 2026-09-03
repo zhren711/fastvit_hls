@@ -118,7 +118,7 @@ int main() {
          * a real-chain input (entry63's output) and reference (entry64's
          * output) for a board test of PW_WEIGHT_HOIST's cache-cutoff
          * fallback path, which never had real-chain dump coverage before. */
-        if (i <= 16 || (i >= 63 && i <= 64) || (i >= 74 && i <= 80)) {
+        if (i <= 16 || (i >= 63 && i <= 72) || (i >= 74 && i <= 80)) {
             /* A3 round (2026-08-23, ZHR-92): real output size differs by
              * op_type -- the original cout*h_out*w_out formula is only
              * correct for DWCONV/PWCONV. GAP collapses spatial entirely
