@@ -117,8 +117,14 @@ int main() {
          * cin=384/cout=1152, real >144KB weight-hoist fallback layer) needs
          * a real-chain input (entry63's output) and reference (entry64's
          * output) for a board test of PW_WEIGHT_HOIST's cache-cutoff
-         * fallback path, which never had real-chain dump coverage before. */
-        if (i <= 16 || (i >= 63 && i <= 72) || (i >= 74 && i <= 80)) {
+         * fallback path, which never had real-chain dump coverage before.
+         * ZHR-92 (2026-09-03): extended down to i==59 -- entry60
+         * (layer_0040_pwconv, cin=384/cout=384, exactly the 144KB cache
+         * boundary, w_bytes==PW_WEIGHT_CACHE_ELEMS) is the degenerate-path
+         * regression case for the PW_WCHUNK chunked-loading board round --
+         * needs entry59's output as input and entry60's own output as
+         * reference. */
+        if (i <= 16 || (i >= 59 && i <= 72) || (i >= 74 && i <= 80)) {
             /* A3 round (2026-08-23, ZHR-92): real output size differs by
              * op_type -- the original cout*h_out*w_out formula is only
              * correct for DWCONV/PWCONV. GAP collapses spatial entirely

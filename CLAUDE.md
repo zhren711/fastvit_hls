@@ -1239,13 +1239,58 @@ supposedly standing in for.
   must reflect current config) is a standing TODO to verify, not a fact — especially before building
   new code (like a register-write driver) that will silently inherit whichever version is wrong.**
 
-## Current deployed baseline (updated 2026-09-02 -- supersedes every earlier baseline reference below)
+## Current deployed baseline (updated 2026-09-03 -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_pw_weight_hoist` is now the deployed baseline**, replacing `mac_array_a3_gmemmeta_elim1`
-(3,630.74ms/59.25% LUT/WNS+0.272ns, deployed 2026-08-31). This is the largest single latency win on
-this project's whole latency-optimization line -- see ZHR-63's mainline summary and ZHR-92's own
-round-by-round history for how it was reached, `vivado_impl/bitstream_archive/
-mac_array_a3_pw_weight_hoist_2026-09-02/README.txt` for the full technical writeup.
+**`mac_array_a3_pw_wchunk` is now the deployed baseline**, replacing `mac_array_a3_pw_weight_hoist`
+(2,111.27ms/60.06% LUT/WNS+0.153ns, deployed 2026-09-02). This closes out the 351.44ms fallback-layer
+opportunity that `pw_weight_hoist` itself flagged but did not capture -- see ZHR-63's mainline summary
+and ZHR-92's own round-by-round history (including a 3-round real-P&R shared-multiplier regression
+chase) for how it was reached, `vivado_impl/bitstream_archive/mac_array_a3_pw_wchunk_2026-09-03/
+README.txt` for the full technical writeup.
+
+**What changed**: the prior baseline's 144KB `pw_weight_cache` covered only 22 of 26 real PW layers;
+the 4 layers exceeding 144KB (`layer_0043/44/47/48_pwconv`) fell back to a direct-DRAM-read path
+board-measured (2026-09-02) to cost 351.44ms combined (78.7% of their own 446.42ms) in redundant
+weight reads. This round replaces the single-cutoff cache with `PW_WCHUNK`: an outer loop (wrapping
+the entire `(rt,colt)` spatial sweep in `run_layer`) that loads the same 144KB cache in chunks instead
+of one all-or-nothing load, so every real PW layer is now served from on-chip cache -- the direct-read
+fallback is dead code on any constructible shape (kept, not deleted). Chunk boundaries are always
+per-ot (confirmed against real descriptors: L43/44 split into 3 even chunks, L47/48 into 3 uneven
+chunks, 384+384+192/153+153+78).
+
+**Real P&R timing history is the headline finding of this round**: the first two chunking attempts
+regressed real timing hard (WNS -2.264415ns, then -1.127835ns after a partial fix), both traced via
+the actual critical-path report (not guessed) to this project's own previously-documented "shared
+multiplier bound to FSM state" mechanism -- but via two DIFFERENT specific causes exposed in sequence
+by `PW_WCHUNK`'s own new outer loop level restructuring `run_layer`'s FSM. Both fixed the same way
+(hoist the offending multiply to a loop-carried accumulator in `PW_WCHUNK`, stepped by each chunk's
+REAL clamped count, not the nominal chunk size) -- **third attempt: WNS=+0.133715ns, closed.** See
+CLAUDE.md's own refined shared-multiplier entry (below, in the working-method section) for the general
+lesson this produced.
+
+Real P&R (route_design alone, no phys_opt needed): **WNS +0.133715ns** (closed, down from +0.153200ns
+but still positive), **LUT 32,664/53,200 (61.40%)**, up +1.34pp from 60.06%, **BRAM 74/140 tiles
+(52.86%)** -- exactly unchanged from the prior baseline. **DSP 50/220 (22.73%)**, down from 23.64%.
+
+Board: PL-side full-network total **1,806.45ms**, down from 2,111.27ms (**-14.4%**; -70.1% cumulative
+from this line's original 6,050ms starting point). Single-op board tests all byte-exact: the 4
+previously-fallback layers (entry64/66/70/72, 0 mismatches each, combined 446.42ms->143.36ms/-67.9%);
+the degenerate-path regression check (entry3 unchanged at 22.67ms, entry60 -- the exact 144KB boundary
+layer, first real-chain board test -- byte-exact at 11.89ms). Full-network six-checkpoint correctness
+(primary judge per this project's own standing process rule) verified via cosine similarity against
+the untouched ONNX float32 reference (`ckpt_ref_*_0000.npy`, dated 2026-08-21): **0.6313/0.1286/0.2227/
+0.3491/-0.2459/-0.2811** for stage1/stage2/stage3/stage4/finaldw/se -- EXACT match to the project's own
+long-established figures, confirming chunking does not change numeric semantics. Register map is
+UNCHANGED from `mac_array_a3_pw_weight_hoist` (`PW_WCHUNK` is entirely internal to the IP body, not a
+new register) -- existing ARM-side binaries remain valid, no rebuild needed.
+
+## Prior deployed baseline (superseded 2026-09-03, kept for history)
+
+**`mac_array_a3_pw_weight_hoist` was the deployed baseline from 2026-09-02 to 2026-09-03**, replacing
+`mac_array_a3_gmemmeta_elim1` (3,630.74ms/59.25% LUT/WNS+0.272ns, deployed 2026-08-31). This is the
+largest single latency win on this project's whole latency-optimization line at the time -- see ZHR-63's
+mainline summary and ZHR-92's own round-by-round history for how it was reached, `vivado_impl/
+bitstream_archive/mac_array_a3_pw_weight_hoist_2026-09-02/README.txt` for the full technical writeup.
 
 **What changed**: PW's weight read was re-reading the same weight data redundantly from DRAM on every
 spatial `(rt,colt)` tile (up to 341.3x redundancy for shallow/wide-spatial layers, 13.22x weighted
@@ -1280,7 +1325,7 @@ build, not just this one, and is not cited here as a correctness claim. Register
 from `mac_array_a3_gmemmeta_elim1` (`PW_CACHED` is entirely internal to the IP body, not a new
 register) -- existing ARM-side binaries built for that baseline remain valid, no rebuild needed.
 
-## Prior deployed baseline (superseded 2026-09-02, kept for history)
+## Prior-prior deployed baseline (superseded 2026-09-02, kept for history)
 
 **`mac_array_a3_gmemmeta_elim1` was the deployed baseline from 2026-08-31 to 2026-09-02**, replacing
 `mac_array_a3_dwraster_step2`
