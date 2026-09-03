@@ -312,16 +312,75 @@ static void pw_flat_pipeline_impl(
     const wt_t pw_shift_cache[MAX_PW_BIAS_CACHE],
     act_t out_base[],
     hls::burst_maxi<ap_uint<32> > &out_burst,
-    int rt, int colt, int r_sz, int col_sz)
+    int rt, int colt, int r_sz, int col_sz,
+    int ot_start, int ot_count, int ot_out_ch_base_init, int total_iters_in)
 {
     #pragma HLS ARRAY_PARTITION variable=pw_patch_full cyclic factor=MAC_PD dim=1
     #pragma HLS ARRAY_PARTITION variable=pw_patch_full complete dim=2
     #pragma HLS ARRAY_PARTITION variable=pw_patch_full complete dim=3
 
     const int Cin = d.cin;
-    const int n_ot = d.cout;
+    /* ZHR-92 round (2026-09-03): chunked weight loading -- ot_start/
+     * ot_count restrict this call to a SUBRANGE of d.cout (the ot's whose
+     * weight is currently resident in pw_weight_cache for this chunk), not
+     * necessarily the full layer. w_ot_base (the cache-relative gather
+     * index, below) stays 0-based regardless of ot_start -- the cache
+     * itself only ever holds ot_count rows starting from its own index 0,
+     * never the full-layer absolute range. ot_idx (which indexes
+     * pw_bias_cache/pw_shift_cache) starts at the ABSOLUTE ot_start
+     * instead (a plain assignment, not a multiply -- see below for why
+     * ot_out_ch_base is handled differently). Degenerate case (whole layer
+     * fits in one chunk): ot_start=0, ot_count=d.cout, bit-identical to
+     * the pre-chunking call shape.
+     *
+     * ZHR-92 round (2026-09-03, shared-multiplier regression fix): a first
+     * version of this chunking change computed `ot_out_ch_base = ot_start
+     * * d.out_ch_stride` HERE, inside this function's own init -- real P&R
+     * came back WNS=-2.264415ns (vs the pre-chunking baseline's
+     * +0.153200ns), a large real violation. The critical path (pulled and
+     * read directly, not guessed) traced to THIS function's own
+     * (pw_flat_pipeline_impl_false, the narrow instance) FSM state feeding
+     * mul_32s_32s_32_2_1 -- the SAME shared physical multiplier this file's
+     * own "shared-multiplier round" comments already document (multiple
+     * `index*stride`-shaped address computations across run_layer bound to
+     * ONE physical multiplier, arbitrated by FSM state, each added call
+     * site deepening the selection tree). This function is called once per
+     * (rt,colt) spatial tile -- up to 4x per chunk for the real fallback-
+     * layer shapes -- so the multiply this used to compute here executed
+     * far more often than necessary, AND from inside this function's own
+     * separately-synthesized FSM (physically farther from the shared
+     * multiplier than run_layer's own top-level call sites), explaining
+     * why this regression (-2.264ns) was far larger than every prior
+     * instance of this same mechanism (historically -0.1 to -0.3ns).
+     * Fixed by moving the multiply to run_layer's own PW_WCHUNK loop (a
+     * genuine loop-carried accumulator there, stepped once per CHUNK, not
+     * once per spatial tile) and passing the already-computed result in
+     * as ot_out_ch_base_init -- this function now only ASSIGNS it, no
+     * multiply here at all. See PW_WCHUNK's own comment in run_layer for
+     * the accumulator itself.
+     *
+     * ZHR-92 round (2026-09-03, SECOND shared-multiplier fix, same round):
+     * the ot_out_ch_base fix above only halved the regression (WNS
+     * -2.264415ns -> -1.127835ns, still negative) -- the real critical-
+     * path report (pulled again, not guessed) showed the SOURCE had moved
+     * to run_layer's OWN top-level FSM state (not this function's own
+     * separate FSM anymore), still driving into the SAME shared
+     * mul_32s_32s_32_2_1, but the SINK this time was `total_iters`'s own
+     * multiply (`n_ot * (n_cbase*PW_FLAT_STEPS_PER_CBASE+...)`, directly
+     * below) -- confirming PW_WCHUNK's new loop-nesting level had itself
+     * restructured run_layer's FSM in a way that changed how it competes
+     * for the shared multiplier, not just "two more multiplies exist."
+     * total_iters is loop-invariant across the whole (rt,colt) spatial
+     * sweep for a given chunk (n_ot=ot_count and n_cbase both fixed once a
+     * chunk starts) -- exactly the same redundant-per-tile-recomputation
+     * shape as ot_out_ch_base, so it gets the same fix: computed ONCE per
+     * chunk in run_layer's own PW_WCHUNK loop (see there), passed in here
+     * as total_iters_in. n_cbase itself STAYS computed locally below (it's
+     * a division, needed again for the cbase-wrap comparison further down,
+     * and was never implicated in either critical-path report -- only the
+     * n_ot*(...) MULTIPLY moved). */
     const int n_cbase = (Cin + MAX_CIN_PW - 1) / MAX_CIN_PW;
-    const int total_iters = n_ot * (n_cbase * PW_FLAT_STEPS_PER_CBASE + PW_FLAT_WRITEOUT_ELEMS);
+    const int total_iters = total_iters_in;
 
     acc_t acc[MAC_PD][MAC_PR][MAC_PC];
     #pragma HLS ARRAY_PARTITION variable=acc complete dim=0
@@ -339,9 +398,9 @@ static void pw_flat_pipeline_impl(
     bool in_writeout = false;
     int cbase_idx = 0;
     int ch_off = 0;              /* channel offset within Cin, shared by patch+weight addressing */
-    int w_ot_base = 0;           /* == ot*Cin, accumulated */
-    int ot_out_ch_base = 0;      /* == ot*d.out_ch_stride, accumulated */
-    int ot_idx = 0;
+    int w_ot_base = 0;           /* == (ot-ot_start)*Cin, cache-relative, accumulated from 0 every call */
+    int ot_out_ch_base = ot_out_ch_base_init;  /* == ot*d.out_ch_stride, ABSOLUTE -- passed in, not multiplied here */
+    int ot_idx = ot_start;       /* ABSOLUTE ot -- indexes pw_bias_cache/pw_shift_cache/DRAM addressing */
     int wr_row = 0, wr_col = 0;  /* writeout row/col -- wrap-pair, not idx/MAC_PC and idx%MAC_PC */
     int shift_reg = d.out_shift; /* recomputed at each ot's compute->writeout transition */
 
@@ -547,9 +606,10 @@ static void pw_flat_pipeline(
     const wt_t pw_shift_cache[MAX_PW_BIAS_CACHE],
     act_t out_base[],
     hls::burst_maxi<ap_uint<32> > &out_burst,
-    int rt, int colt, int r_sz, int col_sz)
+    int rt, int colt, int r_sz, int col_sz,
+    int ot_start, int ot_count, int ot_out_ch_base_init, int total_iters_in)
 {
-    pw_flat_pipeline_impl<true>(d, w_base, pw_weight_cache, pw_cached, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
+    pw_flat_pipeline_impl<true>(d, w_base, pw_weight_cache, pw_cached, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz, ot_start, ot_count, ot_out_ch_base_init, total_iters_in);
 }
 
 /* Serves only layers whose w_out isn't a multiple of MAC_PC -- verified
@@ -568,9 +628,10 @@ static void pw_flat_pipeline_narrow(
     const wt_t pw_shift_cache[MAX_PW_BIAS_CACHE],
     act_t out_base[],
     hls::burst_maxi<ap_uint<32> > &out_burst,
-    int rt, int colt, int r_sz, int col_sz)
+    int rt, int colt, int r_sz, int col_sz,
+    int ot_start, int ot_count, int ot_out_ch_base_init, int total_iters_in)
 {
-    pw_flat_pipeline_impl<false>(d, w_base, pw_weight_cache, pw_cached, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
+    pw_flat_pipeline_impl<false>(d, w_base, pw_weight_cache, pw_cached, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz, ot_start, ot_count, ot_out_ch_base_init, total_iters_in);
 }
 
 /* ---- round 11: run_dwconv/run_pwconv are GONE. This is the only tile
@@ -769,10 +830,26 @@ static void run_layer(const LayerDescV2 &d,
      * (currently zero -- the direct-read fallback has no separate load
      * phase). Net = 351.44 - 2.64 - 16.225 = ~332.6ms, clearing this
      * round's own pre-registered >200ms "write the chunked loop" threshold
-     * by a wide margin. Chunked loading (option b) is now the pre-
-     * registered next round's actual implementation target -- not
-     * attempted yet, awaiting a checkpoint per this project's own
-     * one-round-at-a-time discipline.
+     * by a wide margin.
+     *
+     * IMPLEMENTED, 2026-09-03 (ZHR-92): PW_WCHUNK (see below, wrapping the
+     * whole (rt,colt) spatial sweep) -- csim 6/6 including a genuinely
+     * uneven-chunk case (L47-shaped, 384+384+192). Real P&R initially
+     * regressed HARD (WNS=-2.264415ns) via a NEW instance of this file's
+     * own "shared multiplier bound to FSM state" mechanism -- took TWO
+     * separate accumulator fixes (not one) to close, because PW_WCHUNK's
+     * own new outer loop level restructured run_layer's FSM enough that
+     * the SAME sink resource got hit by two DIFFERENT specific causes in
+     * sequence (ot_out_ch_base's multiply first, WNS=-1.127835ns after
+     * fixing it; then total_iters's multiply, exposed only once the first
+     * fix changed the FSM again). See pw_flat_pipeline_impl's own header
+     * comment (its `ot_out_ch_base_init`/`total_iters_in` parameters) for
+     * the full two-round diagnosis, and CLAUDE.md's own refined
+     * shared-multiplier entry for the general lesson. **Final real P&R:
+     * WNS=+0.133715ns (closed), BRAM 74/140=52.86% (exactly unchanged from
+     * the 144KB baseline), LUT +711/+1.34pp.** Not yet board-tested as of
+     * this entry -- board verification (all 4 previously-fallback layers +
+     * full network) is the next step before promoting to deployed baseline.
      *
      * Partitioning: deliberately NONE, unchanged from the 144KB round.
      * PW_FLAT reads exactly one weight element per pipeline step
@@ -788,14 +865,97 @@ static void run_layer(const LayerDescV2 &d,
      * capacity, not partition choice. */
 #define PW_WEIGHT_CACHE_ELEMS 147456
     static wt_t pw_weight_cache[PW_WEIGHT_CACHE_ELEMS];
-    bool pw_cacheable = ((long)d.cin * (long)d.cout <= PW_WEIGHT_CACHE_ELEMS);
-    if (d.op_type == LDESC_OP_PWCONV && pw_cacheable) {
-        int w_total = d.cin * d.cout;
+
+    /* ZHR-92 round (2026-09-03): chunked weight loading -- see this
+     * define's own long header comment above for the round-by-round
+     * history (144KB fixed cutoff -> failed 432KB single-cutoff attempt
+     * -> real-board-measured 332.6ms net opportunity via chunking -> this).
+     * Every PW layer now goes through pw_weight_cache; layers whose full
+     * weight (cin*cout) exceeds the 144KB cache are served via MULTIPLE
+     * chunks, loaded one at a time, instead of falling back to direct DRAM
+     * read. Chunk boundary is per-OT (output channel), never mid-ot: each
+     * ot's own cin-wide weight row is contiguous in w_base and processed
+     * atomically by pw_flat_pipeline_impl (one ot fully gathered+written
+     * before the next begins), so any other split granularity would need
+     * to break a single ot's own gather across two loads.
+     * pw_ot_per_chunk = floor(cache_size/cin) is the most ot's that fit in
+     * one 144KB load; pw_n_chunks = ceil(cout/pw_ot_per_chunk). For the 22
+     * real layers whose whole weight already fits under 144KB this reduces
+     * to the SAME degenerate single-chunk case as before (pw_n_chunks==1
+     * exactly when cin*cout<=PW_WEIGHT_CACHE_ELEMS, the OLD pw_cacheable
+     * condition, by construction of floor/ceil) -- same PW_WEIGHT_HOIST
+     * load shape, same pw_flat_pipeline call (ot_start=0, ot_count=
+     * d.cout), bit-identical to the pre-chunking build. For the 4 real
+     * layers that used to fall back to direct read (L43/44/47/48), this
+     * produces 3 chunks each (verified against real descriptors: L43/44
+     * exactly even 384/128 ot's per chunk; L47/48 uneven, last chunk
+     * smaller -- 384+384+192 and 153+153+78 respectively, matching the
+     * probe round's own byte-based load-overhead estimate exactly).
+     *
+     * pw_cached_ok is the renamed, narrowed old `pw_cacheable`: it now
+     * only asks "does a SINGLE ot's weight (cin elements) fit in the
+     * cache", not "does the whole layer fit" -- true for every real/
+     * tested shape (max real cin=1152, cache=147,456 elements, nowhere
+     * close). The direct-DRAM-read branch inside pw_flat_pipeline_impl
+     * (pw_cached==false) is therefore DEAD CODE on any shape this project
+     * can currently construct or test (would need cin>147,456, far past
+     * MAX_CIN=1152) -- kept, not deleted, until this chunked mechanism is
+     * board-verified, per this project's own convention for prior
+     * dead-but-kept fallbacks (use_wide_path, PW_PATCH_HOIST's
+     * in_base_wide parameter). */
+    bool pw_cached_ok = (d.op_type == LDESC_OP_PWCONV) && (d.cin <= PW_WEIGHT_CACHE_ELEMS);
+    int pw_ot_per_chunk = 1;
+    int pw_n_chunks = 1;
+    if (pw_cached_ok) {
+        pw_ot_per_chunk = PW_WEIGHT_CACHE_ELEMS / d.cin;
+        if (pw_ot_per_chunk < 1) pw_ot_per_chunk = 1;
+        pw_n_chunks = (d.cout + pw_ot_per_chunk - 1) / pw_ot_per_chunk;
+    }
+    /* ZHR-92 round (2026-09-03, SECOND shared-multiplier fix, same round as
+     * the ot_out_ch_base one below): layer-constant (division only, not a
+     * multiply, and independent of which chunk is being processed) --
+     * mirrors pw_flat_pipeline_impl's own local n_cbase exactly, computed
+     * here too so pw_total_iters (below, per-chunk) doesn't need to. */
+    int pw_n_cbase = (d.cin + MAX_CIN_PW - 1) / MAX_CIN_PW;
+
+    /* ZHR-92 round (2026-09-03, shared-multiplier regression fix): both
+     * pw_w_chunk_off (PW_WEIGHT_HOIST's own DRAM read address, below) and
+     * pw_ot_out_ch_base (threaded into pw_flat_pipeline/_narrow as
+     * ot_out_ch_base_init, replacing that function's own former internal
+     * `ot_start * d.out_ch_stride` multiply) are genuine loop-carried
+     * accumulators now, not `pw_ot_lo * stride`-shaped multiplies -- see
+     * pw_flat_pipeline_impl's own header comment for the full real-P&R
+     * diagnosis (WNS -2.264415ns, traced to exactly this class of multiply
+     * getting bound into the shared mul_32s_32s_32_2_1 resource). Stepped
+     * by THIS chunk's own REAL (possibly clamped) pw_ot_count, not the
+     * nominal pw_ot_per_chunk -- deliberately robust to an uneven last
+     * chunk (L47/L48-shaped: 384+384+192) even though the accumulator's
+     * post-increment value is provably never consumed after the true last
+     * chunk either way; stepping by the real count needs no argument for
+     * why it's safe, unlike a fixed-step version would. */
+    int pw_w_chunk_off = 0;
+    int pw_ot_out_ch_base = 0;
+
+    PW_WCHUNK: for (int wchunk = 0; wchunk < pw_n_chunks; wchunk++) {
+    int pw_ot_lo = wchunk * pw_ot_per_chunk;
+    int pw_ot_count = pw_ot_per_chunk;
+    if (pw_cached_ok) {
+        int remain = d.cout - pw_ot_lo;
+        if (pw_ot_count > remain) pw_ot_count = remain;
+        int w_total = d.cin * pw_ot_count;
         PW_WEIGHT_HOIST: for (int i = 0; i < w_total; i++) {
             #pragma HLS PIPELINE II=1
-            pw_weight_cache[i] = w_base[d.w_off + i];
+            pw_weight_cache[i] = w_base[d.w_off + pw_w_chunk_off + i];
         }
     }
+    /* ZHR-92 round (2026-09-03, SECOND shared-multiplier fix): computed
+     * ONCE per chunk here (loop-invariant across the whole (rt,colt)
+     * spatial sweep below) instead of once per (rt,colt) tile inside
+     * pw_flat_pipeline_impl -- see that function's own header comment for
+     * the full real-P&R diagnosis (critical path moved to run_layer's own
+     * FSM after the first fix, still sinking into the shared multiplier,
+     * this time via total_iters's multiply). Passed in as total_iters_in. */
+    int pw_total_iters = pw_ot_count * (pw_n_cbase * PW_FLAT_STEPS_PER_CBASE + PW_FLAT_WRITEOUT_ELEMS);
 
     for (int rt = 0; rt < d.n_row_tiles; rt++) {
         int r_sz = (rt == d.n_row_tiles - 1) ? d.last_row_tile : MAC_PR;
@@ -1554,23 +1714,37 @@ static void run_layer(const LayerDescV2 &d,
                  * on the deployed network and exists purely to keep
                  * synthetic/future shapes correct. */
                 /* pw_narrow (FAST_WRITEOUT's own gate, template dispatch,
-                 * unchanged/untouched by this round) and pw_cacheable
-                 * (PW_WEIGHT_HOIST's own gate, now a runtime bool passed
-                 * INTO whichever pw_narrow instance gets picked) are two
+                 * unchanged/untouched by this round) and pw_cached_ok
+                 * (PW_WEIGHT_HOIST's own gate, a runtime bool passed INTO
+                 * whichever pw_narrow instance gets picked) are two
                  * INDEPENDENT conditions on two INDEPENDENT dimensions --
-                 * do not conflate them. The >144KB fallback logic
-                 * (pw_cacheable's own definition, above PW_WEIGHT_HOIST)
-                 * is completely untouched by this round's change from
-                 * template to runtime PW_CACHED. */
+                 * do not conflate them. ZHR-92 round (2026-09-03): the old
+                 * >144KB fallback (this comment used to describe) is GONE
+                 * as a real dispatch path -- pw_cached_ok is now true for
+                 * every real/tested layer (see PW_WEIGHT_CACHE_ELEMS's own
+                 * header comment above run_layer), and >144KB layers are
+                 * served via the PW_WCHUNK loop (above) calling this same
+                 * dispatch once per chunk with a restricted (ot_start,
+                 * ot_count) instead of falling back to a different
+                 * mechanism entirely. */
                 bool pw_narrow = (d.last_col_tile < MAC_PC) || ((d.out_off & 3) != 0);
                 if (pw_narrow) {
-                    pw_flat_pipeline_narrow(d, w_base, pw_weight_cache, pw_cacheable, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
+                    pw_flat_pipeline_narrow(d, w_base, pw_weight_cache, pw_cached_ok, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz, pw_ot_lo, pw_ot_count, pw_ot_out_ch_base, pw_total_iters);
                 } else {
-                    pw_flat_pipeline(d, w_base, pw_weight_cache, pw_cacheable, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz);
+                    pw_flat_pipeline(d, w_base, pw_weight_cache, pw_cached_ok, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz, pw_ot_lo, pw_ot_count, pw_ot_out_ch_base, pw_total_iters);
                 }
             }
         }
     }
+    /* Accumulate for the NEXT chunk, using THIS chunk's own real (possibly
+     * clamped) pw_ot_count -- see the accumulator declarations above this
+     * loop for the full rationale. Both multiplies below execute once per
+     * CHUNK (at most 3x per real layer), not once per (rt,colt) spatial
+     * tile the way the fixed regression did -- a real, large reduction in
+     * call-site frequency even though a multiply is still here. */
+    pw_w_chunk_off += pw_ot_count * d.cin;
+    pw_ot_out_ch_base += pw_ot_count * d.out_ch_stride;
+    } // end PW_WCHUNK
 }
 
 /* ---- Phase A1 (2026-08-20): elementwise residual Add, two DRAM sources

@@ -829,6 +829,37 @@ supposedly standing in for.
   added a new competitor to that shared resource as a *side effect* of an unrelated local code change
   that only removed reads — the mechanism this bullet already predicted, now caught in the act via a
   real, unplanned P&R result, not induced by design.
+  **REFINED, 2026-09-03 (ZHR-92, chunked PW weight-loading round): a new OUTER loop level (not just a
+  new call site at the same nesting depth) can restructure a function's own FSM enough to change how
+  IT ITSELF competes for the shared multiplier -- the same symptom (WNS regression, same sink resource)
+  can have two DIFFERENT specific causes at two different points in one restructuring, needing two
+  separate fixes, not one bigger one.** Adding `PW_WCHUNK` (wrapping the entire `(rt,colt)` spatial
+  sweep in `run_layer`, needed for chunked/multi-load PW weight caching) triggered this twice in
+  immediate succession. Round 1: `ot_out_ch_base = ot_start * d.out_ch_stride`, computed inside
+  `pw_flat_pipeline_impl`'s own init (called once per spatial tile, up to 4x per chunk), real P&R
+  WNS=-2.264415ns -- critical path source was `pw_flat_pipeline_impl_false`'s OWN separately-
+  synthesized FSM feeding `mul_32s_32s_32_2_1`, ~10x worse than every prior instance of this mechanism
+  (historically -0.1 to -0.3ns) because the new call site sat inside a sub-function's own FSM
+  (physically farther from the shared multiplier) rather than `run_layer`'s own top-level FSM. Fixed:
+  moved to a genuine loop-carried accumulator in `run_layer`'s own `PW_WCHUNK` loop, stepped once per
+  chunk (not per tile) by each chunk's REAL clamped count (robust to an uneven last chunk by
+  construction, not by relying on "only the last chunk is ever partial" holding). Real P&R:
+  WNS=-1.127835ns -- improved (roughly halved) but STILL NEGATIVE. Round 2, same day: the critical
+  path had MOVED -- source was now `run_layer`'s OWN top-level FSM state, sink still the SAME
+  `mul_32s_32s_32_2_1`, but via a DIFFERENT pre-existing operation (`pw_flat_pipeline_impl`'s own
+  `total_iters` computation, loop-invariant across the whole `(rt,colt)` sweep for a given chunk, but
+  previously recomputed once per tile). This was NOT the two new accumulator multiplies from round 1's
+  fix (those live in a separate, low-frequency scope) -- `PW_WCHUNK`'s own new loop-nesting level had
+  itself changed `run_layer`'s FSM structure enough to alter its competition for the shared multiplier,
+  independent of round 1's specific fix. Fixed the same way (hoisted `total_iters` to `PW_WCHUNK`,
+  passed in as a parameter) -- bind-database check confirmed ZERO `Multiplier`-core operations remain
+  in either `pw_flat_pipeline_impl` instance afterward. Real P&R: **WNS=+0.133715ns -- closed.**
+  **Practical rule: when a WNS regression's fix only partially recovers the margin, re-pull the actual
+  critical-path report before assuming the same fix needs to go further or a different lever (pblock/
+  phys_opt) is needed -- the source/sink netlist names will say whether it's the same mechanism
+  recurring (same source) or a genuinely different one exposed by the same structural change (different
+  source, same sink). Both rounds here were diagnosed this way, not guessed, and each fix was surgical
+  because of it.**
 - All results — including negative ones — get written back to the relevant Linear issue as a
   comment, not just left in chat or local memory. Real numbers over assumptions: this project has
   been burned before by static-report/simulation readings that turned out wrong (ZHR-5's "140x
