@@ -1971,10 +1971,31 @@ void mac_array_top(
     hls::burst_maxi<ap_uint<32> > in_burst)
 {
 #pragma HLS INTERFACE s_axilite port=desc     bundle=control
+/* ZHR-92 round (2026-09-04): COSIM_DEPTH_HINT -- RTL cosimulation (unlike
+ * synthesis or csim) needs an explicit `depth=` on each m_axi port to
+ * know how many elements to transfer between the C testbench's array and
+ * the RTL simulation's memory model ("A depth specification is required
+ * for interface port 'in_base' for cosimulation" -- the exact HLS
+ * diagnostic, not guessed). depth= is a simulation-only hint -- it does
+ * NOT affect synthesized RTL (real hardware is a full AXI master
+ * addressing any location, no fixed bound), confirmed by Xilinx's own
+ * documentation for this pragma, so this is safe to add without altering
+ * the deployed design's own synthesis output; guarded behind this ifdef
+ * anyway so the default build's source is textually unchanged. Sizes
+ * below match this round's own cosim testbench (pw_cosim_b1_tb.cpp,
+ * pwburst_b1_t16: cin=48,cout=48,h=8,w=32) -- NOT general-purpose bounds,
+ * only sized for this one cosim run. */
+#ifdef COSIM_DEPTH_HINT
+#pragma HLS INTERFACE m_axi port=in_base      offset=slave bundle=gmem_act depth=12288
+#pragma HLS INTERFACE m_axi port=w_base       offset=slave bundle=gmem_w   depth=2304
+#pragma HLS INTERFACE m_axi port=b_base       offset=slave bundle=gmem_b   depth=48
+#pragma HLS INTERFACE m_axi port=out_base     offset=slave bundle=gmem_act depth=12288
+#else
 #pragma HLS INTERFACE m_axi port=in_base      offset=slave bundle=gmem_act
 #pragma HLS INTERFACE m_axi port=w_base       offset=slave bundle=gmem_w
 #pragma HLS INTERFACE m_axi port=b_base       offset=slave bundle=gmem_b
 #pragma HLS INTERFACE m_axi port=out_base     offset=slave bundle=gmem_act
+#endif
 #pragma HLS INTERFACE s_axilite port=out_written bundle=control
 /* ZHR-92 angle-B step (2026-08-24): out_burst is hls::burst_maxi<ap_uint
  * <32>>, matching gmem_act's real 32-bit AXI width (forced by
@@ -1983,7 +2004,11 @@ void mac_array_top(
  * a 5th master. Used only by pw_flat_pipeline's WRITEOUT; the other 7
  * out_base call sites (WRITEOUT_DW, run_add/gap/relu/sigmoid/gelu/scale)
  * are untouched, still plain-pointer out_base. */
+#ifdef COSIM_DEPTH_HINT
+#pragma HLS INTERFACE m_axi port=out_burst    offset=slave bundle=gmem_act depth=3072
+#else
 #pragma HLS INTERFACE m_axi port=out_burst    offset=slave bundle=gmem_act
+#endif
 #pragma HLS INTERFACE s_axilite port=out_burst bundle=control
 /* A3 row-hoist round (2026-08-25, ZHR-92): in_burst is ROW_READ's read-side
  * counterpart to out_burst, same bundle=gmem_act, same "shares a bundle,
@@ -1993,7 +2018,11 @@ void mac_array_top(
  * mac_array_driver.c at this stage -- csim has no register-address concept
  * and cannot catch a missing write; this is a P&R-stage TODO, tracked, not
  * silently deferred). */
+#ifdef COSIM_DEPTH_HINT
+#pragma HLS INTERFACE m_axi port=in_burst     offset=slave bundle=gmem_act depth=3072
+#else
 #pragma HLS INTERFACE m_axi port=in_burst     offset=slave bundle=gmem_act
+#endif
 #pragma HLS INTERFACE s_axilite port=in_burst bundle=control
 /* A3 round (2026-08-23, ZHR-92, MERGE): back on bundle=gmem_act, sharing
  * the SAME physical master as in_base/out_base -- the standalone
@@ -2015,7 +2044,11 @@ void mac_array_top(
  * to both shrink LUT and return the AXI master count to 4. Whether it
  * also resolves the FSM->DSP critical path (see PW_PATCH_HOIST's comment)
  * is the thing THIS round's P&R actually tests, not assumed here. */
+#ifdef COSIM_DEPTH_HINT
+#pragma HLS INTERFACE m_axi port=in_base_wide offset=slave bundle=gmem_act depth=3072
+#else
 #pragma HLS INTERFACE m_axi port=in_base_wide offset=slave bundle=gmem_act
+#endif
 #pragma HLS INTERFACE s_axilite port=in_base bundle=control
 #pragma HLS INTERFACE s_axilite port=w_base bundle=control
 #pragma HLS INTERFACE s_axilite port=b_base bundle=control

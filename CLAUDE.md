@@ -700,7 +700,40 @@ supposedly standing in for.
   any per-region csynth report) but small enough that even a substantial unaccounted multiplier
   wouldn't close the gap alone. **Named-region fill/drain, summed across every region a tile visits,
   is decisively insufficient -- something else drives the remainder.**
-  **FOLLOW-UP, 2026-09-04, next round: the AXI-transaction-count hypothesis was tested and REFUTED in
+  **DIRECT MEASUREMENT, 2026-09-04 (ZHR-92, method change after 6 indirect rounds): switched from
+  "change X, infer cause from the time delta" to directly observing hardware behavior via RTL
+  cycle-accurate cosimulation -- the first time this project's whole PW-remainder investigation has
+  measured rather than inferred.** Cosim'd the FULL `mac_array_top` design (both source files, the
+  current deployed architecture -- never cosim'd whole before, prior cosim use on this project was
+  always an isolated single-function probe) against Group B's smallest shape
+  (`pwburst_b1_t16`, cin=48/cout=48/h=8/w=32/n_tiles=16). Needed a new minimal single-call testbench
+  (the legacy `mac_array_tb.cpp` can't run against this architecture at all, already documented) and
+  a new `COSIM_DEPTH_HINT` ifdef adding explicit `depth=` to every `m_axi` port (cosim, unlike
+  synthesis or csim, needs this to know how many elements to transfer between the C testbench array
+  and the RTL simulation's memory model -- confirmed via the exact HLS diagnostic, not guessed; depth
+  does NOT affect synthesized RTL, a pure simulation hint, confirmed via Xilinx's own documentation).
+  **First attempt SIGSEGV'd** -- used byte-count depth uniformly across all m_axi ports, but
+  `out_burst`/`in_burst`/`in_base_wide` are `ap_uint<32>`-typed (4 bytes/element) and need depth in
+  WORD units, not byte units, unlike the `act_t`/`wt_t` (1-byte-element) ports -- a real, easy-to-miss
+  unit mismatch for anyone adding cosim depth hints to a design with mixed-width m_axi ports. Fixed;
+  default (non-cosim) build re-verified unaffected both before and after (csim clean each time).
+  **Result (`mac_array_top_cosim.rpt`): 94,601 real RTL cycles, PASS, byte-exact.** Compared against
+  the analytical compute-only prediction (61,440 cycles) and the real board measurement (219,000
+  cycles): **the remainder splits 21.0% RTL-internal (cosim sees it) / 79.0% real-hardware-only
+  (cosim's idealized AXI model does not see it, and real hardware costs it anyway).** This is neither
+  of the two clean branches the round was designed to distinguish -- not "cosim matches board" (pure
+  RTL/scheduling issue) and not "cosim matches analytical" (pure real-hardware issue) -- a genuine
+  mixed result, with the majority (79%) confirmed to exist ONLY on real hardware (DRAM controller
+  arbitration, the SmartConnect crossbar, or PS-side memory contention -- cosim's own AXI model is
+  idealized and doesn't simulate any of these). The smaller 21% RTL-internal share is real too and
+  worth its own investigation (a genuine scheduling/FSM cost beyond the flat analytical trip-count
+  model), but is not the dominant contributor. **Practical consequence: the next step for the
+  dominant (79%) share needs REAL hardware bus instrumentation (a Zynq-7000 AXI Performance Monitor
+  instantiated in the BD) to characterize DRAM-side transaction count/latency/throughput directly --
+  no further indirect (change-a-descriptor-field, infer-from-delta) round on this codebase's own
+  descriptor-construction surface can resolve the real-hardware-only share, since by definition it
+  doesn't show up in cosim's own idealized model either.** Not yet attempted (a real BD change, new
+  bitstream, and register-read driver code -- a bigger round than any single-op descriptor probe).
   its simple linear form -- but the data shows a real, non-proportional effect instead, not a clean
   null result.** 3 synthetic bundles, holding `Cin` FIXED (48, not varied against W_in as the round's
   own first design sketch suggested) and trading `H_in` against `W_in` -- strictly better than varying
