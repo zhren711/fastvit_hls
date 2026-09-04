@@ -713,6 +713,34 @@ supposedly standing in for.
   variable Y (burst size) can accidentally reveal that Y itself was the real driver, not X -- a clean
   experiment on the INTENDED variable is exactly what surfaces this, whereas a confounded design
   wouldn't have separated the two possibilities at all.
+  **FOLLOW-UP, 2026-09-04, next round: attempting to isolate "burst size" (the new hypothesis from
+  the entry directly above) hit a STRUCTURAL IDENTITY, not just another confound -- `n_words`
+  (ROW_READ's own burst-length formula, `ceil(w_in/4)` under byte-aligned addresses) and
+  `n_col_tiles` (`ceil(w_out/MAC_PC)`, `MAC_PC=4`, `w_out=w_in` since PW is always k=1/s=1/p=0) are
+  THE EXACT SAME FORMULA, always, whenever `MAC_PC=4` matches the `/4` in the burst-length math --
+  not a coincidence of any one test design, a property of the current source code itself.** Burst
+  size and column-tile count are not two separable variables in this codebase; they are one. A
+  design holding `n_tiles`(`=n_row*n_col`) fixed via `h_in`-vs-`w_in` compensation (attempted this
+  round, and -- realized only in retrospect -- also the PRIOR round's own "burst size" design)
+  necessarily varies `n_col_tiles` (hence `n_words`) AND `n_row_tiles` (hence `ROW_READ`'s own call
+  count) simultaneously, since holding their PRODUCT fixed makes them trade off -- it cannot isolate
+  either one. **Both this round's and the PRIOR round's own "burst size" readings should be treated
+  as reflecting the COMBINED `n_words`/`n_col_tiles`/`n_row_tiles` variable, not burst size
+  specifically -- neither round actually separated it.** A genuinely clean sub-experiment fell out of
+  this same round almost by accident: holding `w_in` (hence `n_words`/`n_col_tiles`) FIXED and
+  varying only `h_in` (hence `n_row_tiles`) shows the remainder grows close to linearly with
+  `n_row_tiles`/`n_tiles` (a 2-point linear fit, `remainder ~= 0.684 + 0.0557*n_tiles`, predicts a
+  3rd held-out point within ~5%) -- a real, substantial, roughly-linear-in-call-count effect,
+  independent of burst size, and NOT itself a threshold effect. Whether burst size matters
+  independently of column-tile count remains genuinely untested -- no descriptor-only construction
+  can separate them, since they are the same number by construction; separating them for real would
+  need a SOURCE-LEVEL change (e.g. a probe that forces a different read granularity than `MAC_PC`),
+  not a new synthetic shape. **General lesson, adds to the entry above rather than replacing it: before
+  designing an experiment to vary "X while holding Y fixed via a third quantity Z," check whether X and
+  Y are actually defined by the SAME formula under the conditions being tested -- two quantities that
+  look conceptually distinct (a burst length in words; a spatial tile count) can turn out to be
+  mathematically identical once the specific constants involved (here, both dividing by 4) are
+  substituted in.**
 - **When a real-board measurement comes from a build whose P&R never closed timing, don't just discard
   it OR trust it at face value -- cross-check with a SECOND, physically different implementation of
   the same source and see if the result is bit-identical.** Confirmed useful 2026-09-02 (ZHR-92,
@@ -1048,6 +1076,18 @@ supposedly standing in for.
     5. **Single-op verification** (a known-good isolated test, e.g. one already-passing entry) before
        trusting the board for anything larger — confirms the specific re-deployed bitstream actually
        works, not just that the FPGA manager accepted it.
+  **New symptom confirmed 2026-09-04 (ZHR-92, PW burst-size round): a hang can present as SSH itself
+  going unresponsive (timing out during banner exchange) while ICMP ping keeps answering normally
+  (0% loss, ~2-3ms RTT) — network layer alive, board's own SSH/system layer not.** Same recovery
+  path applies. **Adapted step 2 this round**: no local raw `.bit` for the literal golden image was
+  available in-session (it predates this session, only the swapped `.bin` and its md5 were on hand,
+  and `Overlay()` requires a raw `.bit` as input — it converts and writes the `.bin`, it does not
+  accept an already-swapped `.bin` back in, confirmed by the `AssertionError: expected 'a' tag, got
+  b'\x00'` when tried). Substituted the current deployed baseline's own `.bit` (present locally from
+  its own earlier real P&R this session) as the PL-reconfiguration proof-of-life instead — a
+  reasonable adaptation when the literal golden `.bit` isn't available, since it's an independently
+  real-P&R-verified, already board-tested build; the golden `.bin` FILE itself was still re-verified
+  by md5 (unchanged) even though it wasn't the one reloaded.
 - When the code itself contains an admitted placeholder/TODO (a hardcoded stand-in value, a comment
   saying "not yet calibrated"/"not yet implemented", etc.) and the observed symptom is consistent with
   that placeholder being the cause, verify the placeholder first — before chasing a more interesting
