@@ -636,6 +636,45 @@ supposedly standing in for.
   contribution: `ROW_READ`'s burst COUNT/latency as opposed to address locality, `PW_WEIGHT_HOIST`/
   `PW_BIAS_HOIST`/`PW_SHIFT_HOIST`'s own real once-per-layer costs, `PW_FLAT`'s own fill/drain and any
   real stalling beyond the trip-count-only estimate), not another address-fixing variant.
+  **FOLLOW-UP, 2026-09-04, next round: no fine-grained on-board timer exists to measure named HLS
+  regions directly, so the "full per-entry timeline" plan above was replaced with a scaling
+  experiment instead** -- the same technique this project has used 3 times before (n_cbase
+  decomposition, n_steps scaling, tile-count scaling), all previously effective. 11 synthetic PW
+  bundles (trivial golden: all-ones input/weight, zero bias, `out_shift=7` -> `out=cin>>7`, no
+  simulator needed), one dimension varied at a time (`n_ot`/cout in {48,96,192}, `n_cbase`/cin in
+  {1,2,4} via cin in {32,64,128}, spatial tile count in {16,64,256}, `n_chunks` in {1,2,3} via cin
+  in {192,576,960} at fixed cout=384/h=w=8). **Caught and fixed a real bug in the CSIM TESTBENCH
+  during this round (not in the deployed design)**: an initial version shared one buffer for both
+  `in_base`/`out_base` (mirroring `pw_weight_hoist_tb.cpp`'s own convention, with `out_off` offset
+  past the input) -- but the REAL board driver (`mac_array_single_op_test.c`) uses two SEPARATE
+  fixed DRAM regions (`in_v`/`out_v`), so these bundles' own `in_off=out_off=0` (matching the board
+  convention, correct) aliased when tested through a shared-buffer csim harness, producing 4/11
+  FALSE FAILURES that had nothing to do with the hardware -- fixed by giving the csim testbench
+  separate `in_buf`/`out_buf` vectors, matching the board's own layout exactly; all 11/11 passed
+  after the fix. All 22 board runs (11 points x2 repeat) came back byte-exact, repeatability
+  0.01-0.06ms.
+  **Finding: comparing each point's measured ms against the KNOWN ANALYTICAL PW_FLAT-only compute
+  formula (`n_ot*(32*n_cbase+16)*n_tiles*n_chunks*10ns`, not a fitted term) shows the remainder is
+  48.7%-71.9% of measured time across all 11 shapes (mean 57.8%, stdev 6.8pp) -- NOT a small fixed
+  additive cost and NOT concentrated in any one of the 4 dimensions.** A literal additive fit
+  (`ms = a + b*n_ot + c*n_cbase + d*n_tiles + e*n_chunks`, as the round's own pre-registered method
+  asked for) came back with a poor R^2 (0.635 on raw ms, 0.693 on the remainder) and physically
+  implausible coefficients (negative n_cbase term, huge n_chunks term) -- traced to two causes, both
+  worth remembering for any future regression on this codebase's own timing data: (1) `n_cbase` and
+  `n_chunks` are collinear within the n_chunks sweep group (both increase together, 6/18/30 vs
+  1/2/3, since both derive from the same varying `cin`), and (2) the TRUE cost structure is
+  multiplicative in these dimensions (matching PW_FLAT's own iteration-count formula exactly), not
+  additive -- a linear-in-raw-features model cannot represent a multiplicative relationship well
+  across an 8x range in n_ot and a 64x range in n_tiles. **Comparing against the known analytical
+  formula instead of fitting a blind linear model to raw dimensions was the more informative move
+  once the naive fit's R^2 came back poor -- don't force a linear fit to explain a relationship whose
+  true functional form is already known from the source code.**
+  **Working hypothesis for the remainder, NOT yet tested**: proportional (not fixed-additive) scaling
+  with compute volume is consistent with a per-AXI-transaction handshake overhead (real cycles per
+  `read_request`/`write_request`+`write`+`write_response` beyond the raw data-transfer cycles the
+  trip-count formula assumes) -- this would scale with transaction COUNT, not address value, which is
+  a DIFFERENT question from all 5 already-tested address-fixing probes (none of which isolated
+  per-transaction handshake cost independent of the address used). Flagged, not measured.
 - **When a real-board measurement comes from a build whose P&R never closed timing, don't just discard
   it OR trust it at face value -- cross-check with a SECOND, physically different implementation of
   the same source and see if the result is bit-identical.** Confirmed useful 2026-09-02 (ZHR-92,
