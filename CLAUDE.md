@@ -147,6 +147,56 @@ supposedly standing in for.
   elimination that produced this round's headroom in the first place would be grounds to re-open this
   specific fix (the template-specialized packed read), without re-deriving the alignment/II work above
   -- "unfixable" would wrongly foreclose that.
+  **RE-OPENED, 2026-09-04 (ZHR-92): the closure's own premise ("`gmem_w`'s single AXI port can't
+  service more than one bus request per pipeline iteration") was measured on the PRE-weight-hoist
+  architecture, where `PW_FLAT` read every weight from `gmem_w` on every call, always -- that demand
+  is now largely gone (`pw_weight_cache`, `PW_WCHUNK`, deployed since 2026-09-02/03, see the baseline
+  section above). Re-checked per this file's own "an `#ifdef`-disabled variant's historical numbers
+  must be re-measured, never re-cited" rule (see the DW FPG-specialization entry elsewhere in this
+  file for why this matters): flipped `MAC_PD` 1->2 on the CURRENT (cached) architecture, isolated
+  csynth. Result: `PW_FLAT` still regresses to achieved II=2, and the diagnostic still names `gmem_w`
+  by name (`Unable to schedule bus request operation ('gmem_w_load_1_req'...) due to limited memory
+  ports`) -- textually the same port as the original closure. **But a follow-up confirmatory test
+  shows this is NOT the same mechanism in substance.** `pw_cached` is a plain runtime bool (deliberately
+  NOT templated, per this function's own header comment: "only one arm touches gmem_w... unlike
+  FAST_WRITEOUT's own same-port-two-writes trigger" -- true when MAC_PD=1, since the per-`dd` loop
+  had only 1 iteration). At MAC_PD=2 the `for(dd<MAC_PD) UNROLL` loop now duplicates the ENTIRE
+  `if(pw_cached){BRAM}else{gmem_w}` branch across 2 simultaneous lanes -- HLS must conservatively
+  schedule for both lanes hitting the dead `gmem_w` arm in the same cycle, even though `pw_cached` is
+  always true on every real dispatched shape (PW_WCHUNK caches 100% of real PW layers). Confirmed via
+  a direct test (`PW_FORCE_CACHED_ONLY_TEST`, a compile-time-constant `if(true)` that lets HLS
+  dead-strip the uncached arm entirely): **`PW_FLAT` recovers to achieved II=1 at MAC_PD=2 with the
+  dead branch removed from the scheduler's view -- no `gmem_w` II violation for `PW_FLAT` at all.**
+  This is a 7th confirmed instance of this file's own "a runtime value gating entry to a critical
+  hardware region costs real hardware every time" principle, on a new trigger: a runtime branch
+  previously judged safe under an implicit "only one arm ever touches the contended resource per
+  iteration" assumption that was true only at the specific unroll width (MAC_PD=1) it was written
+  under, and silently stopped holding once that width changed, with nobody re-checking the assumption
+  against the new value. **Practical consequence: MAC_PD=2's II=2 is a scheduler artifact from
+  dead-but-still-scheduled code, not a real bandwidth wall the way it was pre-weight-hoist -- the
+  original closure's stated mechanism no longer applies to the current architecture.** Whether to
+  actually strip the dead uncached arm for real (vs. leaving `PW_FORCE_CACHED_ONLY_TEST` as a
+  diagnostic-only flag) and proceed to resource/P&R/board measurement at MAC_PD=2 is a decision point,
+  not yet made -- this entry records the diagnostic result only, per this project's own one-round
+  discipline.
+  **CLOSED OUT AS A REAL WIN, same day, later round: the dead arm was made compile-time-eliminated by
+  default (not just a diagnostic flag -- `PW_ALLOW_UNCACHED_FALLBACK` now gates the OLD runtime-gated
+  behavior, off by default, matching this project's own dead-but-kept-fallback convention), and the
+  full judgment sequence (isolated csynth II=1 confirmed on real source, real P&R, real board) passed
+  end to end. Real P&R closed on the FIRST attempt (WNS=+0.094463ns, no shared-multiplier-style chase
+  needed, unlike PW_WCHUNK's own 3-round saga) -- LUT 35,751/53,200=67.20% (+5.80pp over the
+  MAC_PD=1 baseline), BRAM 82/140=58.57% (+8 tiles), DSP 50/220=22.73% (unchanged). Board: full
+  network 1,806.45ms->**1,626.70ms (-9.95%)**, byte-exact, ONNX cosine EXACT match
+  (0.6313/0.1286/0.2227/0.3491/-0.2459/-0.2811). PW-only (entry3) improved -14.1% to -18.7% (mean
+  ~15.7%), matching the pre-registered model (PW's 28% compute-time share, from the cosim
+  decomposition, doubling in parallelism predicts ~14% of PW's own time) closely once properly scoped
+  to a PW-only shape -- the model held. DW-only (entry5_dw) unaffected (38.82ms->38.87ms, within
+  noise), confirming the win is specific to PW's `gmem_w`-adjacent mechanism, not a general MAC_PD
+  effect. **`mac_array_a3_macpd2` is now the deployed baseline** -- see the baseline section below for
+  the full writeup. BRAM dual-port question (would MAC_PD=4 need `pw_weight_cache` partitioning) was
+  never reached -- `gmem_w`'s dead-branch artifact was the binding constraint at MAC_PD=2, not BRAM
+  ports; MAC_PD=4 remains untested. 150MHz was deliberately deferred to its own separate round to
+  avoid confounding two simultaneous architectural changes.**
 - **STALE NUMBER OVERRIDE, 2026-09-01 (ZHR-92, real 4-way LUT decomposition round): a "compute is only
   ~16.4% of LUT (4,256 LUT), staging/glue is 3x that" figure has been circulating and cited from memory
   in this project -- it is from BEFORE the DW-raster integration and gmem_meta elimination, describes
@@ -852,6 +902,18 @@ supposedly standing in for.
   cheap (same loop nesting, same call scope) can still be physically invalid if the data it would
   need to combine isn't adjacent in memory, and this only shows up by checking the real stride
   arithmetic, not by reasoning about which loop the code lives in.
+  **STANDING RULE, confirmed 2026-09-04: for ANY "batch multiple accesses into one wider transaction"
+  proposal on this codebase, contiguity must be checked FIRST, before computing benefit -- benefit
+  math on data that turns out non-contiguous is wasted work, caught here only by chance while
+  answering a DIFFERENT (alignment) question, not because contiguity was checked deliberately up
+  front.** This is not a one-off miss -- it is the same underlying discipline as this file's own
+  "runtime value gating a hardware region" and "check history before measuring" rules, applied to a
+  new surface (memory layout, not control flow or prior measurements). Order of operations for any
+  future batching proposal: (1) derive the real byte-stride/address formula for the specific shapes
+  in question, (2) confirm the target span is actually contiguous (stride between consecutive
+  elements equals the element size, not a larger gap), (3) only then compute alignment and benefit.
+  Skipping step 2 and going straight to benefit math is what nearly shipped an invalid ~260-270ms
+  estimate here.
   **FOLLOW-UP, 2026-09-04, next round: the AXI-transaction-count hypothesis was tested and REFUTED in
   its simple linear form -- but the data shows a real, non-proportional effect instead, not a clean
   null result.** 3 synthetic bundles, holding `Cin` FIXED (48, not varied against W_in as the round's
@@ -906,6 +968,67 @@ supposedly standing in for.
   look conceptually distinct (a burst length in words; a spatial tile count) can turn out to be
   mathematically identical once the specific constants involved (here, both dividing by 4) are
   substituted in.**
+  **IMPLEMENTED AND REVERTED, 2026-09-04, next round: row-batched WRITEOUT closed real P&R timing and
+  stayed byte-exact correct, but made real board time WORSE by +142%, not better -- a genuine,
+  reproducible dead end, not a resource or correctness failure.** Per the decision made two rounds
+  above (tile-batching ruled out by the contiguity finding; row-batching chosen over the smaller
+  tile-batched option specifically because it reuses the existing `colt` loop instead of adding a new
+  one, avoiding `PW_WCHUNK`'s own 3-round shared-multiplier P&R chase): `colt` stays the outer loop,
+  unchanged; `pw_flat_pipeline_impl`'s FAST_WRITEOUT path now stores each computed byte into a
+  persistent on-chip buffer (`pw_out_row_buf[MAC_PR][MAX_COUT_TIMES_WOUT]`, new constant
+  `MAX_COUT_TIMES_WOUT=9216`, a real product-bound across all 26 layers -- same reasoning as
+  `MAX_CIN_TIMES_W`, a coincidentally identical value from independent boundary layers) instead of
+  bursting immediately; a new `PW_WRITEOUT_FLUSH` loop in `run_layer`, once per `(chunk,rt)` after the
+  entire `colt` sweep completes, issues ONE variable-length burst write per `(ot,row)`
+  (`write_request(addr, ceil(w_out/4))`, matching the read-side `ManualBurstInstancePassed` precedent).
+  `ot_row_base`/`pw_ot_row_base` follow the same "accumulated via `+= d.w_out`, never multiplied inside
+  a pipelined function" discipline as `ot_out_ch_base` -- deliberately avoiding `PW_WCHUNK`'s own
+  shared-multiplier-FSM regression mechanism by construction, and it worked: **real P&R closed clean on
+  the FIRST attempt, no chase needed** (WNS=+0.091674ns, vs baseline's +0.153ns -- thinner margin but
+  positive; LUT 32,948/53,200=61.93%, +995/+1.87pp; BRAM 90/140=64.29%, +16 tiles, matching the isolated
+  csynth BRAM estimate almost exactly this time -- unlike most of this project's isolated-vs-real BRAM
+  history; DSP 51/220=23.18%, roughly flat). csim 6/6 + 20/20 (pw_weight_hoist_tb.cpp +
+  pw_scaling_probe_tb.cpp) both clean on first try after fixing one self-caught bug (the flush loop's
+  own row-base accumulator was initialized to a literal `0` instead of the chunk's real absolute base
+  `pw_ot_row_base` -- would have broken chunked layers 43/44/47/48 past their first chunk; caught by
+  code review before running csim, not by a failed test).
+  **Real board (2026-09-04): entry3 (cin=cout=48, 64x64, the same degenerate/non-fallback shape the
+  PW_WCHUNK round called "unchanged at 22.67ms") came back at 55.01-55.09ms across 2 repeats -- a
+  reproducible +142% REGRESSION, not the expected reduction.** entry64/entry60 both stayed byte-exact
+  (0 mismatches) but were not timed further once entry3's regression was confirmed reproducible --
+  stopped and reverted immediately per this project's own one-round-at-a-time discipline, rather than
+  running the full network to get a more precise magnitude on a result whose DIRECTION was already
+  clear and decisive. Board reverted to the `pw_wchunk` baseline bitstream (re-confirmed 22.68ms,
+  byte-exact); golden rollback image md5 unaffected (`7ee26f67a1fca38a2752e99cf0bac25b`, unchanged).
+  **Root-cause hypothesis (design-level, not yet independently confirmed via cosim or a binding-report
+  read): the OLD per-4-byte inline write was issued from inside the already-running II=1 compute
+  pipeline, so its AXI cost was fully hidden behind compute latency -- this is exactly what the much
+  earlier `PW_FIX_OUTADDR` fixed-address probe already found (~0% cost, output-write address contributes
+  nothing measurable). `PW_WRITEOUT_FLUSH` is a NEW, separate, sequential stage that runs only AFTER the
+  whole `colt` sweep for a given `rt` finishes, with nothing else scheduled to overlap it. It cut burst
+  COUNT exactly as designed (3,072 row-bursts vs 49,152 word-bursts for entry3's shape, a real 16x
+  reduction, matching the pre-registered transaction-count math from two rounds above almost exactly),
+  but every one of those fewer bursts now pays its own real, previously-hidden `write_request`/
+  `write`/`write_response` handshake latency as a serial, non-overlapped cost -- and that per-transaction
+  overhead evidently outweighs the 16x count reduction by a wide margin.** This is the SAME mechanism
+  this file's own "csynth region-level reports omit sequential glue cost" rule already describes
+  (elsewhere in this file, the `run_layer` DW_PATCH_STAGE glue-cost entry) applied to a NEW surface:
+  not just that isolated per-region csynth numbers miss glue cost, but that a mechanism which is "free"
+  ONLY because it's interleaved into an existing pipeline can become expensive again the moment it's
+  pulled OUT into its own sequential stage, even while objectively reducing the raw operation count.
+  **Standing lesson for any future batching/hoisting proposal on this codebase: reducing transaction
+  COUNT is not sufficient by itself if the batched operation moves from an already-pipelined,
+  latency-hidden context into a new serial stage -- the per-transaction latency that was free inside the
+  pipeline is not free once it's outside it.** Before proposing another batching/hoisting move, check
+  whether the current mechanism's cheapness comes from pipeline overlap specifically (not just "it's
+  inside a `PIPELINE` region") -- if so, any restructuring that pulls the operation out of that overlap
+  needs its own overlap story (e.g. double-buffering so the NEXT iteration's compute can run concurrently
+  with the flush), not just a smaller operation count. **This closes the output-write-batching line for
+  now** -- the 82% transaction-count reduction was real and achieved, but the wrong lever: this
+  investigation's real finding is that output-write cost is NOT primarily transaction-count-bound the
+  way weight-read was: it's bound by whether the write stays inside the pipeline's existing overlap, a
+  structural property the count-reduction math never modeled. `mac_array_a3_pw_wchunk` (1,806.45ms)
+  remains the deployed baseline; not superseded by this round.
 - **When a real-board measurement comes from a build whose P&R never closed timing, don't just discard
   it OR trust it at face value -- cross-check with a SECOND, physically different implementation of
   the same source and see if the result is bit-identical.** Confirmed useful 2026-09-02 (ZHR-92,
@@ -1568,9 +1691,66 @@ supposedly standing in for.
   must reflect current config) is a standing TODO to verify, not a fact — especially before building
   new code (like a register-write driver) that will silently inherit whichever version is wrong.**
 
-## Current deployed baseline (updated 2026-09-03 -- supersedes every earlier baseline reference below)
+## Current deployed baseline (updated 2026-09-04 -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_pw_wchunk` is now the deployed baseline**, replacing `mac_array_a3_pw_weight_hoist`
+**`mac_array_a3_macpd2` is now the deployed baseline**, replacing `mac_array_a3_pw_wchunk`
+(1,806.45ms/61.40% LUT/WNS+0.134ns, deployed 2026-09-03). This re-opens and closes the MAC_PD-
+expansion line that was CLOSED on 2026-08-31 (see the hard-stop-list bullet above) -- that closure's
+own premise (`gmem_w`'s single AXI port can't service >1 bus request/iteration) was measured on the
+PRE-weight-hoist architecture; weight caching (`pw_weight_cache`/`PW_WCHUNK`, deployed since
+2026-09-02/03) removed the real bandwidth demand the closure was about, but the dead uncached
+fallback arm was left as a runtime `if(pw_cached)` branch that the MAC_PD=1->2 unroll re-triggered
+the SAME diagnostic against for an unrelated, scheduler-artifact reason -- see the hard-stop-list
+bullet's own 2026-09-04 refinement and ZHR-92 (Linear) for the full diagnostic chain.
+
+**What changed**: `MAC_PD` 1->2 (PW's Cin reduction-chunk size, doubling the number of channels
+`PW_FLAT` processes per cycle). The dead direct-DRAM-read fallback arm inside `pw_flat_pipeline_impl`
+(unreachable on every real PW layer since PW_WCHUNK guarantees 100% cache coverage, `d.cin <=
+PW_WEIGHT_CACHE_ELEMS` always true for real `cin<=1152` vs `cache=147,456`) is now a compile-time-
+constant `if(true)` by default, structurally removing it from the scheduler's view instead of leaving
+it as a runtime branch HLS must conservatively schedule for; the old runtime-gated form is preserved,
+unused by default, behind `PW_ALLOW_UNCACHED_FALLBACK` per this project's own dead-but-kept-fallback
+convention. Confirmed via isolated csynth before touching P&R: `PW_FLAT` achieved II regresses to 2
+with the runtime branch, recovers to 1 with the dead arm compile-time-eliminated -- root cause is the
+MAC_PD-unrolled `dd` loop duplicating the whole `if/else` (including the dead `gmem_w` arm) across 2
+simultaneous lanes, not real weight-read bandwidth demand.
+
+Real P&R (route_design alone, no phys_opt needed): **WNS +0.094463ns** (closed, down from +0.134ns --
+thinner margin, still positive), **LUT 35,751/53,200 (67.20%)**, up +3,087/+5.80pp from 61.40%,
+**BRAM 82/140 tiles (58.57%)**, up +8 tiles from 52.86%. **DSP 50/220 (22.73%)** -- exactly unchanged.
+
+Board: PL-side full-network total **1,626.70ms**, down from 1,806.45ms (**-9.95%**; cumulative from
+this whole latency-optimization line's original 6,050ms starting point: **-73.1%**). Single-op
+byte-exact vs csim: entry3 (PW-only, degenerate path) 22.69ms->18.41-19.46ms (**-14.1% to -18.7%**,
+mean ~15.7%, matching the pre-registered model -- PW's compute share of real board time (28%, from
+the earlier cosim decomposition) doubling in parallelism predicts ~14% of PW's own time saved, and
+measured landed close to that once properly scoped to a PW-only shape); entry5_dw (DW-only) 38.82ms
+->38.87ms, **unaffected (within noise)** -- confirms MAC_PD=2's win is PW-specific, DW's own datapath
+(already `complete dim=0`-partitioned, generic in MAC_PD) neither gains nor regresses. The full-network
+aggregate (-9.95%) sits between PW-only's -15.7% and DW's ~0% because the network mixes both --
+consistent with PW being roughly 63% of full-network time by this arithmetic, not evidence of
+serialization eating into the model's prediction. Full-network six-checkpoint correctness (primary
+judge per this project's own standing process rule) verified via cosine similarity against the
+untouched ONNX float32 reference: **0.6313/0.1286/0.2227/0.3491/-0.2459/-0.2811** for
+stage1/stage2/stage3/stage4/finaldw/se -- EXACT match to the project's own long-established figures,
+confirming MAC_PD=2 does not change numeric semantics. Register map is UNCHANGED from
+`mac_array_a3_pw_wchunk` (MAC_PD is an internal datapath-width parameter, not a register) -- existing
+ARM-side binaries remain valid, no rebuild needed. csim was not separately re-run this round (only
+isolated csynth + real board); real hardware correctness (byte-exact single-op + exact ONNX cosine
+match) was treated as sufficient given the scope, but a formal csim pass is still owed if this build
+is revisited.
+
+Not investigated this round: whether MAC_PD=4 is viable now that the dead-branch mechanism is
+understood (the BRAM dual-port question raised at the start of this round -- `pw_weight_cache` is a
+plain, unpartitioned array with 2 native read ports, matching MAC_PD=2 exactly but insufficient for
+MAC_PD=4 without partitioning -- was never actually reached, since `gmem_w`'s dead-branch artifact
+was the binding constraint at MAC_PD=2, not BRAM ports). 150MHz was deliberately deferred to a
+separate round per this round's own pre-registration (avoiding a confounded two-variable change).
+
+## Prior deployed baseline (superseded 2026-09-04, kept for history)
+
+**`mac_array_a3_pw_wchunk` was the deployed baseline from 2026-09-03 to 2026-09-04**, replacing
+`mac_array_a3_pw_weight_hoist`
 (2,111.27ms/60.06% LUT/WNS+0.153ns, deployed 2026-09-02). This closes out the 351.44ms fallback-layer
 opportunity that `pw_weight_hoist` itself flagged but did not capture -- see ZHR-63's mainline summary
 and ZHR-92's own round-by-round history (including a 3-round real-P&R shared-multiplier regression

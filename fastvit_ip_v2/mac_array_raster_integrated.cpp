@@ -431,7 +431,39 @@ static void pw_flat_pipeline_impl(
                  * safe (only one arm touches gmem_w, unlike FAST_WRITEOUT's
                  * own same-port-two-writes trigger). See PW_WEIGHT_HOIST's
                  * header comment above run_layer for sizing/partitioning. */
+                /* ZHR-92 round (2026-09-04): the uncached (gmem_w direct-
+                 * read) arm below is DEAD on every real shape this project
+                 * can construct -- pw_cached_ok (run_layer's own caller-
+                 * side computation, see its header comment above) is
+                 * `d.cin <= PW_WEIGHT_CACHE_ELEMS`, true for every real
+                 * layer (max real cin=1152 vs cache=147,456) since
+                 * PW_WCHUNK. Kept as a runtime `if(pw_cached)` (not a
+                 * template, per the original design's own reasoning: "only
+                 * one arm touches gmem_w, unlike FAST_WRITEOUT's own
+                 * same-port-two-writes trigger") -- true when MAC_PD's own
+                 * per-`dd` UNROLL had exactly 1 lane. That assumption
+                 * silently stopped holding at MAC_PD=2: the unrolled `dd`
+                 * loop now duplicates this WHOLE if/else across 2
+                 * simultaneous lanes, and HLS must conservatively schedule
+                 * for both lanes hitting the dead gmem_w arm in the same
+                 * cycle -- confirmed via a direct compile-time-constant
+                 * test (`if(true)`) that this, not real gmem_w bandwidth
+                 * demand, is what regresses PW_FLAT's achieved II to 2 (see
+                 * this round's own CLAUDE.md/Linear write-up). Default is
+                 * now the compile-time-constant form (matches what
+                 * pw_cached_ok's own value always evaluates to on real
+                 * hardware); the old runtime-gated form is preserved,
+                 * unused by default, behind PW_ALLOW_UNCACHED_FALLBACK for
+                 * anyone who needs to re-enable the direct-DRAM path (e.g.
+                 * a future cin > PW_WEIGHT_CACHE_ELEMS shape), per this
+                 * project's own convention for prior dead-but-kept
+                 * fallbacks (use_wide_path, PW_PATCH_HOIST's in_base_wide
+                 * parameter). */
+#ifdef PW_ALLOW_UNCACHED_FALLBACK
                 if (pw_cached) {
+#else
+                if (true) {
+#endif
                     /* ZHR-92 round (2026-09-03): PW_FIX_WCACHE_ADDR --
                      * timing-only probe, mirrors PW_FIX_WADDR's own
                      * discipline but for the NOW-LIVE cached-BRAM-read
