@@ -675,6 +675,20 @@ supposedly standing in for.
   trip-count formula assumes) -- this would scale with transaction COUNT, not address value, which is
   a DIFFERENT question from all 5 already-tested address-fixing probes (none of which isolated
   per-transaction handshake cost independent of the address used). Flagged, not measured.
+  **RULED OUT, 2026-09-04, same round (no board time needed -- computed against the actual csynth
+  report): a competing hypothesis, also proportional-with-compute in shape, was PW_FLAT's own
+  pipeline fill/drain restarting once per `(rt,colt)` call (the flat trip counter covers one call's
+  own steady state, so a call boundary restarts the pipeline -- and call COUNT scales with
+  `n_tiles*n_chunks`, the same axis the remainder tracks).** `pw_flat_pipeline_impl_true_Pipeline_
+  PW_FLAT`'s own csynth report (`PipelineII=1`, `PipelineDepth=22`) gives a real, not estimated,
+  fill/drain cost of `(22-1)*10ns=210ns` per call. Computed across all 13 shapes measured so far
+  (the 11-point scaling sweep plus entry3/entry64): **worst case is 0.4% of the remainder** (256
+  calls, the highest tested, costs only 53.8us total) -- roughly 2 orders of magnitude too small to
+  matter at any shape tested, not a close call. Decisively ruled out without needing new board time,
+  because `PipelineDepth` was already a real, measured csynth quantity, not something requiring a
+  fresh probe. The AXI-transaction-handshake hypothesis (above) remains the live candidate; its own
+  verification (two same-byte-volume shapes with different transaction counts, compare timing) does
+  need real board time and has not been run yet.
 - **When a real-board measurement comes from a build whose P&R never closed timing, don't just discard
   it OR trust it at face value -- cross-check with a SECOND, physically different implementation of
   the same source and see if the result is bit-identical.** Confirmed useful 2026-09-02 (ZHR-92,
