@@ -752,6 +752,29 @@ supposedly standing in for.
   working picture is many small transactions each paying a real per-transaction DRAM-controller/
   arbitration round-trip cost, not a transfer-size-bound cost. Not yet proceeded to the actual APM
   implementation.
+  **DECISIVE PRE-APM CHECK, 2026-09-04, same day: back-solved real per-transaction latency and
+  compared to the known 40-80 cycle typical DRAM-read-latency range -- lands at ~34-36 cycles,
+  AT/JUST BELOW the typical range, not the "hundreds to thousands" anomalous case.** Total B1
+  transaction count computed by type: activation reads (`ROW_READ`'s own `read_request` count,
+  `MAC_PR*Cin*n_row_tiles*n_chunks`) = 384; output writes (`out_burst.write_request`, one 4-byte word
+  per completed row) = `Cout*MAC_PR*n_tiles*n_chunks` = 3,072 -- **8x the activation-read count for
+  this shape**; weight load (burst-inferred) = 3-144 depending on assumed burst length, small enough
+  either way not to matter (total transaction count only moves 3,459->3,600, changing the final
+  answer by ~4%). Real-hardware-only cycles (from the cosim round, 219,000-94,601=124,399) divided by
+  ~3,459-3,600 transactions = **34.6-36.0 cycles/transaction**. This is NOT the anomalous case a
+  much-earlier round's own "1,000-1,400 cycles/transaction" figure would suggest -- that number is
+  from a different, pre-weight-caching architecture and does not hold under the current one (same
+  "measure the CURRENT mechanism" lesson this file already records elsewhere on this exact line).
+  **Practical conclusion: normal-ish per-transaction latency, too many transactions -- APM would NOT
+  be expected to reveal much new information; the real lever is reducing transaction count.** New
+  finding this calculation surfaces: output-write transaction count DOMINATES activation-read
+  transaction count on real shapes too (checked analytically, not just B1's own synthetic case):
+  entry3 16x, B1 8x, entry64 2x (chunked). This whole multi-round investigation has focused almost
+  entirely on activation reads (`ROW_READ`) -- output writeout's own transaction-count burden (one
+  4-byte word per completed row, currently) has never been separately identified as a lever before.
+  SmartConnect arbitration (3 masters sharing one HP0 port) remains a plausible partial contributor to
+  the ~35 cycles/transaction even though bandwidth itself isn't saturated -- a different mechanism
+  than the already-ruled-out bandwidth lever, not yet tested in isolation.
   **FOLLOW-UP, 2026-09-04, next round: the AXI-transaction-count hypothesis was tested and REFUTED in
   its simple linear form -- but the data shows a real, non-proportional effect instead, not a clean
   null result.** 3 synthetic bundles, holding `Cin` FIXED (48, not varied against W_in as the round's
