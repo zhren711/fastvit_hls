@@ -597,6 +597,29 @@ supposedly standing in for.
   this fill/drain saving (9 cycles) recurs on every tile call, not just once per layer -- small in
   absolute terms (9 cycles x 256 tiles = 2,304 cycles = ~0.023ms for an entry3-scale layer) but real
   and correctly-directional, on top of the much larger DRAM-traffic-reduction benefit.
+- **PW's cost decomposition must be re-measured from scratch after ANY architectural change to the
+  component that used to dominate it -- an old percentage split does not survive the mechanism it was
+  measured against being replaced, even directionally.** Confirmed 2026-09-03 (ZHR-92, "open B" round,
+  post-chunking): the pre-chunking decomposition (weight-read 55.3%, activation ~0%, output ~0%, 27%
+  unexplained, measured on the 3,630.74ms baseline) was NOT reused or extrapolated -- redone with 4
+  real-P&R fixed-address probes (weight now BRAM-cached, activation, output, and a NEW bias/shift-cache
+  probe never run before) on the CURRENT chunked-weight deployed baseline, on both a small (entry3) and
+  large (entry64) layer. **Result: all 4 combined explain ~0% of PW's time** (every probe's delta
+  within noise, <=0.06ms, of baseline) -- weight-read's old 55.3% share is gone (confirmed, not
+  assumed: BRAM-cached reads have uniform latency regardless of address, so fixing the address changes
+  nothing measurable), and none of the other three ever mattered. A trip-count-based pipeline-only
+  estimate (`total_iters x II(=1) x 10ns`, matching this file's own established `Performance Estimates`
+  discipline) plus the separately-established ~0.58ms/entry dispatch floor together explain only 46-57%
+  of measured time (entry3: 9.83ms pipeline + 0.58ms dispatch = 45.9% of 22.67ms; entry64: 18.43ms +
+  0.58ms = 56.8% of 33.46ms) -- **a large remainder (43-54%) unaccounted by anything tested.** New gap
+  in this project's own probe coverage identified while investigating: `PW_FIX_ACTADDR` only ever fixed
+  `COPY_FROM_ROW`'s SRAM-to-SRAM copy, never `ROW_READ`'s own real DRAM burst fetch (`in_burst.
+  read_request`/`read()`, genuinely data-dependent address, once per row-tile x Cin channels) -- the
+  "activation read ~0%" finding this project has cited repeatedly only ever covered the on-chip copy,
+  not the DRAM fetch feeding it. Flagged as the strongest untested candidate for the remainder, not
+  measured yet -- do not assume it explains the gap until a dedicated `ROW_READ`-address probe actually
+  runs; this file's own repeated lesson on this exact line (weight-read's 1.3% vs 55.3% reversal, see
+  above) is precisely "measure the CURRENT mechanism, don't extrapolate from a prior one's number."
 - **When a real-board measurement comes from a build whose P&R never closed timing, don't just discard
   it OR trust it at face value -- cross-check with a SECOND, physically different implementation of
   the same source and see if the result is bit-identical.** Confirmed useful 2026-09-02 (ZHR-92,

@@ -432,7 +432,25 @@ static void pw_flat_pipeline_impl(
                  * own same-port-two-writes trigger). See PW_WEIGHT_HOIST's
                  * header comment above run_layer for sizing/partitioning. */
                 if (pw_cached) {
+                    /* ZHR-92 round (2026-09-03): PW_FIX_WCACHE_ADDR --
+                     * timing-only probe, mirrors PW_FIX_WADDR's own
+                     * discipline but for the NOW-LIVE cached-BRAM-read
+                     * branch (PW_FIX_WADDR above only forces the DEAD
+                     * direct-DRAM-read branch, unreachable on any real/
+                     * tested shape since the PW_WCHUNK round -- see
+                     * PW_WEIGHT_CACHE_ELEMS's own header comment). This
+                     * round's own goal (ZHR-92, "opening B", re-decomposing
+                     * PW's external-cost breakdown now that weight-hoist's
+                     * old 55.3% component has been chunked away) needs a
+                     * probe for THIS branch specifically -- pw_weight_cache
+                     * index 0 is always in-range regardless of shape.
+                     * Board-only, csim/checkpoint NOT meaningful under this
+                     * flag. Off by default. */
+#ifdef PW_FIX_WCACHE_ADDR
+                    lane_w[dd] = ch_valid ? pw_weight_cache[0] : (wt_t)0;
+#else
                     lane_w[dd] = ch_valid ? pw_weight_cache[w_ot_base + ch_off + dd] : (wt_t)0;
+#endif
                 } else {
 #ifdef PW_FIX_WADDR
                     lane_w[dd] = ch_valid ? w_base[d.w_off] : (wt_t)0;
@@ -495,7 +513,18 @@ static void pw_flat_pipeline_impl(
                     #pragma HLS UNROLL
                     total += acc[dd][wr_row][wr_col];
                 }
+                /* ZHR-92 round (2026-09-03): PW_FIX_BIASADDR -- timing-only
+                 * probe (see PW_FIX_WCACHE_ADDR's own comment above for the
+                 * round this belongs to). pw_bias_cache/pw_shift_cache were
+                 * never individually probed before -- this round's own goal
+                 * is a full re-decomposition of PW's external cost now that
+                 * weight-read's old 55.3% share is gone. Index 0 always
+                 * in-range. Off by default. */
+#ifdef PW_FIX_BIASADDR
+                total += pw_bias_cache[0];
+#else
                 total += pw_bias_cache[ot_idx];
+#endif
                 val = (act_t)clip_shift(total, shift_reg);
             }
             /* A3 shared-multiplier round (2026-08-25, ZHR-92, U2598
@@ -555,7 +584,11 @@ static void pw_flat_pipeline_impl(
             if (!in_writeout) {
                 if (cbase_idx == n_cbase - 1) {
                     in_writeout = true;
+#ifdef PW_FIX_BIASADDR
+                    shift_reg = d.use_shift_table ? (int)pw_shift_cache[0] : d.out_shift;
+#else
                     shift_reg = d.use_shift_table ? (int)pw_shift_cache[ot_idx] : d.out_shift;
+#endif
                 } else {
                     /* A3 round (2026-08-23, ZHR-92, run_layer rewrite
                      * stage 2 followup): FOUND AND FIXED via csim, not
