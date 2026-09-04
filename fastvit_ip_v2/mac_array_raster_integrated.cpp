@@ -1087,7 +1087,25 @@ static void run_layer(const LayerDescV2 &d,
                     int word_addr0 = byte_addr >> 2;
                     int r = byte_addr & 3;
                     int n_words = (r + W + 3) >> 2;
+                    /* ZHR-92 round (2026-09-04): PW_FIX_ROWREAD_ADDR --
+                     * timing-only probe, mirrors PW_FIX_WADDR's own
+                     * discipline (see its comment elsewhere in this file)
+                     * but for ROW_READ's own real DRAM burst fetch, which
+                     * PW_FIX_ACTADDR never touched (that flag only fixes
+                     * COPY_FROM_ROW's SRAM-to-SRAM copy further down, not
+                     * this read). ONLY the address argument is fixed
+                     * (d.in_off, always in-range, same word_addr0 for
+                     * every (rr,ci)) -- n_words is left computed from the
+                     * REAL r/W exactly as before, so burst LENGTH is
+                     * unchanged from the real run; only address locality
+                     * changes. Values WILL be wrong. Board-only, csim/
+                     * checkpoint NOT meaningful under this flag. Off by
+                     * default. */
+#ifdef PW_FIX_ROWREAD_ADDR
+                    in_burst.read_request((size_t)(d.in_off >> 2), (unsigned)n_words);
+#else
                     in_burst.read_request((size_t)word_addr0, (unsigned)n_words);
+#endif
                     ROW_READ_FILL: for (int i = 0; i < MAX_WORDS_PER_CH; i++) {
                         #pragma HLS PIPELINE II=1
                         bool word_valid = i < n_words;

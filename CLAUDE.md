@@ -620,6 +620,22 @@ supposedly standing in for.
   measured yet -- do not assume it explains the gap until a dedicated `ROW_READ`-address probe actually
   runs; this file's own repeated lesson on this exact line (weight-read's 1.3% vs 55.3% reversal, see
   above) is precisely "measure the CURRENT mechanism, don't extrapolate from a prior one's number."
+  **FOLLOW-UP, 2026-09-04, same round: the "strongest untested candidate" was tested and ALSO came back
+  ~0%.** `PW_FIX_ROWREAD_ADDR` fixes only `ROW_READ`'s `read_request` address argument (constant,
+  `d.in_off>>2`) while leaving `n_words` (burst length) computed from the real per-`(rr,ci)` address
+  exactly as before -- isolating address locality from burst-length effects, the same discipline
+  `PW_FIX_WADDR` used for the (successful) weight-read probe. Real P&R closed (WNS=+0.288714ns).
+  Board: entry3 22.67ms->22.67ms (Delta 0.00ms), entry64 33.46ms->33.44ms (Delta -0.02ms) -- both
+  noise, matching all 4 prior probes exactly. Mismatch counts (147517/196608, 56197/73728) confirm
+  genuine engagement, not a no-op. **Five real-P&R-confirmed probes now (weight-cache, activation
+  SRAM copy, output write, bias/shift cache, ROW_READ DRAM address), ALL ~0% -- the candidate list is
+  exhausted, not merely thin.** None of PW's still-large remainder (54.1%/entry3, 43.2%/entry64) is
+  attributable to any addressing site tested so far. Practical conclusion for whoever continues this
+  line: stop reaching for fixed-address probes on this specific question -- the next diagnostic step
+  is a full per-entry timeline (dispatch handshake, each named HLS region's own real elapsed
+  contribution: `ROW_READ`'s burst COUNT/latency as opposed to address locality, `PW_WEIGHT_HOIST`/
+  `PW_BIAS_HOIST`/`PW_SHIFT_HOIST`'s own real once-per-layer costs, `PW_FLAT`'s own fill/drain and any
+  real stalling beyond the trip-count-only estimate), not another address-fixing variant.
 - **When a real-board measurement comes from a build whose P&R never closed timing, don't just discard
   it OR trust it at face value -- cross-check with a SECOND, physically different implementation of
   the same source and see if the result is bit-identical.** Confirmed useful 2026-09-02 (ZHR-92,
