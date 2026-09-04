@@ -687,6 +687,19 @@ supposedly standing in for.
   matter at any shape tested, not a close call. Decisively ruled out without needing new board time,
   because `PipelineDepth` was already a real, measured csynth quantity, not something requiring a
   fresh probe.
+  **EXTENDED, 2026-09-04 (still no board time): the single-region check above only counted `PW_FLAT`
+  -- redone summing fill/drain across ALL 4 named pipelined regions a tile/chunk actually walks
+  through (`ROW_READ_FILL` depth=3/II=1, `COPY_FROM_ROW` depth=4/II=1, `PW_FLAT` depth=22/II=1,
+  `PW_WEIGHT_HOIST` depth=3/II=1 -- all real values from `pwchunk3`'s own csynth reports), weighted
+  by each region's REAL call frequency (`ROW_READ_FILL`=`MAC_PR*Cin*n_row_tiles*n_chunks`, the
+  highest-frequency region by far; `COPY_FROM_ROW`/`PW_FLAT`=`n_tiles*n_chunks`;
+  `PW_WEIGHT_HOIST`=`n_chunks`). **Still only 0.96%-2.26% of the remainder across 4 shapes checked**
+  (entry3, entry64, and two of the scaling-experiment's own extreme points) -- even at the highest
+  `ROW_READ_FILL` call count tested (12,288 calls), the sum stays 1-2 orders of magnitude below the
+  remainder. This is a LOWER BOUND (doesn't capture inter-region FSM transition cost, invisible in
+  any per-region csynth report) but small enough that even a substantial unaccounted multiplier
+  wouldn't close the gap alone. **Named-region fill/drain, summed across every region a tile visits,
+  is decisively insufficient -- something else drives the remainder.**
   **FOLLOW-UP, 2026-09-04, next round: the AXI-transaction-count hypothesis was tested and REFUTED in
   its simple linear form -- but the data shows a real, non-proportional effect instead, not a clean
   null result.** 3 synthetic bundles, holding `Cin` FIXED (48, not varied against W_in as the round's
@@ -1088,6 +1101,14 @@ supposedly standing in for.
   reasonable adaptation when the literal golden `.bit` isn't available, since it's an independently
   real-P&R-verified, already board-tested build; the golden `.bin` FILE itself was still re-verified
   by md5 (unchanged) even though it wasn't the one reloaded.
+  **Observed pattern, root cause NOT known -- recorded so it's not re-derived from scratch next time:
+  this is the 2nd occurrence of the SSH-dead/ping-alive hang symptom, and both times it happened
+  during a round doing MANY consecutive board dispatches in one session** (the first was a full-
+  network 82-entry run; this one was after a long sequence of single-op scaling-probe dispatches).
+  Not yet confirmed as causal (could be coincidence -- both are also simply the rounds with the most
+  total board time), but worth treating "many consecutive dispatches in one sitting" as a mild risk
+  factor until either a real mechanism is found or enough hang-free long sessions accumulate to make
+  the correlation look like noise.
 - When the code itself contains an admitted placeholder/TODO (a hardcoded stand-in value, a comment
   saying "not yet calibrated"/"not yet implemented", etc.) and the observed symptom is consistent with
   that placeholder being the cause, verify the placeholder first — before chasing a more interesting
