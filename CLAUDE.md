@@ -734,6 +734,25 @@ supposedly standing in for.
   descriptor-construction surface can resolve the real-hardware-only share, since by definition it
   doesn't show up in cosim's own idealized model either.** Not yet attempted (a real BD change, new
   bitstream, and register-read driver code -- a bigger round than any single-op descriptor probe).
+  **CHEAPER PRE-CHECK, 2026-09-04, before committing to APM (no BD change needed): computed real
+  achieved DRAM bandwidth for the same B1 shape cosim just measured.** Total real DRAM bytes moved =
+  activation (`Cin*H*W`=12,288, the whole tensor via `ROW_READ`) + weight (`Cin*Cout`=2,304, one
+  `PW_WEIGHT_HOIST` load since `n_chunks=1`) + output (`Cout*h_out*w_out`=12,288) + bias
+  (`Cout*4`=192) = 27,072 bytes, moved in 219,000 real cycles (2.19ms). **Achieved bandwidth: 12.36
+  MB/s -- 1.55% of the 800MB/s theoretical 64-bit-HP ceiling, 3.09% even against a conservative
+  400MB/s (32-bit) estimate. Nowhere close to saturated.** Separately confirmed (from the deployed
+  build's own BD tcl, `run_impl_bitstream_pwchunk3.tcl`): `CONFIG.PCW_USE_S_AXI_HP0 {1}` is the ONLY
+  HP port enabled -- all 3 masters (`gmem_act`/`gmem_w`/`gmem_b`) funnel through one `smartconnect`
+  (`sc_data`, `NUM_SI 3`) into that single HP0 port; HP1-3 are unused. **Because bandwidth is nowhere
+  near the ceiling, spreading the 3 masters across the 3 unused HP ports would NOT be expected to
+  help on its own** -- that lever only pays off in a bandwidth-saturated regime, which this isn't.
+  **This is a latency/arbitration signature, not a throughput-limit signature -- APM is warranted, not
+  redundant with what these two cheap checks already show.** Consistent with Group B's own earlier
+  finding (remainder grows close to linearly with tile/transaction count, not with byte volume): the
+  working picture is many small transactions each paying a real per-transaction DRAM-controller/
+  arbitration round-trip cost, not a transfer-size-bound cost. Not yet proceeded to the actual APM
+  implementation.
+  **FOLLOW-UP, 2026-09-04, next round: the AXI-transaction-count hypothesis was tested and REFUTED in
   its simple linear form -- but the data shows a real, non-proportional effect instead, not a clean
   null result.** 3 synthetic bundles, holding `Cin` FIXED (48, not varied against W_in as the round's
   own first design sketch suggested) and trading `H_in` against `W_in` -- strictly better than varying
