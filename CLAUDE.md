@@ -686,9 +686,33 @@ supposedly standing in for.
   calls, the highest tested, costs only 53.8us total) -- roughly 2 orders of magnitude too small to
   matter at any shape tested, not a close call. Decisively ruled out without needing new board time,
   because `PipelineDepth` was already a real, measured csynth quantity, not something requiring a
-  fresh probe. The AXI-transaction-handshake hypothesis (above) remains the live candidate; its own
-  verification (two same-byte-volume shapes with different transaction counts, compare timing) does
-  need real board time and has not been run yet.
+  fresh probe.
+  **FOLLOW-UP, 2026-09-04, next round: the AXI-transaction-count hypothesis was tested and REFUTED in
+  its simple linear form -- but the data shows a real, non-proportional effect instead, not a clean
+  null result.** 3 synthetic bundles, holding `Cin` FIXED (48, not varied against W_in as the round's
+  own first design sketch suggested) and trading `H_in` against `W_in` -- strictly better than varying
+  Cin, since it eliminates the `n_cbase` confound entirely (Cin fixed -> n_cbase=2 identical across all
+  3) rather than needing to model and subtract it; `n_tiles`(=32) and total bytes(24,576) fall out
+  AUTOMATICALLY constant once Cin and total bytes are both fixed, and analytical PW_FLAT compute time
+  is therefore IDENTICAL by construction (1.2288ms) across all 3 -- no subtraction uncertainty. Total
+  ROW_READ transaction count varied 1x/2x/4x (384/768/1536) via burst size (n_words 16/8/4). csim
+  14/14, board 6/6 (3 points x2 reps) byte-exact, repeatability <=0.01ms.
+  **Result: 1x->2x (transactions doubled) showed essentially ZERO change in the remainder (+0.2%);
+  2x->4x (transactions doubled again) showed a real +52.5% remainder jump.** Over the full 4x
+  transaction range, remainder only grew 1.53x, far short of the 4x simple proportionality predicts --
+  and the pattern (flat, then a jump) isn't even monotonic with the ratio the way "more transactions
+  costs proportionally more" would need. **Simple linear scaling with transaction count is refuted**,
+  but this isn't a clean null result either -- there IS a real, repeatable, non-noise effect at the 4x
+  point. The one variable that changes monotonically and lines up with where the jump happens is BURST
+  SIZE (n_words per transaction: 16/8/4) rather than transaction COUNT itself -- the 4x point's 4-word
+  bursts may cross an AXI/burst-efficiency threshold the 8- and 16-word points don't. This is a
+  post-hoc read of the pattern, not yet tested as its own isolated hypothesis (would need 2 shapes with
+  the SAME transaction count but different burst sizes, mirroring how this round isolated transaction
+  count from byte volume) -- flagged, not confirmed. **Lesson for this project's own scaling-experiment
+  method**: designing a test to isolate variable X (here, transaction count) via a compensating
+  variable Y (burst size) can accidentally reveal that Y itself was the real driver, not X -- a clean
+  experiment on the INTENDED variable is exactly what surfaces this, whereas a confounded design
+  wouldn't have separated the two possibilities at all.
 - **When a real-board measurement comes from a build whose P&R never closed timing, don't just discard
   it OR trust it at face value -- cross-check with a SECOND, physically different implementation of
   the same source and see if the result is bit-identical.** Confirmed useful 2026-09-02 (ZHR-92,

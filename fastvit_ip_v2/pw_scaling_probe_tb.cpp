@@ -72,6 +72,7 @@ int main() {
         "pwscale_2a_cb1", "pwscale_2b_cb2", "pwscale_2c_cb4",
         "pwscale_3a_t16", "pwscale_3b_t64",
         "pwscale_4a_nc1", "pwscale_4b_nc2", "pwscale_4c_nc3",
+        "pwaxi_1x", "pwaxi_2x", "pwaxi_4x",
     };
     int fails = 0;
     for (const char *t : tags) fails += !run_case(t);
