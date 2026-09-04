@@ -636,6 +636,24 @@ supposedly standing in for.
   contribution: `ROW_READ`'s burst COUNT/latency as opposed to address locality, `PW_WEIGHT_HOIST`/
   `PW_BIAS_HOIST`/`PW_SHIFT_HOIST`'s own real once-per-layer costs, `PW_FLAT`'s own fill/drain and any
   real stalling beyond the trip-count-only estimate), not another address-fixing variant.
+  **RESOLVED, 2026-09-04 (several rounds later, after directly measuring transaction counts): the "5
+  probes, all ~0%" result above is NOT actually a contradiction with the later finding that output-
+  write TRANSACTION COUNT is a real, large lever -- it's exactly consistent, once the scope of what a
+  fixed-address probe can measure is stated precisely.** A fixed-address probe (`PW_FIX_WADDR`/
+  `_ACTADDR`/`_OUTADDR`/`_BIASADDR`/`_ROWREAD_ADDR`) tests "does WHERE we access cost anything" -- it
+  forces the address to a constant, holding the NUMBER of accesses and their SIZE completely
+  unchanged. It structurally cannot detect a cost that scales with access COUNT (too many small
+  transactions) rather than access LOCATION (cache miss, DRAM row-buffer thrash, alignment penalty).
+  The one probe in this whole line that DID show a large effect -- `PW_FIX_WADDR` on the pre-chunking
+  weight-read path -- worked BECAUSE fixing the address collapsed 341x redundant re-reads into
+  repeated hits on the SAME location (a location-cost effect, not a count effect); output write's own
+  fixed-address probe stayed flat because fixing the address does nothing to the fact that it's still
+  issuing the SAME NUMBER of tiny 4-byte writes. **General rule for this project going forward: a
+  fixed-address probe answers "is this address-dependent," not "is this access-pattern-dependent" --
+  a null result rules out the FORMER only. Before concluding a mechanism doesn't matter from an
+  all-~0%-probes result, separately ask whether the real cost could be in access COUNT or GRANULARITY
+  instead of access LOCATION, and check that with a transaction-count calculation (real code, real
+  formula) or a scaling experiment, not another address-fixing variant.**
   **FOLLOW-UP, 2026-09-04, next round: no fine-grained on-board timer exists to measure named HLS
   regions directly, so the "full per-entry timeline" plan above was replaced with a scaling
   experiment instead** -- the same technique this project has used 3 times before (n_cbase
@@ -775,6 +793,24 @@ supposedly standing in for.
   SmartConnect arbitration (3 masters sharing one HP0 port) remains a plausible partial contributor to
   the ~35 cycles/transaction even though bandwidth itself isn't saturated -- a different mechanism
   than the already-ruled-out bandwidth lever, not yet tested in isolation.
+  **OUTPUT-WRITE BATCHING OPPORTUNITY, 2026-09-04, same day, computed not implemented: confirmed
+  current WRITEOUT granularity is one 4-byte word per write (`out_burst.write_request(byte_addr>>2,
+  1)`, triggered once per 4 columns) -- NOT one write per full output row.** `colt*MAC_PC` is baked
+  into the write address, so a full row is assembled across `n_col_tiles` SEPARATE `(rt,colt)` calls,
+  each issuing its own tiny write -- the 8-16x output/activation transaction ratio found above is
+  inflated by exactly this factor, not a natural floor; this line had not hit its end. Real network
+  total output-write transactions (all 26 PW layers, `cout*MAC_PR*n_tiles*n_chunks`): **1,001,664**.
+  Two batching options computed: (a) tile-batched -- accumulate the full `MAC_PR*MAC_PC`=16-byte block
+  before flushing, entirely within one `(rt,colt)` call's own existing scope, no outer-loop
+  restructuring -- reduces to 250,416 txns (75.0% reduction), ~260-270ms at 34.6-36.0 cycles/txn; (b)
+  row-batched -- accumulate a full `w_out`-byte row across all `n_col_tiles` calls before flushing, a
+  real structural change (a buffer whose lifetime spans multiple `pw_flat_pipeline_impl` calls, or a
+  loop-nesting restructure) -- reduces to 179,904 txns (82.0% reduction), ~284-296ms. **Both are large
+  relative to the 1,806.45ms full-network baseline (14-16%), comparable in scale to this session's
+  biggest wins so far.** Open questions before implementing either: alignment for a 16-byte or
+  full-row burst (a previously-established 100%-2-byte/50%-4-byte figure doesn't directly answer this
+  -- needs its own check), and whether tile-batching's smaller-but-contained win is the better
+  near-term target given row-batching's real structural cost. Not implemented this round.
   **FOLLOW-UP, 2026-09-04, next round: the AXI-transaction-count hypothesis was tested and REFUTED in
   its simple linear form -- but the data shows a real, non-proportional effect instead, not a clean
   null result.** 3 synthetic bundles, holding `Cin` FIXED (48, not varied against W_in as the round's
