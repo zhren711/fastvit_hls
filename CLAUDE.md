@@ -811,6 +811,47 @@ supposedly standing in for.
   full-row burst (a previously-established 100%-2-byte/50%-4-byte figure doesn't directly answer this
   -- needs its own check), and whether tile-batching's smaller-but-contained win is the better
   near-term target given row-batching's real structural cost. Not implemented this round.
+  **CORRECTION, 2026-09-04, same day, before implementing anything: "tile-batched" (the contained
+  option above) is not actually achievable -- the memory layout doesn't support it, for any real
+  layer.** Row `wr_row`'s 4 output bytes end at `base+wr_row*w_out+3`; row `wr_row+1`'s begin at
+  `base+(wr_row+1)*w_out` -- the gap between them is `w_out-4` bytes, zero only when
+  `w_out==MAC_PC==4`. Checked all 26 real PW layers' `w_out` values ({1,8,16,32,64}) -- none equal 4,
+  so the 4 rows of a spatial tile are NEVER contiguous in DRAM for any real layer; a single burst
+  cannot span them. Within one `(rt,colt)` call the code is already maximally batched (one row's own
+  `MAC_PC` columns in one word -- the full width that call's own data has); there is no further
+  reduction available without either breaking contiguity or spanning `colt` calls. **"Contained
+  tile-batching" collapses to "no improvement available" -- it is not a smaller, distinct alternative
+  to row-batching; any real reduction needs the identical structural change (cross-`colt`
+  accumulation).** The prior entry's ~260-270ms "tile-batched" figure is invalid as something
+  achievable without restructuring -- a real miss, caught only when working the follow-up alignment
+  question, not before reporting the original number.
+  Alignment check (still useful for whatever implementation form follows): row-start addresses
+  (`out_off + c*out_ch_stride + oh*w_out`) across all 26 real layers, 131,376 addresses checked --
+  **mod4==0 (word-aligned): 100%** (excluding narrow layers 50/51, `w_out=1`, which never use
+  `out_burst`/`FAST_WRITEOUT` anyway); mod16==0: 89.48% overall, with the only misaligned rows
+  belonging to `w_out=8` layers (40/43/44/47/48) in a clean, predictable 50/50 even/odd-row split
+  (row stride=8, not a multiple of 16) -- not scattered. Given full-row batching is the only real
+  option, a FIXED 4-word (16-byte) burst isn't even the right shape to aim for -- real row lengths
+  (`n_col_tiles` in {16,8,4,2,1}) don't divide evenly into "groups of 4 column-tiles" (w=8 layers'
+  whole row is only 2 words; w=16's whole row already fits one 4-word group). **The clean, uniform
+  implementation is a variable-length word burst per row** (`write_request(addr, ceil(w_out/4))`,
+  runtime length), matching this project's own already-validated read-side precedent
+  (`row_hoist_probe`'s `hls::burst_maxi::read_request` with genuine runtime length, confirmed
+  `ManualBurstInstancePassed, Length=variable`) -- not a fixed-length 4-word burst. Alignment is clean
+  for this (100% word-aligned) -- no dual-path/mixed-alignment case is triggered by this check.
+  **Net position: alignment isn't the blocker, but the achievable option is confirmed to be
+  row-batched only (82% reduction, ~284-296ms) -- the structural-change risk this round's own
+  decision was trying to avoid by picking "tile-batched" cannot actually be avoided while still
+  getting a real reduction.** Not resolved as of this entry -- awaiting a decision on whether to
+  proceed with the structural change (this line's own poor track record with restructuring: PW
+  tiling's own resource blowup, `PW_WCHUNK`'s 3-round P&R chase, 3 failed DATAFLOW attempts, all
+  elsewhere in this file) or close this opportunity out.
+  **General lesson**: before reporting a "contained, no-restructuring" option's own savings figure,
+  verify the underlying DRAM ADDRESSES the batched write would actually need to be contiguous are
+  genuinely contiguous for the real shapes in question -- a batching idea that looks structurally
+  cheap (same loop nesting, same call scope) can still be physically invalid if the data it would
+  need to combine isn't adjacent in memory, and this only shows up by checking the real stride
+  arithmetic, not by reasoning about which loop the code lives in.
   **FOLLOW-UP, 2026-09-04, next round: the AXI-transaction-count hypothesis was tested and REFUTED in
   its simple linear form -- but the data shows a real, non-proportional effect instead, not a clean
   null result.** 3 synthetic bundles, holding `Cin` FIXED (48, not varied against W_in as the round's
