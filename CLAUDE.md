@@ -2120,6 +2120,44 @@ them against this build.
 
 ## Known open issues as of 2026-08-15
 
+- **OPEN, 2026-09-05: GELU (+43.8%) and ADD (+46.9%) real board time both REGRESSED at the gmem_meta
+  elimination round (2026-08-31), and have been flat at the regressed value ever since -- a ~144ms
+  (9.5% of the current 1,522.39ms full network) free win if root-caused and fixed, not yet
+  investigated further than localization.** Found while re-decomposing the operator-type breakdown
+  after this session's MAC_PD work eroded PW's own dominance (PW dropped from 60.81% of the old
+  3,608.76ms baseline to 32.90% now -- no longer uniquely the largest operator; DWCONV is now
+  narrowly ahead at 35.26%). Full current breakdown (fresh full-network run, all 82 entries parsed by
+  op_type): DWCONV 531.51ms (35.26%), PWCONV 495.88ms (32.90%), GELU 328.47ms (21.79%), ADD 138.42ms
+  (9.18%), SE-block components (SCALE+GAP+RELU+SIGMOID) combined 12.96ms (0.86%). Compared against
+  the historical 3,608.76ms baseline's own breakdown (PW 60.81%/2,194.49ms, DW 28.15%/1,015.87ms,
+  GELU 6.33%/228.43ms, ADD 2.61%/94.19ms, SE 0.20%/7.22ms): PW dropped -77.4% and DW dropped -47.7%
+  (both expected-direction, PW from this session's own optimization work; DW's drop is NOT explained
+  by any DW-specific optimization round -- flagged, not investigated, per explicit instruction to
+  prioritize the regression over the improvement) -- but **GELU grew +43.8% (228.43->328.47ms) and
+  ADD grew +46.9% (94.19->138.42ms), neither of which has ever been touched by any optimization round
+  this whole session.**
+  **Bisected via real board tests on 3 archived bitstreams spanning the gap (gmemmeta_elim1,
+  pw_wchunk, plus the already-known dwraster_step2 and macpd4 endpoints -- register map has been
+  unchanged since gmemmeta_elim1, per each promotion's own README, so the current `mac_array_full_
+  network_test`/`board_test_full_network` bundle works unmodified against all of them): GELU/ADD are
+  ALREADY at the regressed value (328.3-328.7ms / 138.3-138.5ms) at `mac_array_a3_gmemmeta_elim1`
+  (2026-08-31), and have stayed flat to within measurement noise (+-0.2ms) through `pw_wchunk` and
+  `mac_array_a3_macpd4` (today) -- confirmed NOT a gradual drift across multiple rounds, a single-step
+  regression localized to the SAME round that eliminated `gmem_meta`.** DW's own -47.7% drop
+  localizes to the identical round (531.3-531.9ms at gmemmeta_elim1, flat ever since) -- both effects
+  trace to the same commit, which at first reading looks like it should be impossible (one change
+  shouldn't make one op type faster and another slower) but isn't: gmem_meta elimination replaced a
+  whole DMA-based descriptor/`out_written` AXI master with an `s_axilite`-based control-register
+  mechanism, a protocol change touching EVERY dispatched entry's own completion-signaling, not just
+  PW/DW's data path -- a plausible (not yet confirmed) mechanism is that short ops (GELU/ADD, dominated
+  by fixed per-dispatch overhead rather than real compute) are disproportionately sensitive to a
+  completion-signaling latency change, while DW separately benefited from reduced AXI arbitration
+  contention with the now-removed `gmem_meta` traffic -- two distinct effects from one commit touching
+  two distinct mechanisms, not one effect misdiagnosed as two. **Not yet root-caused** -- the next
+  step (not done this round, per explicit instruction to localize and report, not optimize) would be
+  reading `gmemmeta_elim1`'s actual diff against `dwraster_step2` for the ARM-driver-side and
+  HLS-side completion-signaling mechanism specifically, now that the search space is a single,
+  bounded commit instead of the whole multi-week session.
 - **OPEN, 2026-09-02: `accuracy_test_imgs_256/ckpt_hw_*_0000.bin` (the full-network checkpoint
   correctness reference `tools/compare_board_full_network_ckpts.py` compares real board dumps
   against) is currently WRONG/stale, and the last time it was known-good is uncertain.** Found while
