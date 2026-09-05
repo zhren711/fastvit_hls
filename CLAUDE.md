@@ -1675,6 +1675,59 @@ supposedly standing in for.
   tiles, real +40 tiles) did not. A close isolated-to-real match on one resource category is not
   evidence the others will match too; each of LUT/DSP/BRAM/timing needs its own real-P&R confirmation,
   independent of how well the others predicted.
+  **150MHz RE-CHECKED, 2026-09-05 (ZHR-92, MAC_PD=4 architecture, 3-point sweep with HLS and Vivado
+  BOTH tightened together): the whole investigation line above (this "Sixth confirmed instance" entry
+  and its own "two nearly-tied critical paths, HLS swings between them, neither below ~8.9ns" verdict)
+  was measured on the PRE-gmem_meta-elimination, MAC_PD=1 architecture -- both of that verdict's
+  premises are gone (gmem_meta doesn't exist; the critical path moved to `mul_32s_32s_32_2_1`, then to
+  the whole different mechanisms below at MAC_PD=4). Re-ran the same style of sweep the ORIGINAL
+  111/125/150MHz round used, but fixing that round's own gap (it only tightened the Vivado-side
+  constraint on RTL scheduled for a fixed 10ns HLS target) -- this time `create_clock` (HLS) AND the
+  PS7 FCLK/XDC (Vivado) were retargeted together at each of 3 points: 9.0ns/111MHz, 8.0ns/125MHz,
+  6.67ns/150MHz, real P&R (route_design only) at every point, on the CURRENT deployed baseline's
+  source (`mac_array_a3_macpd4`, MAC_PD=4, WNS+0.339ns at 10ns/100MHz).
+  **Absolute critical-path data-path delay across the 3 points: ~8.7-8.8ns -> ~8.26-8.40ns ->
+  ~8.1-8.3ns.** Real, substantial rescheduling improvement between the first two points (~0.4-0.5ns
+  drop, confirming HLS-side rescheduling is a genuine lever on THIS architecture too, not just the
+  8ns-vs-10ns finding this entry already established on the old one) followed by an near-total
+  PLATEAU between the last two (~0.1-0.2ns, essentially floored) -- the same two-phase shape
+  (real-then-floored) as the original 8ns/6.67ns finding, but at a LOWER floor: ~8.1-8.3ns
+  (~120-123MHz) here vs. the old architecture's own ~8.9ns (~112MHz) floor -- real, structural
+  progress, but still well short of 150MHz's 6.67ns requirement.
+  **The specific DOMINANT critical-path mechanism changed at every single point -- three different
+  mechanisms across three points, not one recurring bottleneck:**
+    - 9.0ns/111MHz (WNS=+0.008764ns, barely closed): 9 of the top 10 paths are `pw_flat_pipeline_
+      impl_false`'s own MAC multiply-accumulate carry chain (`mul_8s_8s_16_1_1` feeding `acc_*_reg`,
+      11-13 logic levels, mostly `CARRY4`, 46-48% logic/52-55% route) -- the actual per-lane compute
+      hardware itself, not address arithmetic, not an AXI FIFO. This is the FIRST time in this
+      project's whole timing-investigation history that the dominant critical path is inside the real
+      MAC datapath rather than staging/glue/address logic.
+    - 8.0ns/125MHz (WNS=-0.650887ns): same mechanism, but the dominant INSTANCE switched from
+      `_false` to `_true` (8 of 10 paths), with a 2-path outlier (a `LayerDescV2` descriptor BRAM read
+      feeding `_false`'s own `empty_reg`, only 3 logic levels but 57% route -- a placement-distance
+      signature).
+    - 6.67ns/150MHz (WNS=-2.280775ns): switched again, this time to a COMPLETELY DIFFERENT subsystem
+      -- `gmem_act_m_axi`'s own AXI write-response FIFO (`store_unit_0/user_resp/dout_vld_reg`
+      fanning out into multiple SRL-based FIFO bit-slices), 9 of 10 paths, 22% logic/77-86% route (a
+      pure placement-distance signature, not logic depth).
+  **Practical reading: each point is individually CONCENTRATED (one dominant mechanism owns 80-90% of
+  the top 10, matching the original sweep's own "concentrated, not spread" finding), but the
+  mechanism that's concentrated keeps changing as the constraint tightens -- multiple near-tied
+  critical paths trading places, the same qualitative pattern the pre-gmem_meta-elimination sweep
+  found (there: gmem_meta's own FIFO vs. `dwr_consume6`'s FIFO), just with entirely different specific
+  paths this time (the old paths don't exist in this architecture at all).** This recurrence across
+  two architecturally very different builds suggests "several genuinely different, near-tied critical
+  structures that swap places as HLS reschedules for a tighter target" may be a general property of
+  how this whole design's timing closure behaves under pressure, not a coincidence tied to gmem_meta
+  specifically. Resources grew monotonically with tighter constraints as expected (LUT 81.03% ->
+  81.55% -> 83.67%, BRAM/DSP unchanged at every point) -- consistent with "tighter timing needs more
+  pipeline stages," never itself the blocking factor at any of the 3 points (no DRC-level resource
+  failure). **Verdict: 150MHz is NOT achievable on this RTL structure via HLS/Vivado clock-target
+  tightening alone -- the floor is real (~8.1-8.3ns / ~120-123MHz), improved from the old
+  architecture's own floor, but a different lever (not more rescheduling) would be needed to close
+  the remaining ~1.4-1.6ns gap to 6.67ns.** 111MHz is achievable (barely, WNS=+0.009ns, no margin for
+  error); 125MHz is close but not yet closed (WNS=-0.651ns) and would need a real fix (not just a
+  retry) on the MAC-accumulator-carry-chain mechanism specifically.
 - **An HLS-level resource-binding choice (`#pragma HLS BIND_OP ... impl=DSP` vs. leaving it default)
   does not reliably determine the real, whole-IP P&R resource distribution — but it can still change
   real placement, and therefore real timing, even when it doesn't.** Confirmed 2026-08-28 (ZHR-92, DW
