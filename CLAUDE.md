@@ -1728,6 +1728,62 @@ supposedly standing in for.
   the remaining ~1.4-1.6ns gap to 6.67ns.** 111MHz is achievable (barely, WNS=+0.009ns, no margin for
   error); 125MHz is close but not yet closed (WNS=-0.651ns) and would need a real fix (not just a
   retry) on the MAC-accumulator-carry-chain mechanism specifically.
+  **MARGIN SEARCH, 2026-09-05, same round, follow-up: found a real-margin candidate frequency via P&R
+  (106.667MHz, WNS=+0.212ns, clears a >=+0.15ns bar), but real board deployment revealed a FUNDAMENTAL
+  DEPLOYMENT-METHODOLOGY BLOCKER that has nothing to do with timing closure -- changing a bitstream's
+  own embedded PS7 IP `PCW_FPGA0_PERIPHERAL_FREQMHZ` config does NOT change the real PL clock
+  frequency on this board's actual running hardware.** First checked achievable real frequencies (the
+  Zynq-7000 IO PLL's divider granularity doesn't hit arbitrary requested values): querying the PS7
+  IP's own `CONFIG.PCW_ACT_FPGA0_PERIPHERAL_FREQMHZ` readback property confirmed real achievable
+  points near the target range are 100.000000, 106.666664, 107.692307, 109.090912, 111.111115 MHz --
+  NOT a continuum, and NOT matching arbitrary round numbers like "105" or "108" (both requests snap to
+  a nearby achievable divisor ratio). Built and board-tested a full bitstream at the best candidate
+  (106.667MHz, WNS=+0.212ns, real P&R -- though even at this point the top-10 critical paths were
+  scattered across 3 DIFFERENT mechanisms within ~0.15-0.35ns of each other -- `gmem_w`'s AXI load
+  buffer feeding directly into DW's gather stage at 0 logic levels/94% route, `pw_flat_pipeline_impl`'s
+  own accumulator carry chain, and a `LayerDescV2` descriptor-RAM write-enable path -- a multi-way tie,
+  not one clean bottleneck, flagged as elevated risk before deployment; deployed anyway since every
+  path was independently diagnosed, not an unknown unknown).
+  **Real board result: full-network time was UNCHANGED (1,524.43ms vs. the 100MHz baseline's
+  1,522.39ms, a +0.13% difference) instead of the expected ~6.25% improvement (~1,427ms projected from
+  the clock ratio).** This is not measurement noise -- a 6.25% (~95ms) difference is far outside every
+  noise band this project has ever documented for this kind of measurement (single-op repeatability
+  0.01-0.06ms; even scaled to a full 82-entry run, nothing close to 95ms). **Root cause: on Zynq-7000,
+  PS7 clock generation (the FCLK0-3 dividers) is configured by the boot flow (FSBL/u-boot's PS7 init)
+  ONCE at cold boot, and is architecturally independent of whatever a LATER bitstream's own embedded
+  PS7 IP customization requests -- reconfiguring the PL fabric at runtime via Linux's
+  `/sys/class/fpga_manager/fpga0/firmware` interface (this project's entire deployment method,
+  established since the very first bitstream swap) touches ONLY the PL fabric, never the PS clock
+  tree.** Checked for a live runtime clock-reprogramming path (the classic PYNQ-style `fclk` sysfs
+  interface, or the standard Linux `clk` framework's debugfs `clk_summary`) -- neither exists on this
+  board's kernel (`6.6.40-xilinx`, `debugfs` not even mounted, no `fclk*` sysfs nodes found anywhere
+  under `/sys/devices` or `/sys/class`). A direct SLCR register read (`devmem 0xF8000170`, the
+  `FPGA0_CLK_CTRL` register) was attempted as an independent hardware-level cross-check but the
+  decoded divisor values didn't cleanly resolve to a specific frequency with confidence (possible
+  bit-field mis-decode on this attempt) -- NOT relied upon; the empirical board-timing evidence above
+  is the load-bearing evidence for this finding, not the register read. **This is the FIRST time in
+  this project's whole history that a non-100MHz bitstream was ever pushed through `write_bitstream`
+  and deployed to real hardware** -- every prior 111/125/150MHz round (both the original gmem_meta-era
+  sweep and this same round's own earlier 3-point sweep) was explicitly P&R-only ("timing-recon, no
+  bitstream," per this project's own established convention for that class of round), so this
+  discovery does NOT retroactively invalidate any prior claim -- checked directly (grepped CLAUDE.md
+  for any prior "board" + frequency-value co-occurrence): none exists. **Practical consequence: EVERY
+  WNS/timing number this whole 150MHz investigation line has ever produced (the original sweep, the
+  HLS-reschedule-to-8ns round, this round's own 3-point sweep and margin search) is a real, valid P&R
+  static-timing-analysis result -- but NONE of them describe a frequency that has ever actually been
+  proven to run on real silicon, because achieving that requires a boot-level change (modifying
+  BOOT.BIN/FSBL's own PS7 init parameters) and a physical reboot, not just a bitstream swap. This is a
+  categorically different, higher-risk class of action than anything done on this board so far this
+  entire session (every previous deployment has been a safe, reversible PL-only bitstream swap) --
+  not attempted this round, and should not be attempted without explicit user authorization given the
+  risk of an incorrectly-modified boot image leaving the board unable to boot at all, needing physical
+  recovery.** Board reverted immediately to the known-good `mac_array_a3_macpd4`/100MHz deployed
+  baseline (re-confirmed 17.30ms on entry3, byte-exact) once this was established; the 106.667MHz
+  bitstream is not promoted and is not the deployed baseline. **This closes out the "find a headroom
+  frequency" sub-line for this session — not because no such frequency exists (106.667MHz's P&R result
+  is real and would very likely deliver its projected ~6.25% gain if a real boot-time clock change were
+  made), but because actually realizing it needs a fundamentally different, higher-risk class of change
+  that this session's own safety discipline doesn't authorize on its own initiative.**
 - **An HLS-level resource-binding choice (`#pragma HLS BIND_OP ... impl=DSP` vs. leaving it default)
   does not reliably determine the real, whole-IP P&R resource distribution — but it can still change
   real placement, and therefore real timing, even when it doesn't.** Confirmed 2026-08-28 (ZHR-92, DW
