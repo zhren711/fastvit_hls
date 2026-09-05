@@ -110,7 +110,7 @@ typedef ap_int<32>  acc_t;   /* accumulator / bias */
  * WNS>=0, which is the only number that matters (7.3x that ships beats
  * 13.5x that doesn't). Independently sweepable parameter, same convention
  * as MAC_PC's own 8->4 history above. */
-#define MAC_PD 2   /* DW: channel tile. PW: Cin reduction-chunk size. */
+#define MAC_PD 4   /* DW: channel tile. PW: Cin reduction-chunk size. */
 
 /* Compile-time bounds for on-chip staging buffers -- sized for this PoC's
  * test problem (Cin<=32), NOT arbitrary real FastViT layer sizes (e.g.

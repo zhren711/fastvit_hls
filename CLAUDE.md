@@ -197,6 +197,33 @@ supposedly standing in for.
   never reached -- `gmem_w`'s dead-branch artifact was the binding constraint at MAC_PD=2, not BRAM
   ports; MAC_PD=4 remains untested. 150MHz was deliberately deferred to its own separate round to
   avoid confounding two simultaneous architectural changes.**
+  **MAC_PD=4, same day, next round: the BRAM dual-port question resolved itself -- HLS auto-inferred
+  the exact partitioning needed, no manual pragma required.** `pw_weight_cache` was (and remains)
+  completely unpartitioned in source; at MAC_PD=4 HLS's own pipeline-scheduling pass emitted `[HLS
+  214-270] Inferring pragma 'array_partition type=cyclic factor=2 dim=1'... due to pipeline pragma`
+  and applied it automatically -- 2 auto-inferred banks x 2 native BRAM read ports/bank = 4
+  simultaneous reads, exactly covering MAC_PD=4's need, at HALF the naive factor (4) a hand-written
+  partition might have reached for. `PW_FLAT` achieved II=1 immediately, zero diagnostic violation.
+  Isolated csynth showed a real stop-condition trigger (LUT 56,358->70,661, +25.4%, projecting via
+  MAC_PD=2's own measured real/isolated ratio to ~84.3% real -- above every prior successful closure
+  on this line) -- reported per this round's own pre-registered "stop if LUT jumps a lot" rule rather
+  than running P&R automatically. Decision: ran real P&R anyway, on the explicit reasoning that
+  MAC_PD=1->2's own isolated-to-real divergence went the FAVORABLE direction and this project's own
+  history says the direction isn't predictable in advance. **Real P&R came back the best-margin build
+  on this session's entire timing history despite the highest LUT occupancy**: WNS=+0.338785ns (LUT
+  80.79%, the isolated projection overshot -- real came in lower, but still the highest occupancy this
+  project has ever closed timing at) -- see the "utilization percentage doesn't predict WNS direction"
+  finding this specific result produced, now recorded as its own lesson below. Board: full network
+  1,626.70ms->**1,522.39ms (-6.41% further, -15.73% cumulative from MAC_PD=1)**, byte-exact, ONNX
+  cosine exact match at every MAC_PD value tested. PW-only improved a further ~9.4% (matching the
+  pre-registered ~7-8% diminishing-returns model); DW-only unaffected at every step (1/2/4), confirming
+  the whole line is PW-specific. **`mac_array_a3_macpd4` is now the deployed baseline.**
+  **MAC_PD=8 is pre-registered as very unlikely to be worth attempting**: the diminishing-returns
+  pattern (1->2 saved ~15.7% of PW's time, 2->4 saved a further ~9.4%, roughly halving each step,
+  matching the "PW's compute share keeps halving" model) predicts only ~4-5% further PW-time savings
+  from 4->8, for a LUT cost that -- by the same roughly-doubling growth pattern seen 2->4 -- could push
+  real occupancy well past 90%, a region this project has never closed timing in. Not tested; recorded
+  as a judgment call so a future round doesn't have to re-derive it.**
 - **STALE NUMBER OVERRIDE, 2026-09-01 (ZHR-92, real 4-way LUT decomposition round): a "compute is only
   ~16.4% of LUT (4,256 LUT), staging/glue is 3x that" figure has been circulating and cited from memory
   in this project -- it is from BEFORE the DW-raster integration and gmem_meta elimination, describes
@@ -564,6 +591,33 @@ supposedly standing in for.
   has run dozens of rounds; a lot of specific numbers already exist in commit messages and Linear
   comments. Check before spending a board round re-deriving something already on record — search git
   log/commit messages for the quantity or shape you're about to measure before writing a new probe.
+- **The same resource/port NAME in an HLS diagnostic can mean two completely different mechanisms at
+  different points in this project's history — citing a historical closure by the diagnostic's named
+  resource alone, without checking the diagnostic's own surrounding condition, is not the same claim
+  as confirming the mechanism still applies.** Confirmed 2026-09-04 (ZHR-92, MAC_PD-expansion
+  re-open): the 2026-08-31 closure of MAC_PD-expansion cited `gmem_w`'s single AXI port as the reason
+  `PW_FLAT`'s achieved II regressed 1->2 at MAC_PD=2 — real, load-bearing weight-read bandwidth demand
+  at the time. Weight caching (`pw_weight_cache`/`PW_WCHUNK`) later removed that real demand entirely
+  — `PW_FLAT`'s hot path no longer touches `gmem_w` at all on any real layer. Re-testing MAC_PD=2 on
+  the current architecture still showed achieved II=2, and the diagnostic still named `gmem_w` by
+  name, verbatim — which would read, at a glance, as "the same closure reason, still valid, don't
+  bother re-opening this." It wasn't: a follow-up test (forcing the dead uncached fallback arm to a
+  compile-time constant so HLS could dead-strip it) recovered II=1 immediately, proving the real
+  mechanism was a scheduler artifact from MAC_PD's own unroll duplicating a dead branch across lanes
+  — completely unrelated to `gmem_w`'s actual bandwidth, which was never the constraint on the current
+  architecture at all. Confirmed by dead-code elimination, not inferred from the diagnostic text.
+  **This is a distinct variant of this file's own "a claimed test result is not evidence unless
+  reproduced" rule (see the fabricated-numbers entry and the `csim-verified N/N` staleness entries
+  elsewhere in this file): there, the risk was trusting a claim without re-running it; here, the risk
+  is trusting a NAMED MECHANISM (a port, a resource, a diagnostic string) without checking whether the
+  surrounding conditions that made it load-bearing are still true.** A resource name recurring in an
+  HLS diagnostic is not proof the same causal story still applies — the diagnostic only says "this
+  operation couldn't be scheduled onto this resource under the current constraints," and what changed
+  around it (an architecture change eliminating the resource's real demand, leaving only a dead
+  branch's structural footprint) is invisible from the diagnostic text alone. Before re-citing a
+  historical closure whose stated reason names a specific port/resource, check what ELSE has changed
+  in the surrounding code since that closure was written — not just whether the same diagnostic string
+  reappears.
 - **PW re-reads every weight from DRAM on every spatial tile, confirmed 2026-09-01 (ZHR-92) via real
   code + real descriptors, not estimated -- and a mechanism that fixed exactly this was already built,
   measured, and reverted once, with a historical real-board result that should be treated as the
@@ -1636,6 +1690,24 @@ supposedly standing in for.
   pragma as a lever on RTL structure and therefore placement/timing, not as a reliable lever on final
   resource counts — the two effects are separate and can point in different directions; don't assume
   a binding choice "didn't matter" just because a follow-up real-resource check comes back unchanged.**
+- **LUT occupancy percentage across genuinely different builds does not reliably predict WNS margin,
+  even in the direction of the correlation — a higher-occupancy build can close with a dramatically
+  BETTER margin than a lower-occupancy one.** This project has now seen the relationship point both
+  ways enough times that "higher occupancy = tighter/riskier timing" should not be assumed as a
+  default heuristic, even loosely: the DW-raster round closed at 77.52% LUT with only +0.021ns; the
+  gmemmeta-elimination round closed at 59.25% with +0.272ns (fits the naive heuristic); but the
+  MAC_PD=2->4 round (2026-09-05, ZHR-92) closed at 80.79% LUT — the highest occupancy this project has
+  ever closed timing at — with **+0.338785ns, the best margin on this project's entire timing
+  history**, beating both the 67.20%-LUT MAC_PD=2 build (+0.094ns) and the 61.40%-LUT MAC_PD=1
+  baseline (+0.134ns) it descended from. Consistent with the HLS-binding-pragma finding directly
+  above (resource totals and timing outcome are separate levers, steered by RTL structure/placement,
+  not just aggregate occupancy) but distinct in scope: that finding was about ONE pragma choice on
+  otherwise-identical resource totals; this one is about genuinely different architectural
+  configurations (different MAC_PD values) with genuinely different, substantial resource totals,
+  still failing to predict WNS direction from occupancy alone. **Use LUT% as a rough feasibility gate
+  (a DRC-level "will this even fit" check, and this project's own pblock-sizing discipline still
+  applies), not as a timing-margin predictor — only a real P&R run answers the timing question,
+  regardless of how the occupancy percentage compares to a prior build's.**
 - **Two independent implementations of the same wait-for-ap_done mechanism can coexist in this
   codebase with only one of them actually on the path that produces this project's cited numbers —
   a third instance of the "two paths do the same thing, only one is real" class (after the
@@ -1691,11 +1763,75 @@ supposedly standing in for.
   must reflect current config) is a standing TODO to verify, not a fact — especially before building
   new code (like a register-write driver) that will silently inherit whichever version is wrong.**
 
-## Current deployed baseline (updated 2026-09-04 -- supersedes every earlier baseline reference below)
+## Current deployed baseline (updated 2026-09-05 -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_macpd2` is now the deployed baseline**, replacing `mac_array_a3_pw_wchunk`
-(1,806.45ms/61.40% LUT/WNS+0.134ns, deployed 2026-09-03). This re-opens and closes the MAC_PD-
-expansion line that was CLOSED on 2026-08-31 (see the hard-stop-list bullet above) -- that closure's
+**`mac_array_a3_macpd4` is now the deployed baseline**, replacing `mac_array_a3_macpd2`
+(1,626.70ms/67.20% LUT/WNS+0.094ns, deployed 2026-09-04). Second step of the MAC_PD-widening line,
+same day as MAC_PD=2's own promotion -- continuing to MAC_PD=4 was justified specifically because
+the BRAM dual-port question flagged (but never reached) at MAC_PD=2 turned out to resolve itself:
+HLS auto-inferred `cyclic factor=2` partitioning on `pw_weight_cache` via its own pipeline-scheduling
+pass (`[HLS 214-270] Inferring pragma 'array_partition type=cyclic factor=2 dim=1'... due to pipeline
+pragma`) -- 2 banks x 2 native BRAM read ports = 4 simultaneous reads, exactly matching MAC_PD=4's
+need, with ZERO manual partitioning pragma required. `PW_FLAT` achieved II=1 immediately, no
+diagnostic violation at all for this mechanism.
+
+**What changed**: `MAC_PD` 2->4. No source change beyond the macro -- the same compile-time-
+eliminated uncached-fallback fix from the MAC_PD=2 round already covers this (the dead branch was
+never MAC_PD-specific).
+
+Isolated csynth (pre-registered stop condition check, per this round's own plan): LUT jumped
+56,358->70,661 (+25.4%) over MAC_PD=2's own isolated baseline -- projected via the MAC_PD=2 round's
+own measured real/isolated ratio (0.634) to ~84.3% real LUT, above every prior successful closure on
+this line (77.52% was the previous high-water mark, with only +0.021ns margin). Per this round's own
+pre-registered stop condition ("if LUT jumps a lot, stop and report before committing to P&R"),
+this was reported as a decision point rather than run automatically -- decided to spend the real P&R
+run anyway specifically because MAC_PD=2's own isolated-to-real divergence had gone the FAVORABLE
+direction (56,358 isolated -> 35,751 real), and this project's own repeated finding is that the
+divergence direction is not predictable in advance.
+
+**Real P&R came back the best-margin build on this entire session's timing history, despite the
+highest LUT occupancy**: WNS=+0.338785ns (vs MAC_PD=2's +0.094463ns and MAC_PD=1's +0.134ns -- both
+LOWER margins at LOWER LUT occupancy), LUT 42,980/53,200 (80.79%, +13.59pp over MAC_PD=2's 67.20%,
+the isolated projection (84.3%) overshot but the real number is still the highest LUT occupancy this
+project has ever closed timing at), BRAM 106/140 tiles (75.71%, +24 tiles over 58.57%), DSP 50/220
+(22.73%, exactly unchanged across all three MAC_PD values -- confirms yet again the whole MAC
+datapath is LUT-inferred, zero DSP). **This is a second, independent data point (after the DW-raster
+round's own 77.52%-at-+0.021ns and the gmemmeta-elim round's 59.25%-at-+0.272ns) that real timing
+margin does not correlate simply with LUT occupancy percentage on this design -- the specific
+critical-path structure matters more than the aggregate occupancy number.** Do not use LUT% alone to
+predict WNS direction; a higher-occupancy build closing with a dramatically better margin than a
+lower-occupancy one is now a repeated pattern on this project, not a fluke.
+
+Board: PL-side full-network total **1,522.39ms**, down from 1,626.70ms (**-6.41%** further;
+cumulative from the MAC_PD-widening line's own start, MAC_PD=1's 1,806.45ms: **-15.73%**; cumulative
+from this whole latency-optimization line's original 6,050ms starting point: **-74.8%**). Single-op
+byte-exact vs csim, all PASS: entry3 (PW-only) 19.11ms(MAC_PD=2 mean)->17.30-17.36ms mean ~17.32ms
+(**-9.4%** further, matching the pre-registered ~7-8% model prediction for the 2->4 step -- PW's
+compute share keeps halving with each doubling of parallelism, so each step's own marginal benefit
+shrinks, exactly as pre-registered); entry5_dw (DW-only) 38.82/38.87/38.88ms across all three MAC_PD
+values (1/2/4) -- UNAFFECTED, within noise, at every step, confirming the whole widening line is
+PW-specific and DW's own already-generic-in-MAC_PD datapath never engages with any of this. Full-
+network six-checkpoint correctness verified via cosine similarity against the untouched ONNX float32
+reference: **0.6313/0.1286/0.2227/0.3491/-0.2459/-0.2811** -- EXACT match to the project's own
+long-established figures, at every MAC_PD value tested (1, 2, 4) -- confirms the whole widening line
+preserves numeric semantics exactly. Register map unchanged from `mac_array_a3_macpd2`.
+
+**Diminishing returns, pre-registered before this round ran and confirmed by it**: MAC_PD 1->2 saved
+~15.7% of PW's own time; 2->4 saved a further ~9.4% -- each doubling of parallelism recovers roughly
+half of what the previous doubling did, exactly as the "PW's compute share keeps halving" model
+predicts. MAC_PD=8 would be expected to save only ~4-5% more of PW's time, for a LUT cost that (by
+the same roughly-doubling pattern seen 2->4) could push real occupancy well past 90%, a resource
+region this project has never closed timing in. **MAC_PD=8 is very unlikely to be worth attempting
+-- this is a pre-registered judgment, not yet tested, recorded here so a future round doesn't have to
+re-derive the diminishing-returns argument from scratch before deciding whether to spend a round on
+it.**
+
+## Prior deployed baseline (superseded 2026-09-05, kept for history)
+
+**`mac_array_a3_macpd2` was the deployed baseline from 2026-09-04 to 2026-09-05**, replacing
+`mac_array_a3_pw_wchunk` (1,806.45ms/61.40% LUT/WNS+0.134ns, deployed 2026-09-03). This re-opens and
+closes the MAC_PD-expansion line that was CLOSED on 2026-08-31 (see the hard-stop-list bullet above)
+-- that closure's
 own premise (`gmem_w`'s single AXI port can't service >1 bus request/iteration) was measured on the
 PRE-weight-hoist architecture; weight caching (`pw_weight_cache`/`PW_WCHUNK`, deployed since
 2026-09-02/03) removed the real bandwidth demand the closure was about, but the dead uncached
