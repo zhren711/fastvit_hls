@@ -1844,14 +1844,42 @@ static void run_layer(const LayerDescV2 &d,
  * to target an Add layer specifically -- the historical defect-5 (Add
  * write-back failure on the old architecture, root cause never isolated)
  * is untested on this architecture until that check runs and passes. */
+/* ZHR-92 round (2026-09-06): ELEMWISE_BURST rewrite. Old version used
+ * plain-pointer in_base[]/out_base[] (one un-bursted AXI transaction per
+ * element, confirmed real-board 16.57x a naive II=1 floor -- see this
+ * round's own writeout). Chunked hls::burst_maxi read/write instead:
+ * in_off's chunk is read into a small on-chip buffer first (buf_a), then
+ * in2_off's matching chunk is read and summed on the fly while writing --
+ * two SEQUENTIAL passes over the SAME elemwise_in_burst port, not two
+ * simultaneous reads, which is what caused the old version's confirmed
+ * `Unable to schedule bus request operation... due to limited memory
+ * ports` II=2 violation (two same-cycle reads on one bundle). Whether this
+ * incidentally restores II=1 is measured via csynth, not assumed here. */
 static void run_add(const LayerDescV2 &d,
-                     const act_t in_base[], act_t out_base[])
+                     hls::burst_maxi<act_t> in_burst, hls::burst_maxi<act_t> out_burst)
 {
     const int total = d.cin * d.h_in * d.w_in;
-    ADD: for (int i = 0; i < total; i++) {
-        #pragma HLS PIPELINE II=1
-        acc_t sum = (acc_t)in_base[d.in_off + i] + (acc_t)in_base[d.in2_off + i];
-        out_base[d.out_off + i] = (act_t)clip_shift(sum, d.out_shift);
+    act_t buf_a[ELEMWISE_CHUNK];
+    ADD_CHUNK: for (int base = 0; base < total; base += ELEMWISE_CHUNK) {
+        int this_chunk = (total - base < ELEMWISE_CHUNK) ? (total - base) : ELEMWISE_CHUNK;
+        in_burst.read_request(d.in_off + base, this_chunk);
+        ADD_READA: for (int i = 0; i < ELEMWISE_CHUNK; i++) {
+            #pragma HLS PIPELINE II=1
+            if (i < this_chunk) {
+                buf_a[i] = in_burst.read();
+            }
+        }
+        in_burst.read_request(d.in2_off + base, this_chunk);
+        out_burst.write_request(d.out_off + base, this_chunk);
+        ADD_COMPUTE: for (int i = 0; i < ELEMWISE_CHUNK; i++) {
+            #pragma HLS PIPELINE II=1
+            if (i < this_chunk) {
+                act_t b = in_burst.read();
+                acc_t sum = (acc_t)buf_a[i] + (acc_t)b;
+                out_burst.write((act_t)clip_shift(sum, d.out_shift));
+            }
+        }
+        out_burst.write_response();
     }
 }
 
@@ -1931,14 +1959,29 @@ static void run_sigmoid(const LayerDescV2 &d, const act_t in_base[], act_t out_b
  * accuracy caveat as run_sigmoid, proves data flow not numeric fidelity.
  * tools/gen_gelu_lut.py exists as the real calibrated asset to integrate
  * when this needs actual accuracy (not this round). */
-static void run_gelu(const LayerDescV2 &d, const act_t in_base[], act_t out_base[])
+/* ZHR-92 round (2026-09-06): ELEMWISE_BURST rewrite -- see run_add's own
+ * header comment for the shared rationale (real-board 8.60x a naive II=1
+ * floor, confirmed per-element not fixed overhead, plain-pointer access
+ * never bursted). GELU's own access pattern (one read, one write per
+ * element, fully sequential offsets) is the simplest possible burst
+ * shape -- chunked read+compute+write in one pass, no intermediate
+ * buffer needed (unlike run_add's two-source case). */
+static void run_gelu(const LayerDescV2 &d, hls::burst_maxi<act_t> in_burst, hls::burst_maxi<act_t> out_burst)
 {
     const int total = d.cin * d.h_in * d.w_in;
-    GELU: for (int i = 0; i < total; i++) {
-        #pragma HLS PIPELINE II=1
-        act_t x = in_base[d.in_off + i];
-        acc_t prod = (acc_t)x * (acc_t)quantized_sigmoid(x);
-        out_base[d.out_off + i] = (act_t)clip_shift(prod, d.out_shift);
+    GELU_CHUNK: for (int base = 0; base < total; base += ELEMWISE_CHUNK) {
+        int this_chunk = (total - base < ELEMWISE_CHUNK) ? (total - base) : ELEMWISE_CHUNK;
+        in_burst.read_request(d.in_off + base, this_chunk);
+        out_burst.write_request(d.out_off + base, this_chunk);
+        GELU: for (int i = 0; i < ELEMWISE_CHUNK; i++) {
+            #pragma HLS PIPELINE II=1
+            if (i < this_chunk) {
+                act_t x = in_burst.read();
+                acc_t prod = (acc_t)x * (acc_t)quantized_sigmoid(x);
+                out_burst.write((act_t)clip_shift(prod, d.out_shift));
+            }
+        }
+        out_burst.write_response();
     }
 }
 
@@ -1991,6 +2034,24 @@ static void run_scale(const LayerDescV2 &d, const act_t in_base[], act_t out_bas
  * "value stable at ap_done" guarantee this function's own `return` value
  * already relies on. See CLAUDE.md's gmem_meta-elimination entries and
  * ZHR-92/ZHR-63 for the full recon. */
+/* ZHR-92 round (2026-09-06): ELEMWISE_BURST -- gelu_burst/add_burst give
+ * run_gelu/run_add their own hls::burst_maxi<act_t> access onto the SAME
+ * physical gmem_act master (bundle=gmem_act, no new AXI master/BD change
+ * needed -- mirrors out_burst/in_burst's own established "share a bundle,
+ * get a separate control register" precedent, see that comment elsewhere
+ * in this file). Real board measurement (ZHR-92, same round) found GELU's
+ * real per-element cost is 8.60x a naive II=1/1-wide floor and ADD's is
+ * 16.57x, BOTH flat across a 32x element-count range (confirmed per-
+ * element, not fixed dispatch overhead) -- neither op had ever used
+ * burst_maxi before this, both used plain act_t[] pointer accesses
+ * (one un-bursted AXI transaction per element), the exact mechanism this
+ * project's own PW ROW_READ/WRITEOUT already fixed for PW's own AXI
+ * paths. ADD's extra ~2x over GELU matched its own confirmed HLS
+ * diagnostic (`Unable to schedule bus request operation... due to limited
+ * memory ports`, achieved II=2 from reading in_off/in2_off simultaneously
+ * from the same bundle) -- whether switching to burst_maxi's own
+ * sequential read_request/read calls incidentally resolves this is
+ * measured, not assumed (see run_add's own comment below). */
 void mac_array_top(
     LayerDescV2 desc,
     const act_t  in_base[],
@@ -2000,7 +2061,9 @@ void mac_array_top(
     int          *out_written,
     const ap_uint<32> in_base_wide[],
     hls::burst_maxi<ap_uint<32> > out_burst,
-    hls::burst_maxi<ap_uint<32> > in_burst)
+    hls::burst_maxi<ap_uint<32> > in_burst,
+    hls::burst_maxi<act_t> elemwise_in_burst,
+    hls::burst_maxi<act_t> elemwise_out_burst)
 {
 #pragma HLS INTERFACE s_axilite port=desc     bundle=control
 /* ZHR-92 round (2026-09-04): COSIM_DEPTH_HINT -- RTL cosimulation (unlike
@@ -2056,6 +2119,21 @@ void mac_array_top(
 #pragma HLS INTERFACE m_axi port=in_burst     offset=slave bundle=gmem_act
 #endif
 #pragma HLS INTERFACE s_axilite port=in_burst bundle=control
+    /* ELEMWISE_BURST (see this function's own header comment): same
+     * bundle=gmem_act as in_burst/out_burst above, same "own control
+     * register, not yet wired into mac_array_driver.c" caveat. act_t
+     * (8-bit) element width, not ap_uint<32> -- GELU/ADD's own natural
+     * per-element granularity, avoiding out_burst/in_burst's own 4-byte-
+     * word pack/unpack entirely. */
+#ifdef COSIM_DEPTH_HINT
+#pragma HLS INTERFACE m_axi port=elemwise_in_burst  offset=slave bundle=gmem_act depth=12288
+#pragma HLS INTERFACE m_axi port=elemwise_out_burst offset=slave bundle=gmem_act depth=12288
+#else
+#pragma HLS INTERFACE m_axi port=elemwise_in_burst  offset=slave bundle=gmem_act
+#pragma HLS INTERFACE m_axi port=elemwise_out_burst offset=slave bundle=gmem_act
+#endif
+#pragma HLS INTERFACE s_axilite port=elemwise_in_burst  bundle=control
+#pragma HLS INTERFACE s_axilite port=elemwise_out_burst bundle=control
 /* A3 round (2026-08-23, ZHR-92, MERGE): back on bundle=gmem_act, sharing
  * the SAME physical master as in_base/out_base -- the standalone
  * gmem_act_wide master (previous round, solution18) is gone. That
@@ -2107,12 +2185,12 @@ void mac_array_top(
      * function-header comment above), so this whole distance-to-run_layer
      * problem is moot for desc, not just mitigated. */
     switch (desc.op_type) {
-        case LDESC_OP_ADD:     run_add(desc, in_base, out_base); break;
+        case LDESC_OP_ADD:     run_add(desc, elemwise_in_burst, elemwise_out_burst); break;
         case LDESC_OP_GAP:     run_gap(desc, in_base, out_base); break;
         case LDESC_OP_RELU:    run_relu(desc, in_base, out_base); break;
         case LDESC_OP_SIGMOID: run_sigmoid(desc, in_base, out_base); break;
         case LDESC_OP_SCALE:   run_scale(desc, in_base, out_base); break;
-        case LDESC_OP_GELU:    run_gelu(desc, in_base, out_base); break;
+        case LDESC_OP_GELU:    run_gelu(desc, elemwise_in_burst, elemwise_out_burst); break;
         default:                run_layer(desc, in_base, w_base, b_base, out_base, in_base_wide, out_burst, in_burst); break;
     }
     *out_written = 1;

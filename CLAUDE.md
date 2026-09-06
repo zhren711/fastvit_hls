@@ -2219,6 +2219,77 @@ them against this build.
   precedent that applies to internal-behavior-only probes. The isolated-csynth/P&R/board-test tcl
   scripts for this experiment are kept for the historical record even though the source itself is
   reverted.
+  **FIFTH AND FINAL CANDIDATE REFUTED BY MAGNITUDE ALONE, 2026-09-06 (no experiment needed): the
+  `n_layers` loop removal / 28-register startup fan-out was ruled out by the same order-of-magnitude
+  argument as the AXI-Lite-write check, without spending a board round on it.** 144.27ms / 27
+  GELU+ADD dispatches = 5.34ms/dispatch = 534,000 cycles at 100MHz -- no plausible HLS-generated
+  register-fan-out sequence (distributing 28 already-parallel `s_axilite` registers to their
+  consumers) costs anywhere near that many cycles; even the already-measured real dispatch floor
+  (~0.58ms/entry = 58,000 cycles, itself 9x smaller and covering far more than register fan-out
+  alone: AP_START handshake, full descriptor validation, etc.) is an order of magnitude too small.
+  **All five candidates read from the gmem_meta-elimination diff or otherwise proposed are now
+  exhausted (AXI-Lite write cost, `run_gelu`/`run_add` field access, `out_written` mechanism,
+  SmartConnect `NUM_SI`, register-fan-out startup cost) -- the actual mechanism behind the GELU/ADD
+  regression AND DW's own improvement is recorded as OPEN, not pursued further.** Cheap-argument
+  refutation (checking whether a hypothesis is even physically plausible before spending a board
+  round) is a real, repeatable technique on this project now -- used decisively twice in a row on
+  this same investigation (this entry and the AXI-Lite one above) to close a candidate in minutes
+  instead of a full isolation-experiment round.
+  **PIVOT (same day, explicit direction change, not a continuation of the regression search):**
+  rather than keep searching for the regression's CAUSE, decomposed GELU/ADD's own real cost
+  STRUCTURE directly -- these two operators have never been individually profiled in this whole
+  project (nine-plus rounds of optimization work, all on PW), and now account for 466.89ms/30.68%
+  of the network, comparable to PW (32.90%) and DW (35.26%). Per-entry decomposition (element count
+  vs. real ms, all 17 GELU + 10 ADD real dispatches, matched against a naive `elements/cycle @ II=1,
+  1-wide` theoretical floor): **GELU's real-to-theoretical ratio is 8.42x-8.87x, essentially FLAT
+  across a 32x element-count range (24,576 to 786,432 elements) -- confirmed a genuine PER-ELEMENT
+  cost, not fixed dispatch overhead.** ADD's ratio is 15.94x-17.66x, same flat-across-size pattern.
+  Checked the actual HLS scheduling diagnostic (not assumed): GELU's own csynth report claims a
+  PERFECT achieved II=1; ADD shows the exact `Unable to schedule bus request operation... due to
+  limited memory ports` signature this project has hit dozens of times before (reading `in_off`/
+  `in2_off` simultaneously from the shared `gmem_act` bundle forces achieved II=2) -- ADD's own
+  extra ~2x over GELU (16.57/8.60=1.93x) is consistent with this confirmed II=2, but GELU's own
+  8.60x is a REAL-HARDWARE-ONLY gap invisible to HLS's own "perfect II=1" claim -- the same class of
+  isolated-csynth-vs-real divergence this project has documented many times, here manifesting as a
+  scheduling-feasibility metric (II) that says nothing about whether a plain, un-bursted, one-
+  element-at-a-time AXI transaction's real DRAM round-trip latency gets hidden across iterations.
+  Both `run_gelu` and `run_add` used plain `act_t[]` pointer accesses before this round -- neither
+  had ever used `hls::burst_maxi`, unlike PW's `ROW_READ`/`WRITEOUT`, which fixed the identical
+  mechanism for PW's own AXI paths years (in this project's own timeline) earlier. Confirmed via
+  source read: both loops are genuinely 1-wide (no `UNROLL` anywhere), unlike PW's 64-wide
+  (`MAC_PD*MAC_PR*MAC_PC`) or DW's own parallel line-buffer structure -- a completely untouched
+  optimization axis.
+  **IMPLEMENTED, ELEMWISE_BURST, csim clean (per explicit instruction to stop there this round):**
+  rewrote `run_gelu`/`run_add` to use two new `hls::burst_maxi<act_t>` ports (`elemwise_in_burst`/
+  `elemwise_out_burst`), sharing the EXISTING `gmem_act` bundle (no new AXI master, no BD change --
+  mirrors `out_burst`/`in_burst`'s own established "share a bundle, get a separate control register"
+  precedent). No documented exact `hls::burst_maxi` single-request length ceiling was found locally
+  (the shipped csim model only asserts `len>0`) -- sidestepped by design rather than gambling on an
+  unverified large single request: both loops chunk at a new `ELEMWISE_CHUNK=4096`-element compile-
+  time bound, in a plain sequential (non-unrolled) outer loop with a genuine runtime trip count (the
+  real largest GELU tensor, 786,432 elements, needs 192 chunks) -- no compile-time-bound requirement
+  applies to that outer loop, only the inner per-chunk `PIPELINE`d loop needs one, matching this
+  project's own established "runtime value gating a compile-time-bounded loop" pattern exactly.
+  `run_add`'s own two-source case reads `in_off`'s chunk into a small on-chip buffer first, then
+  reads `in2_off`'s matching chunk and sums on the fly while writing -- two SEQUENTIAL passes over
+  the SAME burst port, not two simultaneous reads, deliberately avoiding the exact mechanism that
+  caused the old version's confirmed II=2 violation (whether this incidentally restores II=1 is a
+  csynth-stage question, not assumed here). No existing testbench in this codebase exercises GELU/
+  ADD against the current raster architecture (`mac_array_tb.cpp` is the already-documented stale-
+  paired legacy suite; `mac_array_raster_integrated_wiring_tb.cpp` only covers DW) -- wrote a new,
+  dedicated, self-contained testbench (`gelu_add_burst_tb.cpp`, reference values computed by
+  replicating `quantized_sigmoid`/`clip_shift`'s own exact arithmetic in-tb, no external golden file
+  needed) covering small/exact-chunk-boundary/multi-chunk-even/multi-chunk-uneven-last-chunk/real-
+  network-scale (786,432 elements, layer 0's own GELU shape) cases. **csim: 8/8 PASS, 0 mismatches**,
+  including the uneven-last-chunk case (the real risk point for the new chunking loop) and the full
+  network-scale case. The pre-existing DW wiring testbench (`mac_array_raster_integrated_wiring_tb.
+  cpp`, whose own call site needed updating for the 2 new parameters) still passes 4/4, confirming
+  the shared `mac_array_top` signature change didn't disturb DW. **Pre-registered expectation for
+  the next steps (csynth/P&R/board, not yet run): if burst access drops the per-element cost from
+  ~8.6x toward ~2x (one real read + one real write, a reasonable bursted floor), GELU -> ~76ms, ADD
+  -> ~33-66ms depending on whether II=2 also resolves, combined 466.89ms -> 110-142ms, full network
+  1,522.39ms -> a projected 1,200-1,350ms (-11% to -21%) -- flagged explicitly as likely optimistic,
+  per this project's own repeated finding that real board gains usually land below naive projections.**
 - **OPEN, 2026-09-02: `accuracy_test_imgs_256/ckpt_hw_*_0000.bin` (the full-network checkpoint
   correctness reference `tools/compare_board_full_network_ckpts.py` compares real board dumps
   against) is currently WRONG/stale, and the last time it was known-good is uncertain.** Found while

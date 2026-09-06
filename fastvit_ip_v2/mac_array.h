@@ -220,6 +220,19 @@ typedef ap_int<32>  acc_t;   /* accumulator / bias */
 #define MAX_CIN_TIMES_W  9216
 #define MAX_WORDS_PER_CH 17
 
+/* ZHR-92 round (2026-09-06): ELEMWISE_CHUNK bounds run_gelu/run_add's own
+ * new burst_maxi read/write chunk size (see ELEMWISE_BURST's own header
+ * comment in mac_array_raster_integrated.cpp). 4096 bytes/elements per
+ * chunk -- a conservative, clearly-safe DMA burst size (no documented
+ * exact hls::burst_maxi single-request length ceiling was found locally;
+ * this sidesteps that uncertainty by design rather than assuming an
+ * unverified large single-request length works). The real largest GELU/
+ * ADD tensor (786,432 elements, layer 0's own GELU) needs 192 chunks --
+ * a plain sequential runtime-trip-count outer loop, not unrolled, so no
+ * compile-time-bound requirement applies to it (only the INNER per-chunk
+ * loop, bounded by this constant, needs one). */
+#define ELEMWISE_CHUNK 4096
+
 /* A3 round 3 (2026-08-21, ZHR-92): bound for run_reduce_unified's
  * per-step gather buffers (lane_in_all/lane_w_all), see mac_array.cpp's
  * header comment on the drive_mac removal for the full rationale. Must
@@ -548,7 +561,9 @@ void mac_array_top(
     int          *out_written,
     const ap_uint<32> in_base_wide[],
     hls::burst_maxi<ap_uint<32> > out_burst,
-    hls::burst_maxi<ap_uint<32> > in_burst
+    hls::burst_maxi<ap_uint<32> > in_burst,
+    hls::burst_maxi<act_t> elemwise_in_burst,
+    hls::burst_maxi<act_t> elemwise_out_burst
 );
 
 #endif // __MAC_ARRAY_H__
