@@ -2158,6 +2158,67 @@ them against this build.
   reading `gmemmeta_elim1`'s actual diff against `dwraster_step2` for the ARM-driver-side and
   HLS-side completion-signaling mechanism specifically, now that the search space is a single,
   bounded commit instead of the whole multi-week session.
+  **FOLLOW-UP, 2026-09-05, same day: two of three specific hypotheses read from the diff were ruled
+  out by direct inspection, and the third (SmartConnect NUM_SI 4->3) was tested via a real isolation
+  experiment and CONCLUSIVELY REFUTED for both effects -- the actual mechanism is still unknown.**
+  Order-of-magnitude check first (real measurement, not estimate): a standalone ARM-side timing test
+  (cross-compiled, run directly on the board, no accelerator dispatch needed) measured the real cost
+  of `mac_write_desc()`'s own 28 AXI-Lite register writes at 5,343.5ns total (190.84ns/write average)
+  -- for 27 GELU+ADD dispatches, even the full delta vs. a 2-write old mechanism (~4,982.8ns/dispatch)
+  is only ~135us total, **1,068x too small** to explain the observed 144.27ms regression. This
+  decisively ruled out the AXI-Lite-write-cost hypothesis before any code reading was needed.
+  Reading the diff with three specific candidate mechanisms in hand: (1) `run_gelu`/`run_add`'s own
+  descriptor field access (`d.in_off`, `d.out_off`, etc.) showed **no structural change** -- identical
+  plain-field-read code regardless of how `desc` arrives at the top level, ruled out by direct
+  inspection; (2) `out_written`'s move from a `gmem_meta`-DMA'd DRAM location to a scalar `s_axilite`
+  output register (`ap_vld`-handshaked, "value stable at ap_done") is real but very likely NOT the
+  bottleneck, since ARM-side completion detection has always polled `ap_done` directly (the
+  established `usleep`-based polling loops documented elsewhere in this file), never `out_written`
+  itself -- this change doesn't add a new wait, just changes how a value already-available-at-the-same-
+  moment gets fetched; (3) `sc_data` SmartConnect's own `NUM_SI` dropped from 4 (`gmem_act`/`gmem_w`/
+  `gmem_b`/`gmem_meta`) to 3 (`gmem_meta` gone) -- confirmed via a direct BD-tcl diff between
+  `dwraster_step2`'s own build script (`NUM_SI 4`, `gmem_meta` on `S03_AXI`) and the current one
+  (`NUM_SI 3`), not inferred -- initially the most promising candidate, since it's a genuine change to
+  the shared arbitration topology every real master's traffic passes through, and a topology change
+  affecting different access patterns differently could explain the "one op type faster, another
+  slower" symmetry no single-direction hypothesis could.
+  **Isolation experiment (`DUMMY_FOURTH_MASTER`, diagnostic-only, NOT a deployable candidate):**
+  restored `sc_data`'s `NUM_SI` to 4 via a new 4th m_axi port (`gmem_dummy`) that is genuinely LIVE in
+  the RTL (gated by `dummy_enable`, a real `s_axilite` runtime bool HLS cannot prove false at compile
+  time, so the port cannot be optimized away) but never actually issues a transaction in real dispatch
+  (the ARM driver never writes `dummy_enable` true, so it stays at its POR-reset default of 0) --
+  isolating "does 4-way arbitration matter" from "does `gmem_meta`'s own specific traffic pattern
+  matter". csim clean (4/4, `mac_array_raster_integrated_wiring_tb.cpp`). Real P&R: route_design alone
+  gave WNS=-0.133008ns (a real violation, LUT 82.57%/+1.78pp over macpd4's 80.79%) -- recovered to
+  WNS=+0.013ns (thin but positive) via a single-threaded `phys_opt_design` pass on the same
+  checkpoint, per this project's own established two-phase recipe. Board: single-op byte-exact
+  (entry3, 0/196,608 mismatches, 17.30-17.32ms, matching macpd4 exactly -- confirms the new register
+  offsets, appended after all existing ones, don't shift anything already deployed). **Full network,
+  2 repeats: GELU 328.70/328.83ms, ADD 138.53/138.48ms, DW 531.86/531.97ms, PW 496.37/496.38ms -- ALL
+  four essentially IDENTICAL to the macpd4 baseline's own values (328.47/138.42/531.51/495.88),
+  reproducible across both repeats.** Restoring 4-way arbitration did NOT bring GELU/ADD back down
+  toward their old values (228.43/94.19ms) even partially, and did NOT reverse DW's own drop either --
+  **the NUM_SI hypothesis is REFUTED for BOTH effects, not just one.** This is a cleaner, more
+  decisive null result than the pre-registered "if only GELU/ADD move and DW doesn't, NUM_SI explains
+  only half" contingency anticipated -- neither moved at all, meaning NUM_SI explains none of it.
+  Board reverted to `mac_array_a3_macpd4` (byte-exact re-confirmed), golden untouched. **All three
+  specific hypotheses read from the diff are now ruled out (field access: no change found; out_written:
+  architecturally unlikely to matter; NUM_SI: isolated and refuted by direct experiment) -- the actual
+  mechanism behind BOTH the GELU/ADD regression and DW's improvement remains unknown.** The `n_layers`
+  loop removal (item 1 of the original three questions, `desc[]` array -> single by-value struct) was
+  never isolated on its own and is the one remaining candidate from the original diff-reading pass;
+  beyond that, no new hypothesis has been proposed. `DUMMY_FOURTH_MASTER`'s source changes (`mac_array_
+  raster_integrated.cpp`/`mac_array.h`/`mac_array_raster_integrated_wiring_tb.cpp`) were an
+  unconditional signature change (a new `gmem_dummy`/`dummy_enable` parameter pair, not gated behind
+  an `#ifdef`) -- unlike this project's usual probe convention (kept behind an off-by-default macro,
+  base signature untouched), a bare `#ifdef` around function PARAMETERS doesn't compose cleanly in
+  C++, so once the experiment concluded the source was reverted to the deployed baseline exactly
+  (`git checkout`, confirmed zero remaining `gmem_dummy`/`dummy_enable` references) rather than left
+  in place -- matching this project's own "attempted, measured, reverted" precedent for one-off
+  structural experiments (e.g. option D's desc-local-copy attempt) instead of the "kept behind ifdef"
+  precedent that applies to internal-behavior-only probes. The isolated-csynth/P&R/board-test tcl
+  scripts for this experiment are kept for the historical record even though the source itself is
+  reverted.
 - **OPEN, 2026-09-02: `accuracy_test_imgs_256/ckpt_hw_*_0000.bin` (the full-network checkpoint
   correctness reference `tools/compare_board_full_network_ckpts.py` compares real board dumps
   against) is currently WRONG/stale, and the last time it was known-good is uncertain.** Found while
