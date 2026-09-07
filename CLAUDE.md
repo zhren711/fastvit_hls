@@ -1872,9 +1872,105 @@ supposedly standing in for.
   must reflect current config) is a standing TODO to verify, not a fact — especially before building
   new code (like a register-write driver) that will silently inherit whichever version is wrong.**
 
-## Current deployed baseline (updated 2026-09-05 -- supersedes every earlier baseline reference below)
+## Current deployed baseline (updated 2026-09-07 -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_macpd4` is now the deployed baseline**, replacing `mac_array_a3_macpd2`
+**`mac_array_a3_elemwise_burst` is now the deployed baseline**, replacing `mac_array_a3_macpd4`
+(1,522.39ms/80.79% LUT/WNS+0.339ns, deployed 2026-09-05). Promotes the ELEMWISE_BURST mechanism
+(chunked `hls::burst_maxi<ap_uint<32>>` reads/writes for `run_gelu`/`run_add`, replacing plain un-
+bursted pointer accesses) -- see ZHR-92's own round writeup for the full diagnostic chain (the
+operator decomposition that found GELU/ADD were 8.60x/16.57x a naive per-element floor, the csynth
+codegen crash and its fix, the real P&R WNS journey, and the two real pre-existing bugs the board
+deployment surfaced and fixed).
+
+**What changed**: `run_gelu`/`run_add` now use two new burst ports (`elemwise_in_burst`/
+`elemwise_out_burst`, `ap_uint<32>`-typed, 4 lanes unrolled per word) sharing the existing `gmem_act`
+bundle -- no new AXI master, no BD change. `run_add`'s own two-source case reads sequentially (buffer
+`in_off`'s chunk, then read `in2_off`'s) rather than simultaneously, which incidentally also resolved
+its pre-existing `II=2` port-contention violation (a bonus, not pre-registered).
+
+Real P&R: **route_design alone did NOT close (WNS=-0.166790ns)** -- the critical path was confirmed
+identical to `macpd4`'s own pre-existing `mul_32s_32s_32_2_1` mechanism (resource-pressure-induced
+degradation, not a new bottleneck from the burst rewrite), so a single `phys_opt_design` pass (not a
+pblock, not directive rotation) was applied, recovering **WNS=+0.017ns**.
+
+**IMPORTANT CHARACTERIZATION, required before citing this build's own margin in any future round:**
+this baseline's margin comes ENTIRELY from `phys_opt_design`, not from `route_design` alone (which is
+still negative at -0.167ns on the identical netlist). This is qualitatively different from every
+prior deployed baseline on this line (macpd2, macpd4, pw_wchunk, etc.), which all closed on
+`route_design` alone with real margin to spare. **+0.017ns means the NEXT change to this design has
+essentially zero headroom -- deployable, but with no room to move.** Any future round that modifies
+this design should re-run BOTH `route_design` alone AND `phys_opt_design` fresh, not assume the same
+`phys_opt_design` recovery will reproduce on a changed netlist.
+
+Real utilization: LUT 44,272/53,200 (83.22%, +2.43pp over macpd4's 80.79%), BRAM 107/140 tiles
+(76.43%, +0.72pp), DSP 59/220 (26.82%, +4.09pp). Isolated csynth had projected ~84.5% LUT (using
+macpd4's own isolated-to-real ratio) -- real came in lower, the project's own now-well-established
+pattern of isolated-vs-real divergence having no consistent direction.
+
+Board: full network **1,099.77ms**, down from 1,522.39ms (**-27.8%**, the SECOND-largest single-round
+win on this whole latency-optimization line, behind only PW weight-residency's own -41.9%).
+GELU 328.47ms->22.93ms (-93.0%), ADD 138.42ms->13.06ms (-90.6%), PW 495.88ms->496.08ms and DW
+531.51ms->531.20ms both unchanged (no regression). Cumulative from this line's original 6,050ms
+starting point: **-81.8%**. Six-checkpoint correctness verified via cosine similarity against the
+untouched ONNX float32 reference: **0.6313/0.1286/0.2227/0.3491/-0.2459/-0.2811** -- EXACT match to
+the project's own long-established figures. Register map changed (two new burst ports added, each
+needing its own AXI-Lite base-address register programmed by the host -- see the two real bugs this
+round's board deployment fixed, below) -- **any ARM-side binary built before this round's own driver
+fix (`mac_array_driver.h`'s `MAC_ELEMWISE_IN_BURST_LO/HI`/`MAC_ELEMWISE_OUT_BURST_LO/HI`) will hang or
+silently produce wrong output on any real GELU/ADD dispatch** -- always rebuild driver/test harnesses
+from current source before using them against this build.
+
+**Two real, pre-existing bugs this round's board deployment surfaced and fixed (neither in the
+ELEMWISE_BURST HLS logic itself):**
+1. `tools/build_single_op_test_entry0_gelu.py`/`entry10_add.py` were stuck at 27-field descriptors
+   (`MacLayerDesc` grew to 28 fields on 2026-08-31, `use_wide_path` appended) -- never updated, and
+   their bundles had never actually been built or run before this round (confirmed via the board's
+   own directory listing). **A sweep of every other `build_*.py` bundle generator's own asserted field
+   count found 18 MORE scripts still stuck at 27 fields** (DW/PW probe builders, several single-op
+   entry builders for RELU/SIGMOID/SCALE/GAP/etc.) -- likely harmless in PRACTICE (`use_wide_path` is
+   confirmed dead code in the active dispatch path, and many of these bundles were already
+   successfully board-tested in earlier rounds despite the staleness, which is itself evidence their
+   own dead field never mattered) but a real, verified latent-risk pattern, not yet fixed for any of
+   the 18. Confirmed NOT load-bearing for this round's own bug: fixing `entry10_add`'s own desc.bin
+   alone (before the register-wiring fix below) still produced 100%-poison wrong output -- the field-
+   count fix was a real, worthwhile correctness cleanup, but not what actually resolved the hang or
+   the wrong output.
+2. **The actual proximate cause of both real symptoms**: `elemwise_in_burst`/`elemwise_out_burst`'s
+   own AXI-Lite base-address registers (found at 0xe8/0xec and 0xf4/0xf8 in the real exported IP's own
+   `xmac_array_top_hw.h`) were never wired into the ARM driver. This is the THIRD confirmed instance
+   of this project's "sharing an m_axi bundle does NOT mean sharing a control register" trap (after
+   `out_burst` and `in_burst`'s own identical history) -- and the first instance where the risk was
+   explicitly named in the code's OWN header comment in advance ("own control register, not yet wired
+   into mac_array_driver.c... a P&R-stage TODO, tracked, not silently deferred") and STILL shipped
+   unfixed to a real board round. **New standing lesson: flagging a risk in a comment is not the same
+   as handling it -- this project now has two confirmed instances of a self-identified, explicitly-
+   named risk reaching a real board deployment anyway (this one, and the `in_burst`/`out_burst` gap
+   this same comment references as its own precedent).** An explicit-risk comment should be treated as
+   a checklist item to close before board deployment, not a substitute for closing it. csim could not
+   catch this (no register-address concept) -- it manifested exactly as this project's own established
+   precedent for this failure class predicts: unprogrammed `elemwise_in_burst` caused a genuine AXI bus
+   hang on the largest real GELU dispatch (786,432 elements); unprogrammed `elemwise_out_burst` caused
+   output 100% identical to the pre-dispatch poison pattern despite `ap_done`/`out_written=1` firing
+   normally -- the same "IP completes, output silently not written" signature this project's own
+   `mac_array_tb.cpp` header comment already names as a known defect class. Fixed by adding the
+   register writes to all three real ARM-side call sites (`mac_array_single_op_test.c`, `_add.c`,
+   `mac_array_full_network_test.c` -- grepped for every real caller, per this project's own established
+   discipline for interface changes).
+
+**`phys_opt_design`'s own applicability boundary, now with 3 data points**: recovers a real negative
+WNS successfully when the route_design-alone violation is within roughly **-0.2ns** (dummy4th:
+-0.133->+0.013ns; this round: -0.167->+0.017ns; an earlier round also within this range) -- but does
+NOT single-handedly recover a violation at the -2.264ns magnitude (the PW_WCHUNK shared-multiplier
+regression, which needed an actual source-level fix, not just `phys_opt_design`). **This boundary
+(~-0.2ns) can now be used directly as a rough decision rule for whether a single `phys_opt_design`
+pass is worth attempting on a fresh violation, without re-deriving it from scratch each time** -- a
+violation deeper than roughly -0.3 to -0.5ns should be treated as needing a real source-level
+diagnosis first, not a `phys_opt_design` attempt on its own.
+
+## Prior deployed baseline (superseded 2026-09-07, kept for history)
+
+**`mac_array_a3_macpd4` was the deployed baseline from 2026-09-05 to 2026-09-07**, replacing
+`mac_array_a3_macpd2`
 (1,626.70ms/67.20% LUT/WNS+0.094ns, deployed 2026-09-04). Second step of the MAC_PD-widening line,
 same day as MAC_PD=2's own promotion -- continuing to MAC_PD=4 was justified specifically because
 the BRAM dual-port question flagged (but never reached) at MAC_PD=2 turned out to resolve itself:
@@ -2120,10 +2216,17 @@ them against this build.
 
 ## Known open issues as of 2026-08-15
 
-- **OPEN, 2026-09-05: GELU (+43.8%) and ADD (+46.9%) real board time both REGRESSED at the gmem_meta
-  elimination round (2026-08-31), and have been flat at the regressed value ever since -- a ~144ms
-  (9.5% of the current 1,522.39ms full network) free win if root-caused and fixed, not yet
-  investigated further than localization.** Found while re-decomposing the operator-type breakdown
+- **OPEN (regression cause) / CLOSED (effect), 2026-09-05/07: GELU (+43.8%) and ADD (+46.9%) real
+  board time both REGRESSED at the gmem_meta elimination round (2026-08-31), and were flat at the
+  regressed value ever since -- the CAUSE was never root-caused (5/5 candidate hypotheses refuted,
+  see below), but the EFFECT is now moot: the 2026-09-07 ELEMWISE_BURST round cut GELU/ADD's own real
+  time by 93.0%/90.6% for an unrelated reason (their own per-element AXI cost, not the regression),
+  taking both from their regressed values down to 22.93ms/13.06ms -- well BELOW even their own
+  pre-regression 3,608.76ms-baseline values (228.43ms/94.19ms). Whatever the regression's real
+  mechanism was, it is no longer economically relevant to chase given how small GELU/ADD's own
+  absolute contribution to the network now is (see the updated operator decomposition below) --
+  recorded as a closed line, not further pursued.** Found while re-decomposing the operator-type
+  breakdown
   after this session's MAC_PD work eroded PW's own dominance (PW dropped from 60.81% of the old
   3,608.76ms baseline to 32.90% now -- no longer uniquely the largest operator; DWCONV is now
   narrowly ahead at 35.26%). Full current breakdown (fresh full-network run, all 82 entries parsed by
@@ -2392,6 +2495,29 @@ them against this build.
   per-element cost was dominated by per-element AXI overhead, not chunk-transaction count, so doubling
   transaction count from ~2/tensor-region to ~4 is expected to still land far below the old un-bursted
   cost), not attempted this round.
+  **RESOLVED, 2026-09-07: promoted to deployed baseline (`mac_array_a3_elemwise_burst`) -- the -27.8%
+  full-network result was judged the exception the "+0.01 to +0.1ns / not auto-promoted unless the
+  benefit is exceptionally large" rule anticipated: the SECOND-largest single-round win on this whole
+  line (behind only PW weight-residency's own -41.9%).** See the deployed-baseline section above for
+  the full characterization, including the explicit "this margin has zero headroom, came from
+  `phys_opt_design` not `route_design` alone" annotation this promotion carries.
+  **Operator decomposition REDONE after this promotion (same full-network run, no new board time
+  needed)**: DWCONV 531.20ms (49.36%), PWCONV 496.08ms (46.09%), GELU 22.93ms (2.13%), ADD 13.06ms
+  (1.21%), SE-block components combined 12.95ms (1.20%). **GELU+ADD combined dropped from 30.68% to
+  3.34%** -- matching the pre-registered ~3.3% estimate almost exactly. DW and PW are now essentially
+  TIED (49.36% vs. 46.09%, 95.45% combined) -- neither is uniquely dominant the way PW was at the
+  start of this whole latency-optimization line (60.81% of the original 3,608.76ms baseline). **This
+  sets the next real target: whichever of PW or DW is chosen, GELU/ADD/SE are no longer worth
+  attacking (combined 4.54% of the network) -- the "91.4% real-hardware-only, unexplained" question
+  from the operator-decomposition round's own opening is now entirely a PW/DW question, not a
+  GELU/ADD one.**
+  **Global tally, this whole latency-optimization line**: 6,050ms (original) -> 1,099.77ms (current),
+  cumulative **-81.8%**.
+  **`phys_opt_design`'s own applicability boundary recorded as a standing rule** (see the deployed-
+  baseline section above for the full 3-data-point derivation): roughly **within -0.2ns** of a
+  route_design-alone violation, a single pass reliably recovers positive WNS; beyond that (the
+  -2.264ns PW_WCHUNK case), it needs an actual source-level fix instead. Usable directly as a
+  decision rule for future rounds without re-deriving it.
 - **OPEN, 2026-09-02: `accuracy_test_imgs_256/ckpt_hw_*_0000.bin` (the full-network checkpoint
   correctness reference `tools/compare_board_full_network_ckpts.py` compares real board dumps
   against) is currently WRONG/stale, and the last time it was known-good is uncertain.** Found while
