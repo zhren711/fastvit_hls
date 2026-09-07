@@ -234,6 +234,14 @@ int main(int argc, char **argv) {
      * MAC_OUT_BURST_LO/HI's own comment in the driver header). Every PW
      * dispatch needs it set to the same address as MAC_OUT_BASE_*. */
     W64(MAC_OUT_BURST_LO, MAC_OUT_BURST_HI, out_phys);
+    /* ZHR-92 round (2026-09-07): elemwise_in_burst/elemwise_out_burst --
+     * run_gelu/run_add's own new burst ports (ELEMWISE_BURST), same
+     * shared-bundle/separate-register trap as in_burst/out_burst above.
+     * Found the hard way: a real board hang (elemwise_in_burst reading an
+     * unprogrammed address) then a real wrong-output case (elemwise_out_
+     * burst writing to an unprogrammed address) before this write existed. */
+    W64(MAC_ELEMWISE_IN_BURST_LO, MAC_ELEMWISE_IN_BURST_HI, in_phys);
+    W64(MAC_ELEMWISE_OUT_BURST_LO, MAC_ELEMWISE_OUT_BURST_HI, out_phys);
 
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);

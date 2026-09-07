@@ -57,9 +57,20 @@ fields = [
     0,                   # use_shift_table (unused)
     0,                   # shift_off (unused)
     0, 0,                # in_ch_stride, out_ch_stride (unused)
+    0,                   # use_wide_path -- dead code in the active dispatch path.
+                         # ZHR-92 (2026-09-07): this script was stale at 27 fields
+                         # (never updated when MacLayerDesc grew to 28 on
+                         # 2026-08-31, and never actually run before now --
+                         # confirmed via mac_array_driver.h's MAC_DESC_NUM_FIELDS=28
+                         # and comparison against build_single_op_test_entry3.py's
+                         # own 28-field, known-working list). A 27-field desc.bin
+                         # leaves the hardware's 28th descriptor register holding
+                         # whatever was left from the PREVIOUS dispatch, not zero --
+                         # found while diagnosing a real board hang that used this
+                         # bundle for the first time ever.
 ]
-assert len(fields) == 27, len(fields)
-desc_bytes = struct.pack("<27i", *fields)
+assert len(fields) == 28, len(fields)
+desc_bytes = struct.pack("<28i", *fields)
 
 with open(os.path.join(OUT_DIR, "desc.bin"), "wb") as f:
     f.write(desc_bytes)
@@ -68,7 +79,7 @@ with open(os.path.join(OUT_DIR, "in.bin"), "wb") as f:
 with open(os.path.join(OUT_DIR, "ref_out.bin"), "wb") as f:
     f.write(ref_out)
 
-print(f">>> desc.bin: {len(desc_bytes)} bytes (27 int32 fields)")
+print(f">>> desc.bin: {len(desc_bytes)} bytes (28 int32 fields)")
 print(f">>> in.bin: {len(op0_buf) + len(op1_buf)} bytes (op0 {len(op0_buf)} + op1 {len(op1_buf)})")
 print(f">>> ref_out.bin: {len(ref_out)} bytes")
 print(f">>> op_type=ADD cin={cin} h={h_in} w={w_in} in_off={IN_OP0_OFF} in2_off={IN_OP1_OFF} out_off={OUT_OFF}")

@@ -2290,6 +2290,108 @@ them against this build.
   -> ~33-66ms depending on whether II=2 also resolves, combined 466.89ms -> 110-142ms, full network
   1,522.39ms -> a projected 1,200-1,350ms (-11% to -21%) -- flagged explicitly as likely optimistic,
   per this project's own repeated finding that real board gains usually land below naive projections.**
+  **REVISED, same round, before csynth: the 8-bit `hls::burst_maxi<act_t>` design crashed csynth's own
+  codegen.** `Call parameter type does not match function signature!` / `_ssdm_op_Write.m_axi.p1i32`
+  expecting a 32-bit write / `Broken module found, compilation aborted!` -- a 2nd confirmed instance
+  of this project's internal-compiler-crash class (after the 2026-08-24 burst_maxi same-bundle probe),
+  a DIFFERENT trigger this time: mixing an 8-bit burst_maxi port onto the SAME bundle as the EXISTING
+  32-bit `out_burst`/`in_burst` ports. This is NOT the same case as the already-proven "plain pointer +
+  burst_maxi share a bundle" precedent -- the plain pointer's own width already matches the bundle's
+  dominant 32-bit width; a genuinely DIFFERENT-width burst_maxi does not. Fixed by making
+  `elemwise_in_burst`/`elemwise_out_burst` `ap_uint<32>`-typed (matching the bundle) with 4-byte pack/
+  unpack inside `run_gelu`/`run_add` (4 lanes unrolled per word -- a bonus 4x-per-cycle parallelism
+  neither the old design nor the pre-registration accounted for) -- verified SAFE first, per this
+  project's own "verify contiguity/alignment before batching" rule: real descriptors (all 27 GELU/ADD
+  entries, `tools/layer_hw_sequence_256.json`) confirmed `in_off`/`in2_off`/`out_off` AND `total`
+  (=cin*h*w) are ALL exactly mod4==0 (real network channel counts and spatial dims are always
+  multiples of 4) -- zero tail-byte handling needed anywhere. One csim regression caught by the fix
+  itself: the testbench's own "uneven chunk boundary" case (`ELEMWISE_CHUNK*2+137`) turned out to
+  violate the SAME mod4 invariant the fix relies on (137 mod4=1) -- an unrealistic test value, not a
+  real implementation bug (`total` is never non-mod4 on any real dispatch) -- fixed to `+136` (mod4==0)
+  to correctly exercise an uneven CHUNK COUNT without violating the real-network alignment invariant.
+  csim 8/8 clean again after both fixes; DW wiring testbench 4/4 clean.
+  **Isolated csynth confirmed all 4 pre-registered judgment items**: burst inference on all 5 access
+  points (`ManualBurstInstancePassed`, `Length="variable"`, `Width=32`, `gmem_act`); resource delta
+  small (LUT +4.6%/+3,268, DSP +12%/+6, BRAM_18K +0.8%/+2 -- `buf_a`'s size checks out exactly:
+  `ap_uint<32>[1024]`=32,768 bits needs precisely 2 RAMB18E1 tiles, matching the observed delta
+  exactly); **ADD's achieved II resolved from 2 back to 1** -- a genuine bonus, not in the original
+  pre-registration, confirmed via the actual csynth diagnostic (`ADD_READA`/`ADD_COMPUTE` both
+  `Target II=1, Final II=1`, no violation) -- the sequential two-pass read design (buffer `in_off`'s
+  chunk fully before reading `in2_off`) genuinely eliminated the old simultaneous-read port contention
+  that forced II=2 before; GELU's own II=1 unchanged.
+  **Real P&R: route_design alone gave WNS=-0.166790ns (violated).** Checked the critical path before
+  reaching for any lever (per this project's own stop-loss discipline): all top-10 paths were IDENTICAL
+  in shape to macpd4's own pre-existing critical path -- `run_layer`'s FSM state -> `mul_32s_32s_32_2_1`
+  (the shared address-arithmetic multiplier), 4 logic levels, 60.7%/39.3% logic/route split -- **the
+  new GELU/ADD burst logic appeared nowhere in the top-10.** This confirmed the violation was resource-
+  pressure-induced placement degradation on the SAME pre-existing mechanism (real utilization: LUT
+  83.22%/+2.43pp, BRAM 76.43%/+0.72pp, DSP 26.82%/+4.09pp over macpd4), not a new bottleneck from the
+  burst rewrite itself -- the isolated LUT extrapolation (84.5%) again didn't hold in either direction
+  cleanly (real came in lower), the 8th "isolated vs real" data point on this project's own running
+  tally. A single `phys_opt_design` pass (NOT pblock tuning, NOT directive rotation -- neither on the
+  hard-stop list, and `phys_opt_design` had already recovered a comparable thin negative margin once
+  this session, dummy4th's -0.133->+0.013ns) recovered **WNS=+0.017ns** -- one pass only, per the
+  project's own established two-phase recipe and this round's own explicit "one pass, don't iterate"
+  discipline.
+  **BOARD DEPLOYMENT HIT A REAL HANG, then a real wrong-output case -- root-caused to TWO separate,
+  pre-existing bugs, NEITHER of which was in the ELEMWISE_BURST HLS logic itself.** First: dispatching
+  the largest real GELU entry (786,432 elements, layer 0) via `board_test_entry0_gelu` (built but
+  NEVER previously pushed/run -- confirmed via board directory listing) hung the board completely
+  (unresponsive to SSH AND ping -- more severe than either of this project's two prior documented
+  hangs, both of which at least answered ping). User power-cycled; board recovery followed this
+  project's own established checklist (fresh uptime confirmed at "0:00", golden image md5 re-verified
+  unchanged, `mac_array_a3_macpd4`'s own already-proven `.bit` used as PL-reconfiguration proof-of-life
+  per the established substitute-golden precedent, single-op sanity before trusting anything larger).
+  **Root cause #1, found while investigating: `tools/build_single_op_test_entry0_gelu.py` and
+  `tools/build_single_op_test_entry10_add.py` were BOTH stale at 27-field descriptors** (`MacLayerDesc`
+  grew to 28 fields on 2026-08-31 when `use_wide_path` was appended -- these two scripts were never
+  updated, and -- confirmed via the board's own directory listing -- their bundles had NEVER actually
+  been built or run before this round, unlike `build_single_op_test_entry3.py`'s own 28-field, daily-
+  used, known-working list). Fixed both scripts (append `use_wide_path=0`, 27->28 fields/bytes) --
+  this exact failure class (a persisted artifact silently generated under a since-superseded
+  configuration) is already extensively documented elsewhere in this file; this is simply a new
+  instance of it, on test-bundle generator scripts this time rather than calibration data.
+  **Root cause #2, the actual proximate cause of both the hang and the wrong output: `elemwise_in_
+  burst`/`elemwise_out_burst` (this round's own new burst ports) were NEVER wired into the ARM driver
+  -- their own base-address AXI-Lite registers (found via the exported IP's real `xmac_array_top_hw.h`:
+  0xe8/0xec and 0xf4/0xf8) were left completely unprogrammed on every real dispatch.** This is the
+  EXACT risk this round's own header comment on these ports had already flagged in advance ("own
+  control register, not yet wired into mac_array_driver.c... a P&R-stage TODO, tracked, not silently
+  deferred") -- csim cannot catch this at all (no register-address concept), and it manifested exactly
+  as this project's own established precedent for this failure class predicts: `elemwise_in_burst`
+  reading from an unprogrammed/garbage address caused a genuine AXI bus hang (the large-GELU case);
+  `elemwise_out_burst` writing to an unprogrammed address caused output that was 100% byte-identical
+  to the pre-dispatch poison pattern despite `ap_done`/`out_written=1` firing normally (the moderate-
+  ADD case, no hang, just silently wrong -- the exact "IP completes, output silently not written"
+  signature this project's own `mac_array_tb.cpp` header comment already names as a known defect
+  class). Fixed by adding `W64(MAC_ELEMWISE_IN_BURST_LO/HI, ...)` and `W64(MAC_ELEMWISE_OUT_BURST_LO/
+  HI, ...)` calls to ALL THREE real ARM-side call sites (`mac_array_single_op_test.c`, `_add.c`,
+  `mac_array_full_network_test.c` -- grepped for every real caller, matching this project's own
+  established discipline for interface changes), pointed at the SAME physical address as `in_base`/
+  `out_base` respectively, exactly mirroring `in_burst`/`out_burst`'s own already-fixed precedent.
+  **Real board result after BOTH fixes, decisively better than the pre-registered range at every
+  level:** entry0_gelu (786,432 elements, the exact shape that hung) -- byte-exact, 0/786,432
+  mismatches, 3.35ms (vs. the old mechanism's 66.82ms for this shape, **-95.0%**, ~19.9x); entry10_add
+  (196,608 elements) -- byte-exact, 0/196,608 mismatches, 2.18ms (vs. 31.33ms old, **-93.0%**, ~14.4x).
+  Full network (82/82 written, 6/6 checkpoints): **GELU 328.47ms->22.93ms (-93.0%), ADD 138.42ms->
+  13.06ms (-90.6%), PW 495.88ms->496.08ms (unchanged, no regression), DW 531.51ms->531.20ms (unchanged,
+  no regression), full network 1,522.39ms->1,099.77ms (-27.8%)** -- well below the pre-registered
+  1,150-1,320ms range's own optimistic end. GELU/ADD no longer appear anywhere in the top-10 most
+  expensive real entries (previously dominant). ONNX cosine EXACT match at every checkpoint
+  (0.6313/0.1286/0.2227/0.3491/-0.2459/-0.2811) -- numeric semantics fully preserved. This closes out
+  a real, substantial fraction of the "91.4% real-hardware-only, unexplained" question this whole
+  operator-decomposition line opened with -- not the whole 91.4% (PW/DW's own real-hardware-only share
+  is untouched by this round), but GELU/ADD's own entire contribution to it.
+  **Not yet resolved as of this entry: WNS=+0.017ns falls in this project's own newly-established
+  middle band (+0.01 to +0.1ns -- board-testable, real, but NOT promoted to deployed baseline unless
+  the benefit is exceptionally large) -- whether -27.8% full-network qualifies as "exceptionally
+  large" enough to promote despite the thin margin is an explicit judgment call left to the user, not
+  decided in this entry.** A pre-registered fallback lever exists if a more robust margin is wanted:
+  halving `ELEMWISE_CHUNK_WORDS` (1024->512, buf_a 4KB->2KB) would shrink BRAM/related logic at the
+  cost of doubling transaction count per tensor -- flagged as plausible-but-untested (the 8.60x/16.57x
+  per-element cost was dominated by per-element AXI overhead, not chunk-transaction count, so doubling
+  transaction count from ~2/tensor-region to ~4 is expected to still land far below the old un-bursted
+  cost), not attempted this round.
 - **OPEN, 2026-09-02: `accuracy_test_imgs_256/ckpt_hw_*_0000.bin` (the full-network checkpoint
   correctness reference `tools/compare_board_full_network_ckpts.py` compares real board dumps
   against) is currently WRONG/stale, and the last time it was known-good is uncertain.** Found while

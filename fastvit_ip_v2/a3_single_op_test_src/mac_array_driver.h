@@ -99,6 +99,26 @@
 #define MAC_IN_BURST_LO        0xdc
 #define MAC_IN_BURST_HI        0xe0
 
+/* ZHR-92 round (2026-09-06/07): elemwise_in_burst/elemwise_out_burst,
+ * run_gelu/run_add's own new burst_maxi<ap_uint<32>> ports (ELEMWISE_
+ * BURST). Same "shared bundle (gmem_act) != shared control register"
+ * trap as out_burst/in_burst's own history -- offsets read directly from
+ * the exported IP's own xmac_array_top_hw.h, not guessed. Same physical
+ * DRAM region as in_base/out_base (run_gelu/run_add's d.in_off/d.in2_off/
+ * d.out_off are all relative offsets INTO those same buffers) -- host
+ * must write the SAME address into MAC_IN_BASE_* and MAC_ELEMWISE_IN_
+ * BURST_*, and MAC_OUT_BASE_* and MAC_ELEMWISE_OUT_BURST_*. Found the
+ * hard way: a real board hang (elemwise_in_burst reading an unprogrammed/
+ * garbage address) and a real wrong-output case (elemwise_out_burst
+ * writing to an unprogrammed address, output byte-for-byte unchanged from
+ * poison) on the same round these ports were added -- csim cannot catch
+ * a missing register write (no register-address concept), only real
+ * hardware exposed it. */
+#define MAC_ELEMWISE_IN_BURST_LO   0xe8
+#define MAC_ELEMWISE_IN_BURST_HI   0xec
+#define MAC_ELEMWISE_OUT_BURST_LO  0xf4
+#define MAC_ELEMWISE_OUT_BURST_HI  0xf8
+
 /* Must stay byte-layout-identical to fastvit_ip_v2/mac_array.h's
  * LayerDescV2 (int fields, same order) -- this is now what gets written
  * field-by-field into the MAC_DESC_BASE register block (was DMA'd into

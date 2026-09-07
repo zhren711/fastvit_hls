@@ -230,8 +230,25 @@ typedef ap_int<32>  acc_t;   /* accumulator / bias */
  * ADD tensor (786,432 elements, layer 0's own GELU) needs 192 chunks --
  * a plain sequential runtime-trip-count outer loop, not unrolled, so no
  * compile-time-bound requirement applies to it (only the INNER per-chunk
- * loop, bounded by this constant, needs one). */
+ * loop, bounded by this constant, needs one).
+ *
+ * REVISED same round: the initial act_t (8-bit) burst_maxi design crashed
+ * csynth's own codegen (`Call parameter type does not match function
+ * signature!`, `_ssdm_op_Write.m_axi.p1i32` expecting 32-bit) -- mixing
+ * an 8-bit burst_maxi port onto the SAME bundle as the existing 32-bit
+ * out_burst/in_burst ports is not the same case as the already-proven
+ * "plain pointer + burst_maxi share a bundle" precedent (the plain
+ * pointer's own width already matches the bundle's dominant 32-bit width;
+ * a genuinely different-width burst_maxi does not). Fixed by making the
+ * new ports ap_uint<32>-typed (matching the bundle) instead, with 4-byte
+ * pack/unpack inside run_gelu/run_add -- verified safe first (per this
+ * project's own "verify contiguity/alignment before batching" rule): all
+ * 27 real GELU/ADD entries have in_off/out_off/in2_off AND total (=cin*h*w)
+ * exactly mod4==0 (real network channel counts and spatial dims are
+ * always multiples of 4), so ELEMWISE_CHUNK stays a clean multiple of 4
+ * words with zero tail-byte handling needed anywhere. */
 #define ELEMWISE_CHUNK 4096
+#define ELEMWISE_CHUNK_WORDS (ELEMWISE_CHUNK / 4)
 
 /* A3 round 3 (2026-08-21, ZHR-92): bound for run_reduce_unified's
  * per-step gather buffers (lane_in_all/lane_w_all), see mac_array.cpp's
@@ -562,8 +579,8 @@ void mac_array_top(
     const ap_uint<32> in_base_wide[],
     hls::burst_maxi<ap_uint<32> > out_burst,
     hls::burst_maxi<ap_uint<32> > in_burst,
-    hls::burst_maxi<act_t> elemwise_in_burst,
-    hls::burst_maxi<act_t> elemwise_out_burst
+    hls::burst_maxi<ap_uint<32> > elemwise_in_burst,
+    hls::burst_maxi<ap_uint<32> > elemwise_out_burst
 );
 
 #endif // __MAC_ARRAY_H__

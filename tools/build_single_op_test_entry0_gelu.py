@@ -68,9 +68,16 @@ fields = [
     0,          # use_shift_table
     0,          # shift_off
     in_ch_stride, out_ch_stride,
+    0,          # use_wide_path -- dead code in the active dispatch path.
+                # ZHR-92 (2026-09-07): this script was stale at 27 fields
+                # (never updated when MacLayerDesc grew to 28 on 2026-08-31,
+                # and never actually run before now) -- same fix as
+                # build_single_op_test_entry10_add.py's own correction,
+                # found while diagnosing a real board hang caused by this
+                # exact bundle's own truncated descriptor.
 ]
-assert len(fields) == 27, len(fields)
-desc_bytes = struct.pack("<27i", *fields)
+assert len(fields) == 28, len(fields)
+desc_bytes = struct.pack("<28i", *fields)
 
 with open(os.path.join(OUT_DIR, "desc.bin"), "wb") as f:
     f.write(desc_bytes)

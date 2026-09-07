@@ -221,6 +221,14 @@ int main(int argc, char **argv) {
          * control register -- see CLAUDE.md). Every dispatch needs it
          * set; csim cannot catch a missing write here at all. */
         W64(MAC_OUT_BURST_LO, MAC_OUT_BURST_HI, arena_phys);
+        /* ZHR-92 round (2026-09-07): elemwise_in_burst/elemwise_out_burst --
+         * run_gelu/run_add's own new burst ports (ELEMWISE_BURST), same
+         * shared-bundle/separate-register trap as in_burst/out_burst above.
+         * Found the hard way: a real board hang (elemwise_in_burst reading
+         * an unprogrammed address, on entry[0]'s own GELU dispatch) before
+         * this write existed. */
+        W64(MAC_ELEMWISE_IN_BURST_LO, MAC_ELEMWISE_IN_BURST_HI, arena_phys);
+        W64(MAC_ELEMWISE_OUT_BURST_LO, MAC_ELEMWISE_OUT_BURST_HI, arena_phys);
 
         /* ZHR-92 (2026-08-24): print+flush BEFORE dispatch too -- if this
          * entry is the one that hangs, the process gets killed and any

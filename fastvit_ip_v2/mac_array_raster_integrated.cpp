@@ -1847,36 +1847,54 @@ static void run_layer(const LayerDescV2 &d,
 /* ZHR-92 round (2026-09-06): ELEMWISE_BURST rewrite. Old version used
  * plain-pointer in_base[]/out_base[] (one un-bursted AXI transaction per
  * element, confirmed real-board 16.57x a naive II=1 floor -- see this
- * round's own writeout). Chunked hls::burst_maxi read/write instead:
- * in_off's chunk is read into a small on-chip buffer first (buf_a), then
- * in2_off's matching chunk is read and summed on the fly while writing --
- * two SEQUENTIAL passes over the SAME elemwise_in_burst port, not two
- * simultaneous reads, which is what caused the old version's confirmed
- * `Unable to schedule bus request operation... due to limited memory
- * ports` II=2 violation (two same-cycle reads on one bundle). Whether this
- * incidentally restores II=1 is measured via csynth, not assumed here. */
+ * round's own writeout). Chunked hls::burst_maxi<ap_uint<32>> read/write
+ * instead, 4 bytes/cycle (word-packed, matching the bundle's own 32-bit
+ * width -- an 8-bit burst_maxi port crashed csynth's codegen when sharing
+ * this bundle, see ELEMWISE_CHUNK's own header comment in mac_array.h):
+ * in_off's chunk is read into a small on-chip word buffer first (buf_a),
+ * then in2_off's matching chunk is read and summed on the fly (4 lanes
+ * unrolled per word) while writing -- two SEQUENTIAL passes over the SAME
+ * elemwise_in_burst port, not two simultaneous reads, which is what
+ * caused the old version's confirmed `Unable to schedule bus request
+ * operation... due to limited memory ports` II=2 violation (two same-
+ * cycle reads on one bundle). Whether this incidentally restores II=1 is
+ * measured via csynth, not assumed here. Word-packing is safe with zero
+ * tail handling: confirmed via real descriptors (all 27 real GELU/ADD
+ * entries) that in_off/in2_off/out_off and total (=cin*h*w) are ALL
+ * exactly mod4==0. */
 static void run_add(const LayerDescV2 &d,
-                     hls::burst_maxi<act_t> in_burst, hls::burst_maxi<act_t> out_burst)
+                     hls::burst_maxi<ap_uint<32> > in_burst, hls::burst_maxi<ap_uint<32> > out_burst)
 {
-    const int total = d.cin * d.h_in * d.w_in;
-    act_t buf_a[ELEMWISE_CHUNK];
-    ADD_CHUNK: for (int base = 0; base < total; base += ELEMWISE_CHUNK) {
-        int this_chunk = (total - base < ELEMWISE_CHUNK) ? (total - base) : ELEMWISE_CHUNK;
-        in_burst.read_request(d.in_off + base, this_chunk);
-        ADD_READA: for (int i = 0; i < ELEMWISE_CHUNK; i++) {
+    const int n_words   = (d.cin * d.h_in * d.w_in) >> 2;
+    const int in_off_w  = d.in_off  >> 2;
+    const int in2_off_w = d.in2_off >> 2;
+    const int out_off_w = d.out_off >> 2;
+    ap_uint<32> buf_a[ELEMWISE_CHUNK_WORDS];
+    ADD_CHUNK: for (int base = 0; base < n_words; base += ELEMWISE_CHUNK_WORDS) {
+        int this_chunk = (n_words - base < ELEMWISE_CHUNK_WORDS) ? (n_words - base) : ELEMWISE_CHUNK_WORDS;
+        in_burst.read_request(in_off_w + base, this_chunk);
+        ADD_READA: for (int i = 0; i < ELEMWISE_CHUNK_WORDS; i++) {
             #pragma HLS PIPELINE II=1
             if (i < this_chunk) {
                 buf_a[i] = in_burst.read();
             }
         }
-        in_burst.read_request(d.in2_off + base, this_chunk);
-        out_burst.write_request(d.out_off + base, this_chunk);
-        ADD_COMPUTE: for (int i = 0; i < ELEMWISE_CHUNK; i++) {
+        in_burst.read_request(in2_off_w + base, this_chunk);
+        out_burst.write_request(out_off_w + base, this_chunk);
+        ADD_COMPUTE: for (int i = 0; i < ELEMWISE_CHUNK_WORDS; i++) {
             #pragma HLS PIPELINE II=1
             if (i < this_chunk) {
-                act_t b = in_burst.read();
-                acc_t sum = (acc_t)buf_a[i] + (acc_t)b;
-                out_burst.write((act_t)clip_shift(sum, d.out_shift));
+                ap_uint<32> wa = buf_a[i];
+                ap_uint<32> wb = in_burst.read();
+                ap_uint<32> wo = 0;
+                for (int k = 0; k < 4; k++) {
+                    #pragma HLS UNROLL
+                    act_t a = (act_t)wa.range(k * 8 + 7, k * 8);
+                    act_t b = (act_t)wb.range(k * 8 + 7, k * 8);
+                    acc_t sum = (acc_t)a + (acc_t)b;
+                    wo.range(k * 8 + 7, k * 8) = (ap_uint<8>)(act_t)clip_shift(sum, d.out_shift);
+                }
+                out_burst.write(wo);
             }
         }
         out_burst.write_response();
@@ -1962,23 +1980,34 @@ static void run_sigmoid(const LayerDescV2 &d, const act_t in_base[], act_t out_b
 /* ZHR-92 round (2026-09-06): ELEMWISE_BURST rewrite -- see run_add's own
  * header comment for the shared rationale (real-board 8.60x a naive II=1
  * floor, confirmed per-element not fixed overhead, plain-pointer access
- * never bursted). GELU's own access pattern (one read, one write per
- * element, fully sequential offsets) is the simplest possible burst
- * shape -- chunked read+compute+write in one pass, no intermediate
- * buffer needed (unlike run_add's two-source case). */
-static void run_gelu(const LayerDescV2 &d, hls::burst_maxi<act_t> in_burst, hls::burst_maxi<act_t> out_burst)
+ * never bursted) and for why the burst port is ap_uint<32>-word-packed
+ * rather than act_t-typed (an 8-bit burst_maxi port sharing this bundle
+ * crashed csynth's codegen). GELU's own access pattern (one read, one
+ * write per element, fully sequential offsets) is the simplest possible
+ * burst shape -- chunked read+compute+write in one pass, no intermediate
+ * buffer needed (unlike run_add's two-source case), 4 lanes unrolled per
+ * word. */
+static void run_gelu(const LayerDescV2 &d, hls::burst_maxi<ap_uint<32> > in_burst, hls::burst_maxi<ap_uint<32> > out_burst)
 {
-    const int total = d.cin * d.h_in * d.w_in;
-    GELU_CHUNK: for (int base = 0; base < total; base += ELEMWISE_CHUNK) {
-        int this_chunk = (total - base < ELEMWISE_CHUNK) ? (total - base) : ELEMWISE_CHUNK;
-        in_burst.read_request(d.in_off + base, this_chunk);
-        out_burst.write_request(d.out_off + base, this_chunk);
-        GELU: for (int i = 0; i < ELEMWISE_CHUNK; i++) {
+    const int n_words  = (d.cin * d.h_in * d.w_in) >> 2;
+    const int in_off_w  = d.in_off  >> 2;
+    const int out_off_w = d.out_off >> 2;
+    GELU_CHUNK: for (int base = 0; base < n_words; base += ELEMWISE_CHUNK_WORDS) {
+        int this_chunk = (n_words - base < ELEMWISE_CHUNK_WORDS) ? (n_words - base) : ELEMWISE_CHUNK_WORDS;
+        in_burst.read_request(in_off_w + base, this_chunk);
+        out_burst.write_request(out_off_w + base, this_chunk);
+        GELU: for (int i = 0; i < ELEMWISE_CHUNK_WORDS; i++) {
             #pragma HLS PIPELINE II=1
             if (i < this_chunk) {
-                act_t x = in_burst.read();
-                acc_t prod = (acc_t)x * (acc_t)quantized_sigmoid(x);
-                out_burst.write((act_t)clip_shift(prod, d.out_shift));
+                ap_uint<32> wi = in_burst.read();
+                ap_uint<32> wo = 0;
+                for (int k = 0; k < 4; k++) {
+                    #pragma HLS UNROLL
+                    act_t x = (act_t)wi.range(k * 8 + 7, k * 8);
+                    acc_t prod = (acc_t)x * (acc_t)quantized_sigmoid(x);
+                    wo.range(k * 8 + 7, k * 8) = (ap_uint<8>)(act_t)clip_shift(prod, d.out_shift);
+                }
+                out_burst.write(wo);
             }
         }
         out_burst.write_response();
@@ -2062,8 +2091,8 @@ void mac_array_top(
     const ap_uint<32> in_base_wide[],
     hls::burst_maxi<ap_uint<32> > out_burst,
     hls::burst_maxi<ap_uint<32> > in_burst,
-    hls::burst_maxi<act_t> elemwise_in_burst,
-    hls::burst_maxi<act_t> elemwise_out_burst)
+    hls::burst_maxi<ap_uint<32> > elemwise_in_burst,
+    hls::burst_maxi<ap_uint<32> > elemwise_out_burst)
 {
 #pragma HLS INTERFACE s_axilite port=desc     bundle=control
 /* ZHR-92 round (2026-09-04): COSIM_DEPTH_HINT -- RTL cosimulation (unlike
