@@ -2518,6 +2518,94 @@ them against this build.
   route_design-alone violation, a single pass reliably recovers positive WNS; beyond that (the
   -2.264ns PW_WCHUNK case), it needs an actual source-level fix instead. Usable directly as a
   decision rule for future rounds without re-deriving it.
+- **CLOSED, 2026-09-07 (ZHR-92, DWR_INPUT_BURST): attempted the same burst_maxi fix that gave
+  GELU/ADD their real -93%/-91% win, on DW's own per-pixel `in_base[]` read -- real board result was
+  a REGRESSION (DW +8.1%, full network +3.5%), not an improvement, and the round's own root-cause
+  chase found WHY.** Motivated by a decomposition mirroring GELU/ADD's own: DW's real-to-naive-floor
+  ratio came back 18.80x (7.48x once corrected for padding and `dwr_consume`'s own header-commented
+  "achieved II=2"), matching GELU's 8.60x closely enough to predict the same fix would work.
+  Implementation: `dwr_prefetch_channel` bursts a whole channel's real (unpadded) plane via
+  `hls::burst_maxi<ap_uint<32>>` (`dw_in_burst`, new port, chunked at `ELEMWISE_CHUNK_WORDS`,
+  matching ELEMWISE_BURST's own chunk size) into an on-chip buffer BEFORE `dwr_produce`'s own
+  `PIPELINE II=1` COL loop starts, which then reads the buffer instead of `in_base[]` directly.
+  Alignment verified structurally before implementing (not assumed): `in_off`, `in_ch_stride`
+  (=h_in*w_in), and every real channel's start address are mod4==0 for all 25 real DW layers,
+  guaranteed since h_in/w_in are always powers of two >=8 -- zero tail-byte handling needed.
+  csim clean (`dw_raster_layer_tb.cpp` 5/5, wiring tb 4/4, `gelu_add_burst_tb.cpp` 8/8 regression).
+  Isolated csynth: burst inference confirmed (`ManualBurstInstancePassed`), `dwr_consume`'s own
+  achieved II confirmed **8, not the "2" this file's own header comment claims** -- checked against
+  the elemwise_burst-only baseline's own report and confirmed this discrepancy predates this round,
+  not introduced by it (this is the same discrepancy an earlier round already flagged as unresolved --
+  see the `PW_FORCE_DSP`/`LB_FORCE_DSP` entry above). Isolated LUT delta +804/+1.09% over the
+  elemwise_burst-only baseline -- right at this round's own pre-registered ">1% likely won't pass"
+  threshold.
+  **Real P&R: route_design alone WNS=-0.103291ns (within the established ~-0.2ns `phys_opt_design`
+  boundary), one pass recovered WNS=+0.004ns.** This falls in the SAME non-deliverable band as an
+  earlier-session +0.0036ns precedent (<+0.01ns) -- NOT promoted, NOT deployed as baseline, but board-
+  tested anyway per explicit instruction (measurement, not deployment) since "board test" and
+  "promote" are different decisions and the earlier +0.0036ns case was also board-tested for its own
+  real number. Real utilization: LUT 44,172/53,200=83.03% (essentially flat vs. the elemwise_burst
+  baseline's 83.22% -- the isolated +1.09% did not survive real P&R, a 9th isolated-vs-real
+  divergence instance, this time favorable), BRAM 115/140=82.14% (+8 tiles, half the isolated +16
+  projection), DSP 62/220=28.18% (+3, matching isolated exactly). Critical path confirmed unchanged
+  before AND after `phys_opt_design` (`mul_32s_32s_32_2_1`/`pw_flat_pipeline_impl_true`, the same
+  pre-existing mechanism every other thin-margin build on this line has hit) -- not new DW code.
+  **Board protocol**: driver register (`dw_in_burst`, offset 0x100/0x104, read from the fresh export's
+  own `xmac_array_top_hw.h`) was wired into all three real ARM call sites BEFORE the first board
+  attempt this time, not after a hang -- the first time this project's own repeated "shared bundle !=
+  shared register" trap (4th confirmed instance) was closed pre-emptively instead of discovered via a
+  real failure. Single-op entry5_dw byte-exact first, then full network run TWICE with the SAME
+  bitstream, comparing all 6 checkpoints + entry81 byte-for-byte -- **all 7 files MD5-identical across
+  both runs** (times 1138.83ms/1138.90ms, within noise), confirming this is a real, deterministic
+  result and not a marginal-timing artifact (same two-run bit-identity technique this project has used
+  twice before for timing-violating builds, applied here to a technically-MET-but-razor-thin one).
+  **Real result: DW 531.20ms -> 574.22ms (+8.1%, WORSE), full network 1,099.77ms -> ~1,138.87ms
+  (+3.5%, WORSE).** PW/GELU/ADD unaffected (within noise); all 6 ONNX cosine checkpoints exact match
+  (0.6313/0.1286/0.2227/0.3491/-0.2459/-0.2811), correctness fully preserved. Board reverted to
+  `mac_array_a3_elemwise_burst` (re-verified byte-exact, 38.75ms on entry5_dw), golden untouched.
+  **Root cause, found by redoing the ORIGINAL decomposition's own floor calculation with a number
+  this SAME round's own csynth had already measured but hadn't been used to correct it**: recomputing
+  the "adjusted floor" with the REAL achieved II=8 (not the stale "2" the file's own comment claimed)
+  gives the baseline's own real ratio as only 1.87x, not 7.48x -- `dwr_consume`'s own reduction/
+  writeout pipeline, not the input read, was always DW's real bottleneck, and it was already close to
+  its own floor before this round touched anything. This build's ratio came back 2.02x, slightly
+  worse than baseline's 1.87x. **SECOND CONFIRMED INSTANCE of this file's own "pulled out of
+  pipeline overlap, cost becomes additive" mechanism** (1st: output-write batching, `PW_WRITEOUT_FLUSH`,
+  see the "row-batched WRITEOUT... reverted" entry above): pulling an access out of an already-
+  pipelined, latency-hidden context into its own serial pre-stage (`dwr_prefetch_channel` runs to
+  completion before `dwr_produce`/`dwr_consume`'s own `DATAFLOW` region starts, with no overlap) makes
+  its real per-transaction cost fully additive instead of hidden -- compounded here by optimizing the
+  wrong side of the pipeline entirely, since `dwr_consume`'s own II=8 (not the input read) was always
+  the binding constraint. Two independent instances now, different files, different mechanisms being
+  batched (output writes vs. input reads) -- treat this as a general property of this codebase's
+  DATAFLOW-region pipelining, not a one-off, before proposing any future "move an access into its own
+  stage" restructuring.
+  **STANDING RULE ADDED, 2026-09-08: any performance number taken from a code COMMENT (an achieved
+  II, a latency, a cycle count) must be verified against the actual csynth report BEFORE being used
+  as the basis for a new experiment's design -- not just before being cited as a historical fact
+  (this file's own pre-existing "a comment asserting an invariant needs independent verification"
+  rule already covered the latter; this extends it to the former, a costlier failure mode).** This
+  round's entire premise (DW's "7.48x adjusted floor," the whole reason input-side burst looked worth
+  a full implementation+P&R+board round) was built on `dwr_consume`'s own header comment claiming
+  "achieved II=2" -- a claim, never re-checked against the csynth report before the decomposition
+  used it as an input. The real number (II=8, confirmed via this SAME round's own csynth, checked for
+  an unrelated reason -- whether II had regressed) was sitting in a report file the whole time and
+  would have shown the true floor was already 1.87x, not 7.48x, before a single line of the
+  implementation was written. A comment doesn't participate in any automatic check (compiler,
+  csynth, csim) -- it can silently drift out of sync with the code it describes the moment the code
+  changes, and nothing forces a re-sync. **Before designing an experiment whose target/expected-
+  benefit calculation depends on a specific II/latency/cycle-count number, grep the actual csynth
+  XML/report for that number (`<PipelineII>`, the loop table's own "achieved" column) rather than
+  trusting a comment's claim of it -- this is now the second time in this project a stale performance
+  claim was discovered only AFTER spending a full round on it (the first was `DWR_ENABLE_FPG_
+  SPECIALIZATION`'s own "93.6% DSP" claim, caught before implementation there; this time the flawed
+  premise wasn't caught until the round was already complete).**
+  **Disposition**: kept in source as `DWR_INPUT_BURST` (OFF by default), matching this
+  file's own established convention for real-but-rejected mechanisms (`DWR_ENABLE_FPG_SPECIALIZATION`,
+  `LB_FORCE_DSP`, `DWR_HOIST_BASE_ADDR`) rather than deleted -- default path restored to the original
+  direct `in_base[]` read (re-verified csim-clean: 5/5, 4/4, 8/8, matching pre-round behavior exactly).
+  **Practical consequence for any future DW timing work on this line: target `dwr_consume`'s own
+  achieved II=8, not the input read.**
 - **OPEN, 2026-09-02: `accuracy_test_imgs_256/ckpt_hw_*_0000.bin` (the full-network checkpoint
   correctness reference `tools/compare_board_full_network_ckpts.py` compares real board dumps
   against) is currently WRONG/stale, and the last time it was known-good is uncertain.** Found while

@@ -1487,8 +1487,26 @@ void mac_array_top(
     int          *out_written,
     const ap_uint<32> in_base_wide[],
     hls::burst_maxi<ap_uint<32> > out_burst,
-    hls::burst_maxi<ap_uint<32> > in_burst)
+    hls::burst_maxi<ap_uint<32> > in_burst,
+    hls::burst_maxi<ap_uint<32> > elemwise_in_burst,
+    hls::burst_maxi<ap_uint<32> > elemwise_out_burst,
+    hls::burst_maxi<ap_uint<32> > dw_in_burst)
 {
+    /* ZHR-92 round (2026-09-07): mac_array.cpp's own mac_array_top had
+     * already drifted out of sync with mac_array.h's shared prototype
+     * BEFORE this round touched anything -- elemwise_in_burst/
+     * elemwise_out_burst were added to the header by the ELEMWISE_BURST
+     * round (earlier the same day) without a matching update here,
+     * making dw_raster_layer_tb.cpp's mac_array_top() reference call
+     * (which passes the header's full arg list) fail to LINK, not just a
+     * theoretical risk -- this is the same "shared header ripples into
+     * secondary testbenches" class of bug CLAUDE.md already documents
+     * repeatedly. Fixed here as a minimal, behavior-preserving signature
+     * catch-up (this file's own old tile-based mechanism never touches
+     * any of these three ports, matching its own pre-existing unused
+     * elemwise-burst gap) -- not a new decision, just restoring
+     * buildability so dw_raster_layer_tb.cpp's 5/5 check can run at all. */
+    (void)elemwise_in_burst; (void)elemwise_out_burst; (void)dw_in_burst;
 #pragma HLS INTERFACE s_axilite port=desc     bundle=control
 #pragma HLS INTERFACE m_axi port=in_base      offset=slave bundle=gmem_act
 #pragma HLS INTERFACE m_axi port=w_base       offset=slave bundle=gmem_w

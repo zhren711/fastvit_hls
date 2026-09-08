@@ -242,6 +242,13 @@ int main(int argc, char **argv) {
      * burst writing to an unprogrammed address) before this write existed. */
     W64(MAC_ELEMWISE_IN_BURST_LO, MAC_ELEMWISE_IN_BURST_HI, in_phys);
     W64(MAC_ELEMWISE_OUT_BURST_LO, MAC_ELEMWISE_OUT_BURST_HI, out_phys);
+    /* ZHR-92 round (2026-09-07): dw_in_burst -- dwr_prefetch_channel's new
+     * burst port (DWR_INPUT_BURST), same shared-bundle/separate-register
+     * trap as every burst port above. Wired up before this round's first
+     * board attempt (not after a hang) -- see the driver header's own
+     * comment on why this one was front-loaded. Same physical region as
+     * in_base. */
+    W64(MAC_DW_IN_BURST_LO, MAC_DW_IN_BURST_HI, in_phys);
 
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);

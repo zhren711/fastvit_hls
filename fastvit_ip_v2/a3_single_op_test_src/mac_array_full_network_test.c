@@ -229,6 +229,11 @@ int main(int argc, char **argv) {
          * this write existed. */
         W64(MAC_ELEMWISE_IN_BURST_LO, MAC_ELEMWISE_IN_BURST_HI, arena_phys);
         W64(MAC_ELEMWISE_OUT_BURST_LO, MAC_ELEMWISE_OUT_BURST_HI, arena_phys);
+        /* ZHR-92 round (2026-09-07): dw_in_burst -- dwr_prefetch_channel's
+         * new burst port (DWR_INPUT_BURST), same shared-bundle/separate-
+         * register trap as every burst port above. Wired up before this
+         * round's first board attempt this time, not after a hang. */
+        W64(MAC_DW_IN_BURST_LO, MAC_DW_IN_BURST_HI, arena_phys);
 
         /* ZHR-92 (2026-08-24): print+flush BEFORE dispatch too -- if this
          * entry is the one that hangs, the process gets killed and any

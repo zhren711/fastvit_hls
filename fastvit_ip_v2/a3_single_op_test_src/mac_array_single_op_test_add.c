@@ -141,6 +141,10 @@ int main(int argc, char **argv) {
      * burst writing to an unprogrammed address) before this write existed. */
     W64(MAC_ELEMWISE_IN_BURST_LO, MAC_ELEMWISE_IN_BURST_HI, in_phys);
     W64(MAC_ELEMWISE_OUT_BURST_LO, MAC_ELEMWISE_OUT_BURST_HI, out_phys);
+    /* ZHR-92 round (2026-09-07): dw_in_burst -- ADD never touches it, same
+     * "never leave a register that shares a bundle 'probably fine to
+     * skip'" discipline as in_base_wide/in_burst/out_burst above. */
+    W64(MAC_DW_IN_BURST_LO, MAC_DW_IN_BURST_HI, in_phys);
 
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);

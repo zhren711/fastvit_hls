@@ -721,7 +721,8 @@ static void run_layer(const LayerDescV2 &d,
                        const act_t in_base[], const wt_t w_base[], const acc_t b_base[],
                        act_t out_base[], const ap_uint<32> in_base_wide[],
                        hls::burst_maxi<ap_uint<32> > &out_burst,
-                       hls::burst_maxi<ap_uint<32> > &in_burst)
+                       hls::burst_maxi<ap_uint<32> > &in_burst,
+                       hls::burst_maxi<ap_uint<32> > &dw_in_burst)
 {
     // ZHR-92 (2026-08-30): single consolidated shape-range check, csim-
     // only (see mac_array.h's own header comment on
@@ -738,7 +739,7 @@ static void run_layer(const LayerDescV2 &d,
     // here down (PW's own dispatch, every shared helper) is untouched;
     // DW ops return before ever reaching it.
     if (d.op_type == LDESC_OP_DWCONV) {
-        run_dw_layer_raster(in_base, w_base, b_base, out_base,
+        run_dw_layer_raster(in_base, w_base, b_base, out_base, dw_in_burst,
                              d.cin, d.cout, d.h_in, d.w_in,
                              d.k, d.stride, d.pad, d.fpg,
                              d.in_off, d.w_off, d.b_off, d.out_off,
@@ -2092,7 +2093,8 @@ void mac_array_top(
     hls::burst_maxi<ap_uint<32> > out_burst,
     hls::burst_maxi<ap_uint<32> > in_burst,
     hls::burst_maxi<ap_uint<32> > elemwise_in_burst,
-    hls::burst_maxi<ap_uint<32> > elemwise_out_burst)
+    hls::burst_maxi<ap_uint<32> > elemwise_out_burst,
+    hls::burst_maxi<ap_uint<32> > dw_in_burst)
 {
 #pragma HLS INTERFACE s_axilite port=desc     bundle=control
 /* ZHR-92 round (2026-09-04): COSIM_DEPTH_HINT -- RTL cosimulation (unlike
@@ -2163,6 +2165,24 @@ void mac_array_top(
 #endif
 #pragma HLS INTERFACE s_axilite port=elemwise_in_burst  bundle=control
 #pragma HLS INTERFACE s_axilite port=elemwise_out_burst bundle=control
+    /* ZHR-92 round (2026-09-07): DWR_INPUT_BURST -- same bundle=gmem_act
+     * as in_burst/out_burst/elemwise_*_burst above, same "own control
+     * register, not yet wired into mac_array_driver.c" caveat -- and per
+     * this project's own "flagging a risk in a comment is not the same
+     * as handling it" lesson (ELEMWISE_BURST's real board hang), this is
+     * a hard requirement before ANY board dispatch, not a nice-to-have:
+     * add MAC_DW_IN_BURST_LO/HI register writes to every real ARM call
+     * site before testing on real hardware. ap_uint<32> (word-packed),
+     * not act_t (8-bit) -- the 8-bit/32-bit mixed-width crash ELEMWISE_
+     * BURST hit is a codegen-level issue with the bundle itself, not
+     * specific to GELU/ADD, so this port uses the same 32-bit width from
+     * the start. */
+#ifdef COSIM_DEPTH_HINT
+#pragma HLS INTERFACE m_axi port=dw_in_burst  offset=slave bundle=gmem_act depth=4096
+#else
+#pragma HLS INTERFACE m_axi port=dw_in_burst  offset=slave bundle=gmem_act
+#endif
+#pragma HLS INTERFACE s_axilite port=dw_in_burst bundle=control
 /* A3 round (2026-08-23, ZHR-92, MERGE): back on bundle=gmem_act, sharing
  * the SAME physical master as in_base/out_base -- the standalone
  * gmem_act_wide master (previous round, solution18) is gone. That
@@ -2220,7 +2240,7 @@ void mac_array_top(
         case LDESC_OP_SIGMOID: run_sigmoid(desc, in_base, out_base); break;
         case LDESC_OP_SCALE:   run_scale(desc, in_base, out_base); break;
         case LDESC_OP_GELU:    run_gelu(desc, elemwise_in_burst, elemwise_out_burst); break;
-        default:                run_layer(desc, in_base, w_base, b_base, out_base, in_base_wide, out_burst, in_burst); break;
+        default:                run_layer(desc, in_base, w_base, b_base, out_base, in_base_wide, out_burst, in_burst, dw_in_burst); break;
     }
     *out_written = 1;
 }

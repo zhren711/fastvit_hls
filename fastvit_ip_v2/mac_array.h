@@ -580,7 +580,8 @@ void mac_array_top(
     hls::burst_maxi<ap_uint<32> > out_burst,
     hls::burst_maxi<ap_uint<32> > in_burst,
     hls::burst_maxi<ap_uint<32> > elemwise_in_burst,
-    hls::burst_maxi<ap_uint<32> > elemwise_out_burst
+    hls::burst_maxi<ap_uint<32> > elemwise_out_burst,
+    hls::burst_maxi<ap_uint<32> > dw_in_burst
 );
 
 #endif // __MAC_ARRAY_H__

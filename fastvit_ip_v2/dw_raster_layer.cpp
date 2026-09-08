@@ -47,6 +47,146 @@ struct dwr_beat_t {
     bool  valid;
 };
 
+#ifdef DWR_INPUT_BURST
+// ZHR-92 round (2026-09-07): DWR_INPUT_BURST (OFF by default) -- ATTEMPTED
+// AND REJECTED, real board result, kept here per this file's own
+// established convention (see DWR_ENABLE_FPG_SPECIALIZATION/LB_FORCE_DSP/
+// DWR_HOIST_BASE_ADDR above) rather than deleted.
+//
+// Hypothesis: a GELU/ADD-style decomposition found DW's real-to-naive-
+// floor ratio was 18.80x (7.48x once corrected for padding+achieved II),
+// matching GELU's own 8.60x -- attributed to dwr_produce's per-pixel
+// in_base[] read (one un-bursted AXI transaction per pixel), the same
+// mechanism ELEMWISE_BURST had just fixed for GELU/ADD at a real -93%/
+// -91% win. Implementation: dwr_prefetch_channel() bursts a whole
+// channel's real (unpadded) plane via hls::burst_maxi<ap_uint<32>>
+// (dw_in_burst, chunked at ELEMWISE_CHUNK_WORDS) into ch_buf BEFORE this
+// function's own PIPELINE II=1 COL loop starts, which then reads
+// ch_buf[read_ptr] instead of in_base[ci_base+read_ptr].
+//
+// Real P&R: WNS +0.004ns after one phys_opt_design pass (route_design
+// alone: -0.103ns) -- itself in this project's own "<+0.01ns, matches the
+// already-rejected +0.0036ns precedent" non-deliverable band, but board-
+// tested anyway per explicit instruction (measurement, not deployment;
+// two full-network runs came back byte-identical across all 6 checkpoints
+// + entry81, ruling out a marginal-timing artifact).
+//
+// REAL BOARD RESULT: DW got WORSE, not better -- 531.20ms (baseline) ->
+// 574.22ms (+8.1%), full network 1,099.77ms -> ~1,138.87ms (+3.5%). PW/
+// GELU/ADD unaffected (within noise); all 6 ONNX cosine checkpoints exact
+// match, correctness fully preserved.
+//
+// ROOT CAUSE (found by redoing the original decomposition's own floor
+// calculation with a number this SAME round's csynth had already
+// measured but hadn't been used to correct it): the original 7.48x
+// "adjusted floor" used this file's own header comment claiming
+// dwr_consume's achieved II=2 -- but csynth (checked for an unrelated
+// item, whether this round's change regressed it) confirmed the REAL
+// achieved II is 8, unchanged from the baseline, not introduced by this
+// round. Recomputed with II=8: the baseline's real ratio was already only
+// 1.87x, not 7.48x -- dwr_consume's own reduction/writeout pipeline, not
+// the input read, is DW's real bottleneck, and it was already close to
+// its own floor. This build's ratio came back 2.02x, slightly worse than
+// baseline. This is the SAME mechanism CLAUDE.md already documents for
+// output-write batching (PW_WRITEOUT_FLUSH): pulling an access out of an
+// already-pipelined, latency-hidden context into its own serial pre-stage
+// makes its real per-transaction cost fully additive instead of hidden --
+// here compounded by optimizing the wrong side of the pipeline entirely,
+// since consume's own II=8 (not the input read) was always the binding
+// constraint. Practical consequence: any future DW timing work on this
+// line should target dwr_consume's own II=8, not the input read.
+static void dwr_produce_burst(
+    const act_t ch_buf[DWR_CH_BUF_BYTES],
+    int h_in, int w_in, int K, int S,
+    hls::stream<dwr_beat_t> &taps)
+{
+    act_t lb0[DWR_WPAD_MAX], lb1[DWR_WPAD_MAX], lb2[DWR_WPAD_MAX];
+    act_t lb3[DWR_WPAD_MAX], lb4[DWR_WPAD_MAX], lb5[DWR_WPAD_MAX];
+
+    act_t window[DWR_MAX_K][DWR_MAX_K];
+#pragma HLS ARRAY_PARTITION variable=window complete dim=0
+
+    const int pad   = K / 2;
+    const int h_pad = h_in + 2 * pad;
+    const int w_pad = w_in + 2 * pad;
+
+    int read_ptr = 0;
+    int row_phase = 0;
+
+    ROW: for (int prow = 0; prow < h_pad; prow++) {
+        int real_row = prow - pad;
+        bool row_in_image = (real_row >= 0) && (real_row < h_in);
+
+        bool row_valid;
+        if (prow < K - 1) {
+            row_valid = false;
+        } else if (prow == K - 1) {
+            row_phase = 0;
+            row_valid = true;
+        } else {
+            row_phase++;
+            if (row_phase == S) row_phase = 0;
+            row_valid = (row_phase == 0);
+        }
+
+        int col_phase = 0;
+
+        COL: for (int pcol = 0; pcol < w_pad; pcol++) {
+#pragma HLS PIPELINE II=1
+            int real_col = pcol - pad;
+            bool col_in_image = row_in_image && (real_col >= 0) && (real_col < w_in);
+
+            bool col_valid;
+            if (pcol < K - 1) {
+                col_valid = false;
+            } else if (pcol == K - 1) {
+                col_phase = 0;
+                col_valid = true;
+            } else {
+                col_phase++;
+                if (col_phase == S) col_phase = 0;
+                col_valid = (col_phase == 0);
+            }
+
+            dwr_beat_t beat;
+            beat.valid = row_valid && col_valid;
+
+            act_t new_pixel = col_in_image ? ch_buf[read_ptr] : (act_t)0;
+
+            act_t v5 = lb5[pcol]; lb5[pcol] = new_pixel;
+            act_t v4 = lb4[pcol]; lb4[pcol] = v5;
+            act_t v3 = lb3[pcol]; lb3[pcol] = v4;
+            act_t v2 = lb2[pcol]; lb2[pcol] = v3;
+            act_t v1 = lb1[pcol]; lb1[pcol] = v2;
+            act_t v0 = lb0[pcol]; lb0[pcol] = v1;
+
+            for (int r = 0; r < DWR_MAX_K; r++)
+                for (int c = 0; c < DWR_MAX_K - 1; c++)
+                    window[r][c] = window[r][c + 1];
+            window[0][DWR_MAX_K - 1] = v0;
+            window[1][DWR_MAX_K - 1] = v1;
+            window[2][DWR_MAX_K - 1] = v2;
+            window[3][DWR_MAX_K - 1] = v3;
+            window[4][DWR_MAX_K - 1] = v4;
+            window[5][DWR_MAX_K - 1] = v5;
+            window[6][DWR_MAX_K - 1] = new_pixel;
+
+            for (int r = 0; r < DWR_MAX_K; r++)
+                for (int c = 0; c < DWR_MAX_K; c++)
+                    beat.window[r][c] = window[r][c];
+            taps.write(beat);
+
+            if (col_in_image) read_ptr++;
+        }
+    }
+}
+#else
+// Default path (DWR_INPUT_BURST undefined): direct in_base[] read, one
+// pixel per valid cycle inside this function's own PIPELINE II=1 COL
+// loop -- unchanged from before the DWR_INPUT_BURST attempt above. Real
+// board result confirmed this default path is not the mechanism worth
+// fixing (see DWR_INPUT_BURST's own comment) -- dwr_consume's achieved
+// II=8 is the real bottleneck, untouched by this file's own input side.
 static void dwr_produce(
     const act_t in_base[], int in_off, int ci, int in_ch_stride,
     int h_in, int w_in, int K, int S,
@@ -61,11 +201,7 @@ static void dwr_produce(
     const int pad   = K / 2;
     const int h_pad = h_in + 2 * pad;
     const int w_pad = w_in + 2 * pad;
-    const int ci_base = in_off + ci * in_ch_stride;  // computed ONCE per channel,
-                                                       // outside the raster loop; per-pixel
-                                                       // addressing below is a loop-carried
-                                                       // +1 accumulator, no runtime
-                                                       // row*w_in+col multiply.
+    const int ci_base = in_off + ci * in_ch_stride;
 
     int read_ptr = 0;
     int row_phase = 0;
@@ -137,6 +273,7 @@ static void dwr_produce(
         }
     }
 }
+#endif // DWR_INPUT_BURST
 
 // FAST path: 4 consecutive already-valid positions of the SAME channel,
 // packed into one contiguous store. SLOW path: the <4-element remainder
@@ -420,11 +557,51 @@ static void dwr_consume(
 }
 #endif
 
+#ifdef DWR_INPUT_BURST
+// ZHR-92 round (2026-09-07): whole-channel prefetch, deliberately OUTSIDE
+// any #pragma HLS DATAFLOW region (see run_dw_layer_raster below) --
+// bursts this channel's real (unpadded) plane from dw_in_burst
+// (bundle=gmem_act, same bundle as in_base) into ch_buf, chunked at
+// ELEMWISE_CHUNK_WORDS (1024 words/4KB), mirroring ELEMWISE_BURST's own
+// chunk size exactly. n_bytes is always mod4==0 for every real DW layer
+// (verified before implementing, not assumed -- see this file's own
+// header comment and DWR_CH_BUF_BYTES's comment in dw_raster_layer.h),
+// so no tail-byte handling is needed: every word maps to exactly 4 valid
+// bytes, unlike ELEMWISE_BURST's own (also-clean) mod4 case which still
+// carried defensive bounds per the same verification discipline.
+static void dwr_prefetch_channel(
+    hls::burst_maxi<ap_uint<32> > dw_in_burst,
+    int in_off, int ci, int in_ch_stride, int h_in, int w_in,
+    act_t ch_buf[DWR_CH_BUF_BYTES])
+{
+    const int n_bytes = h_in * w_in;
+    const int n_words  = n_bytes >> 2;
+    const int base_w   = (in_off + ci * in_ch_stride) >> 2;
+
+    DWR_PREFETCH_CHUNK: for (int base = 0; base < n_words; base += ELEMWISE_CHUNK_WORDS) {
+        int this_chunk = (n_words - base < ELEMWISE_CHUNK_WORDS) ? (n_words - base) : ELEMWISE_CHUNK_WORDS;
+        dw_in_burst.read_request(base_w + base, this_chunk);
+        DWR_PREFETCH_READ: for (int i = 0; i < ELEMWISE_CHUNK_WORDS; i++) {
+#pragma HLS PIPELINE II=1
+            if (i < this_chunk) {
+                ap_uint<32> w = dw_in_burst.read();
+                int byte_base = (base + i) * 4;
+                for (int k = 0; k < 4; k++) {
+#pragma HLS UNROLL
+                    ch_buf[byte_base + k] = (act_t)w.range(k * 8 + 7, k * 8);
+                }
+            }
+        }
+    }
+}
+#endif // DWR_INPUT_BURST
+
 void run_dw_layer_raster(
     const act_t in_base[],
     const wt_t  w_base[],
     const acc_t b_base[],
     act_t        out_base[],
+    hls::burst_maxi<ap_uint<32> > dw_in_burst,
     int cin, int cout, int h_in, int w_in,
     int K, int S, int pad, int fpg,
     int in_off, int w_off, int b_off, int out_off,
@@ -432,15 +609,30 @@ void run_dw_layer_raster(
     int in_ch_stride, int out_ch_stride, int h_out, int w_out)
 {
     (void)cout; (void)pad;
+#ifndef DWR_INPUT_BURST
+    (void)dw_in_burst;
+#endif
     const int p = K / 2;
     const int h_pad = h_in + 2 * p;
     const int w_pad = w_in + 2 * p;
 
+#ifdef DWR_INPUT_BURST
+    act_t ch_buf[DWR_CH_BUF_BYTES];
+#endif
+
     for (int ci = 0; ci < cin; ci++) {
+#ifdef DWR_INPUT_BURST
+        dwr_prefetch_channel(dw_in_burst, in_off, ci, in_ch_stride, h_in, w_in, ch_buf);
+#endif
+
         hls::stream<dwr_beat_t> taps;
 #pragma HLS STREAM variable=taps depth=2
 #pragma HLS DATAFLOW
+#ifdef DWR_INPUT_BURST
+        dwr_produce_burst(ch_buf, h_in, w_in, K, S, taps);
+#else
         dwr_produce(in_base, in_off, ci, in_ch_stride, h_in, w_in, K, S, taps);
+#endif
 #ifdef DWR_ENABLE_FPG_SPECIALIZATION
         if (fpg == 1) {
             dwr_consume_impl<1>(w_base, w_off, shift_off, b_base, b_off, ci, fpg, K,

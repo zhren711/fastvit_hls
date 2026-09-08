@@ -119,6 +119,22 @@
 #define MAC_ELEMWISE_OUT_BURST_LO  0xf4
 #define MAC_ELEMWISE_OUT_BURST_HI  0xf8
 
+/* ZHR-92 round (2026-09-07): dw_in_burst, dwr_prefetch_channel's own new
+ * burst_maxi<ap_uint<32>> port (DWR_INPUT_BURST) -- same "shared bundle
+ * (gmem_act) != shared control register" trap AGAIN, now a 4th confirmed
+ * instance (after out_burst, in_burst, elemwise_in_burst/out_burst).
+ * Wired up FRONT-LOADED this time, before any board attempt, specifically
+ * because the elemwise round shipped this exact gap to a real board hang
+ * despite flagging it in a comment in advance -- see that round's own
+ * "flagging a risk in a comment is not the same as handling it" lesson.
+ * Offset read directly from the fresh export's own xmac_array_top_hw.h
+ * (dw_input_burst_export/s1/impl/ip/drivers/.../xmac_array_top_hw.h),
+ * not guessed. Same physical DRAM region as in_base (run_dw_layer_raster's
+ * d.in_off is relative into that same buffer) -- host must write the SAME
+ * address into MAC_IN_BASE_* and MAC_DW_IN_BURST_*. */
+#define MAC_DW_IN_BURST_LO         0x100
+#define MAC_DW_IN_BURST_HI         0x104
+
 /* Must stay byte-layout-identical to fastvit_ip_v2/mac_array.h's
  * LayerDescV2 (int fields, same order) -- this is now what gets written
  * field-by-field into the MAC_DESC_BASE register block (was DMA'd into

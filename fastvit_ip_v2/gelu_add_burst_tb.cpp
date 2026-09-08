@@ -48,6 +48,7 @@ static bool run_gelu_case(const char *tag, int total, int out_shift) {
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(buf.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(buf.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(buf.data())),
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(buf.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(buf.data())));
 
     int mismatches = 0;
@@ -85,6 +86,7 @@ static bool run_add_case(const char *tag, int total, int out_shift) {
     int written = 0;
     mac_array_top(d, buf.data(), nullptr, nullptr, buf.data(), &written,
                   reinterpret_cast<const ap_uint<32>*>(buf.data()),
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(buf.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(buf.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(buf.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(buf.data())),
