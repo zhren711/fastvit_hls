@@ -1719,7 +1719,17 @@ supposedly standing in for.
   two architecturally very different builds suggests "several genuinely different, near-tied critical
   structures that swap places as HLS reschedules for a tighter target" may be a general property of
   how this whole design's timing closure behaves under pressure, not a coincidence tied to gmem_meta
-  specifically. Resources grew monotonically with tighter constraints as expected (LUT 81.03% ->
+  specifically. **CONFIRMED A SECOND TIME, 2026-09-12, at a FIXED 10ns constraint (not a frequency
+  sweep): the DW_OUTPUT_BURST 6th-port and port-reuse builds (route-only -0.418/-0.461ns) vs the
+  deployed baseline (-0.167ns) and the DWR_INPUT_BURST build (-0.103ns) all have byte-identical
+  `gmem_act` adapter RTL and structurally identical shared-multiplier operand muxes -- the whole WNS
+  spread is route delay (3.42 -> 3.65 -> 3.83ns, logic flat at 5.17-5.29ns) on two pre-existing
+  near-tied arms into the same sink (`run_layer`-FSM-sourced, 4 levels, vs `desc_op_type`-sourced,
+  6 levels) trading places under placement. So the phenomenon is not specific to tightening the
+  clock -- ANY netlist change reshuffles which near-tied arm is worst, with ~+-0.3ns of variance,
+  as long as the sink itself has zero margin. The fix that actually worked (same day, below) was
+  to shrink the sink's own operand mux, not to touch either arm.** Resources grew monotonically with
+  tighter constraints as expected (LUT 81.03% ->
   81.55% -> 83.67%, BRAM/DSP unchanged at every point) -- consistent with "tighter timing needs more
   pipeline stages," never itself the blocking factor at any of the 3 points (no DRC-level resource
   failure). **Verdict: 150MHz is NOT achievable on this RTL structure via HLS/Vivado clock-target
@@ -2791,14 +2801,56 @@ them against this build.
   root cause before a full export+P&R round was spent on it); (2) the pre-registered acceptance
   criterion being a specific, checkable netlist fact (not just "WNS improves") is what made this
   round's negative result decisive in one shot instead of ambiguous.
-  **Disposition: NOT resolved, awaiting a decision.** The working tree still carries the reuse form
-  as the DEFAULT DW writeout (not `#ifdef`-gated) -- either gate it OFF like `DWR_INPUT_BURST`, or
-  pursue the only lever this round's evidence actually supports: a SOURCE-LEVEL reduction of the
-  top-level shared multiplier's own operand path (e.g. hoist `total = cin*h_in*w_in` for
-  RELU/SIGMOID/GAP/SCALE to one unconditional computation before the op_type `switch`, or give the
-  top-level scalar ops their own multiplier via `INLINE off` instead of sharing with `run_layer`/
-  `run_gelu`), which would buy margin for EVERY future round on this line, not just this one. Not
-  attempted -- one round, one hypothesis.
+  **RESOLVED same day (2026-09-12), two steps in the order the user set -- gate first, then fix the
+  sink ALONE on the clean baseline, so the sink fix is a single-variable measurement:**
+  **Step 1 -- `DW_OUTPUT_BURST` gated OFF by default** (`dw_raster_layer.cpp/.h`, `_tb.cpp`,
+  `mac_array_raster_integrated.cpp`; the `out_burst_w` parameter, `dwr_writeout_packed`, its call,
+  AND the `wbuf` partition pragma -- which on its own never moved II -- all under the one macro, same
+  convention as `DWR_INPUT_BURST`). Verified the default build is source-identical to `8868355` (the
+  deployed baseline's source) apart from the gated blocks: `git diff 8868355` filtered to non-
+  comment, non-`#ifdef` lines shows only lines inside the gated blocks; isolated csynth of the
+  default build reproduces the baseline's CROW_CCOL achieved II=8. Disposition recorded in the
+  source comment: mechanism correct (II 8->2, all three resource axes down, csim clean in both
+  forms), blocked only by the baseline's zero timing margin on the shared-multiplier sink,
+  re-evaluate once that margin improves.
+  **Step 2 -- `SCALAR_OP_SIZE_HOIST`, real P&R route_design alone: WNS -0.167ns -> +0.138388ns
+  (+0.305ns), the first build on this line since `macpd4` to close WITHOUT `phys_opt_design`.**
+  The six scalar ops each computed their own element count inside their body (RELU/SIGMOID/GELU/ADD
+  `cin*h_in*w_in` = 2 multiplies each, GAP/SCALE `h_in*w_in` = 1 each: 10 multiply call sites, all
+  reachable only through the top-level op_type `switch`). Now `scalar_hw = h_in*w_in` and
+  `scalar_total = cin*scalar_hw` are computed ONCE, unconditionally, in `mac_array_top` before the
+  switch and passed in as `int` parameters (same technique as the earlier d.cin/d.cout -> scalar-
+  parameter change). Judgment in the pre-registered order: (1) binding DB (`mac_array_top.verbose.
+  bind.rpt`): the top's Multiplier opset went from 8 op_type-predicated size multiplies (`mul_ln1934`/
+  `total` @`op_type==4`, `mul_ln1965`/`total_5` @`op_type==5`, `HW`, `HW_1`) to exactly two
+  `Predicate = true` ops (`scalar_hw`, `scalar_total`) -- zero `desc_op_type` predicates on any
+  multiplier op; `run_gelu`/`run_add`'s own bind reports went 4 -> 0 Multiplier ops each; in the
+  exported RTL the shared 32x32 multiplier's operand mux went from 4 arms (run_layer, run_gelu, the
+  inline `desc_op_type == 4|5` compare arm, a registered-predicate arm) to 2 (run_layer, the
+  unconditional `w_in*h_in`), and one whole 32x32 multiplier instance disappeared (4 -> 3 units).
+  (2) csim 5/5 + 4/4 + 8/8 clean (`run_csim_sohoist_all.tcl`, all three real testbenches in one
+  session). (3) WNS above. (4) Real resources: LUT 44,054/53,200 (82.81%, -218 vs baseline's
+  44,272), BRAM 107 (flat), DSP 56 (-3 vs 59) -- down, as expected from fewer multiply sites.
+  **Where the margin came from, from the critical-path report, not inferred**: same sink
+  (`mul_32s_32s_32_2_1`), same source shape (`run_layer`'s FSM state, 4 logic levels), but data path
+  8.707 -> 8.251ns: LOGIC 5.287 -> 5.097 (one LUT6 in the operand mux became a LUT4 -- the mux is
+  narrower with 2 arms instead of 4) AND ROUTE 3.420 -> 3.154 (fewer arms, a smaller cone to place).
+  I.e. the improvement is in the sink's own structure, which is exactly why it should transfer to
+  future rounds instead of being another placement roll. Per the pre-registered decision rule
+  (">=0.2ns re-opens DW_OUTPUT_BURST; ~0.05ns means the bottleneck is not the operand side"), this
+  RE-OPENS `DW_OUTPUT_BURST` as the next single-variable round on top of this build. Not board-tested
+  this round (P&R measurement was the round's scope); NOT promoted to deployed baseline yet -- and
+  note a real coverage gap before any promotion: none of the three csim testbenches exercises
+  RELU/SIGMOID/GAP/SCALE, four of the six functions whose signature this round changed (GELU/ADD are
+  the directly-covered pair), so a board single-op pass on entries 75/77/79/80 (`board_test_entry75_
+  gap` etc., already built) is the required correctness check for those before promotion, in
+  addition to the usual full-network ONNX-cosine check.
+  **Lesson (adds to the "several near-tied arms swap places" record above): when a design's
+  critical path is a SHARED functional unit whose operand mux is fed from N call sites, the number
+  of arms in that mux is itself a timing lever independent of any one arm's own logic depth --
+  reducing call-site count (hoisting a computation to one unconditional site) shrank BOTH the logic
+  and the route delay on the sink. Check the sink's mux arm count in the exported RTL (the
+  `always @(*)` block driving `grp_fu_NNN_p0/p1`) before assuming the margin is "just placement."**
 - **OPEN, 2026-09-02: `accuracy_test_imgs_256/ckpt_hw_*_0000.bin` (the full-network checkpoint
   correctness reference `tools/compare_board_full_network_ckpts.py` compares real board dumps
   against) is currently WRONG/stale, and the last time it was known-good is uncertain.** Found while

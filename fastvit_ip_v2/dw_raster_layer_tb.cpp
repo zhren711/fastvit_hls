@@ -96,7 +96,9 @@ static bool run_case(const char *tag, int cin, int cout, int h_in, int w_in,
     run_dw_layer_raster(
         in_raster.data(), w_combined.data(), b_raster.data(), raster_out.data(),
         hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(in_raster.data())),
+#ifdef DW_OUTPUT_BURST
         hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(raster_out.data())),
+#endif
         cin, cout, h_in, w_in, k, stride, pad, fpg,
         /*in_off*/0, /*w_off*/0, /*b_off*/0, /*out_off*/0,
         /*shift_off*/(int)w_bytes.size(),

@@ -275,16 +275,20 @@ static void dwr_produce(
 }
 #endif // DWR_INPUT_BURST
 
-// SLOW path only (see dwr_writeout_packed below for the FAST path,
-// ZHR-92 round 2026-09-08): the <4-element remainder at the very end of
-// a channel's output plane -- kept for defensive completeness, but a
-// real, structural fact about this network, not a hypothetical: every
-// real DW layer's w_out is a power of two (8/16/32/64), so out_ch_stride
-// is always a multiple of 4 and this path NEVER FIRES on any real
-// dispatched shape (verified across all 25 real DW layers x every real
-// output channel, zero exceptions -- structural, not empirical). Same
-// dead-but-kept-for-non-network-shapes convention as WRITEOUT's own
-// slow path and `pw_cached`'s fallback arm.
+// FAST path (default, DW_OUTPUT_BURST undefined): 4 consecutive
+// already-valid positions of the SAME channel, packed into one contiguous
+// store -- HLS reports this as an inferred length-4 burst, but the real
+// scheduling report shows it as 4 elemental writereq+write+writeresp
+// triples on the shared gmem_act adapter (see DW_OUTPUT_BURST below).
+// SLOW path: the <4-element remainder at the very end of a channel's
+// output plane -- kept for defensive completeness; every real DW layer's
+// w_out is a power of two (8/16/32/64), so out_ch_stride is always a
+// multiple of 4 and the slow path NEVER FIRES on any real dispatched
+// shape (verified across all 25 real DW layers x every real output
+// channel, zero exceptions -- structural, not empirical). Same dead-but-
+// kept-for-non-network-shapes convention as WRITEOUT's own slow path and
+// `pw_cached`'s fallback arm. Both write identical bytes to identical
+// addresses.
 template<bool FAST>
 static void dwr_writeout_impl(act_t out_base[], int base_addr, int start, act_t vals[4], int n)
 {
@@ -293,7 +297,27 @@ static void dwr_writeout_impl(act_t out_base[], int base_addr, int start, act_t 
     }
 }
 
-// FAST path (ZHR-92 round, 2026-09-08, DW_OUTPUT_BURST): packs the 4
+#ifdef DW_OUTPUT_BURST
+// ZHR-92 round (2026-09-08..12): DW_OUTPUT_BURST (OFF by default --
+// MECHANISM CORRECT, BLOCKED BY BASELINE TIMING MARGIN, not rejected on
+// its own merits). Isolated csynth: CROW_CCOL achieved II 8 -> 2, LUT
+// -1,162 (-1.57%), BRAM/DSP flat; real P&R: LUT/BRAM/DSP all DOWN vs the
+// deployed baseline; csim clean 5/5 + 4/4 + 8/8 in both the 6th-port and
+// the port-reuse form. What blocks it: the deployed baseline already
+// sits at WNS -0.167ns route_design-alone on the top-level shared
+// multiplier sink (closing only via phys_opt to +0.017ns), and BOTH forms
+// of this mechanism landed worse there (-0.418 / -0.461ns) for a reason
+// that is NOT in the RTL (the gmem_act adapter and the shared-multiplier
+// operand muxes are byte-/structure-identical across baseline and both
+// forms -- verified by diffing the exported HDL, see CLAUDE.md
+// 2026-09-12): it is placement variance between two pre-existing
+// near-tied critical arms on a zero-headroom sink. Re-evaluate once that
+// sink's own margin is improved (the top-level scalar-op multiply hoist
+// is the first candidate). Gated OFF here with the same convention as
+// DWR_INPUT_BURST, so the default build is source-identical to the
+// deployed baseline.
+//
+// Mechanism: packs the 4
 // already-valid bytes in wbuf[g] into one ap_uint<32> word and issues a
 // single word write via out_burst_w, replacing 4 separate elemental
 // AXI writes with 1 -- the real scheduling report for the OLD
@@ -331,6 +355,7 @@ static void dwr_writeout_packed(hls::burst_maxi<ap_uint<32> > out_burst_w, int b
     out_burst_w.write(word);
     out_burst_w.write_response();
 }
+#endif // DW_OUTPUT_BURST
 
 #ifdef DWR_ENABLE_FPG_SPECIALIZATION
 // Option A -- ORIGINAL CLAIM (superseded, see correction below): true
@@ -478,7 +503,9 @@ static void dwr_consume(
     int ci, int fpg, int K,
     act_t out_base[], int out_off, int out_ch_stride,
     int h_pad, int w_pad,
+#ifdef DW_OUTPUT_BURST
     hls::burst_maxi<ap_uint<32> > out_burst_w,
+#endif
     hls::stream<dwr_beat_t> &taps)
 {
     wt_t weight_aligned[DWR_MAX_FPG][DWR_MAX_K][DWR_MAX_K];
@@ -535,7 +562,13 @@ static void dwr_consume(
     // 3 wbuf-specific violations (II 1->2->3); the 2 remaining gmem_act
     // violations (II 4->7) are a separate contention source (both lanes'
     // out_base writes sharing one AXI port), not touched by this step.
+    // Gated with DW_OUTPUT_BURST (2026-09-12): on its own it did NOT move
+    // achieved II (stayed 8 -- gmem_act was independently sufficient to
+    // demand it), so it only has a purpose alongside the packed write;
+    // keeping the default build source-identical to the deployed baseline.
+#ifdef DW_OUTPUT_BURST
 #pragma HLS ARRAY_PARTITION variable=wbuf complete dim=1
+#endif
     int   wbuf_n[DWR_MAX_FPG];
     int   write_ptr[DWR_MAX_FPG];
     for (int g = 0; g < DWR_MAX_FPG; g++) { wbuf_n[g] = 0; write_ptr[g] = 0; }
@@ -592,7 +625,11 @@ static void dwr_consume(
                         wbuf[g][wbuf_n[g]] = (act_t)v;
                         wbuf_n[g]++;
                         if (wbuf_n[g] == 4) {
+#ifdef DW_OUTPUT_BURST
                             dwr_writeout_packed(out_burst_w, base_addr + write_ptr[g], wbuf[g]);
+#else
+                            dwr_writeout_impl<true>(out_base, base_addr, write_ptr[g], wbuf[g], 4);
+#endif
                             write_ptr[g] += 4;
                             wbuf_n[g] = 0;
                         }
@@ -662,7 +699,9 @@ void run_dw_layer_raster(
     const acc_t b_base[],
     act_t        out_base[],
     hls::burst_maxi<ap_uint<32> > dw_in_burst,
+#ifdef DW_OUTPUT_BURST
     hls::burst_maxi<ap_uint<32> > out_burst_w,
+#endif
     int cin, int cout, int h_in, int w_in,
     int K, int S, int pad, int fpg,
     int in_off, int w_off, int b_off, int out_off,
@@ -704,7 +743,11 @@ void run_dw_layer_raster(
         }
 #else
         dwr_consume(w_base, w_off, shift_off, b_base, b_off, ci, fpg, K,
-                    out_base, out_off, out_ch_stride, h_pad, w_pad, out_burst_w, taps);
+                    out_base, out_off, out_ch_stride, h_pad, w_pad,
+#ifdef DW_OUTPUT_BURST
+                    out_burst_w,
+#endif
+                    taps);
 #endif
     }
 }

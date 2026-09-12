@@ -96,7 +96,12 @@ void run_dw_layer_raster(
     const acc_t b_base[],
     act_t        out_base[],
     hls::burst_maxi<ap_uint<32> > dw_in_burst,
+#ifdef DW_OUTPUT_BURST
+    /* ZHR-92 (2026-09-12): DW's packed word writeout reuses PW_FLAT's own
+     * out_burst port (no 6th gmem_act port, no new driver register). OFF
+     * by default -- see dw_raster_layer.cpp's DW_OUTPUT_BURST comment. */
     hls::burst_maxi<ap_uint<32> > out_burst_w,
+#endif
     int cin, int cout, int h_in, int w_in,
     int K, int S, int pad, int fpg,
     int in_off, int w_off, int b_off, int out_off,

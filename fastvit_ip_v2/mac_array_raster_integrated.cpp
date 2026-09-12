@@ -739,7 +739,8 @@ static void run_layer(const LayerDescV2 &d,
     // here down (PW's own dispatch, every shared helper) is untouched;
     // DW ops return before ever reaching it.
     if (d.op_type == LDESC_OP_DWCONV) {
-        /* ZHR-92 round (2026-09-11): DW's packed word writeout reuses
+        /* ZHR-92 round (2026-09-11/12): DW_OUTPUT_BURST (OFF by default,
+         * see dw_raster_layer.cpp) -- DW's packed word writeout reuses
          * PW_FLAT's own EXISTING out_burst port rather than declaring a
          * 6th write port on gmem_act. DW and PW are strictly mutually
          * exclusive -- this branch early-returns before any PW code runs,
@@ -752,7 +753,10 @@ static void run_layer(const LayerDescV2 &d,
          * than the port's own functional win was worth. See CLAUDE.md's
          * own "adding an m_axi port to an existing bundle is not free"
          * entry. */
-        run_dw_layer_raster(in_base, w_base, b_base, out_base, dw_in_burst, out_burst,
+        run_dw_layer_raster(in_base, w_base, b_base, out_base, dw_in_burst,
+#ifdef DW_OUTPUT_BURST
+                             out_burst,
+#endif
                              d.cin, d.cout, d.h_in, d.w_in,
                              d.k, d.stride, d.pad, d.fpg,
                              d.in_off, d.w_off, d.b_off, d.out_off,
@@ -1876,10 +1880,10 @@ static void run_layer(const LayerDescV2 &d,
  * tail handling: confirmed via real descriptors (all 27 real GELU/ADD
  * entries) that in_off/in2_off/out_off and total (=cin*h*w) are ALL
  * exactly mod4==0. */
-static void run_add(const LayerDescV2 &d,
+static void run_add(const LayerDescV2 &d, int total,
                      hls::burst_maxi<ap_uint<32> > in_burst, hls::burst_maxi<ap_uint<32> > out_burst)
 {
-    const int n_words   = (d.cin * d.h_in * d.w_in) >> 2;
+    const int n_words   = total >> 2;
     const int in_off_w  = d.in_off  >> 2;
     const int in2_off_w = d.in2_off >> 2;
     const int out_off_w = d.out_off >> 2;
@@ -1929,9 +1933,8 @@ static void run_add(const LayerDescV2 &d,
  * csim-level goal, but a synthesis-cost item to revisit later, not
  * solved now (matches the project's "don't optimize efficiency this
  * round" discipline). */
-static void run_gap(const LayerDescV2 &d, const act_t in_base[], act_t out_base[])
+static void run_gap(const LayerDescV2 &d, int HW, const act_t in_base[], act_t out_base[])
 {
-    const int HW = d.h_in * d.w_in;
     GAP_C: for (int c = 0; c < d.cin; c++) {
         acc_t sum = 0;
         GAP_HW: for (int i = 0; i < HW; i++) {
@@ -1943,9 +1946,8 @@ static void run_gap(const LayerDescV2 &d, const act_t in_base[], act_t out_base[
     }
 }
 
-static void run_relu(const LayerDescV2 &d, const act_t in_base[], act_t out_base[])
+static void run_relu(const LayerDescV2 &d, int total, const act_t in_base[], act_t out_base[])
 {
-    const int total = d.cin * d.h_in * d.w_in;
     RELU: for (int i = 0; i < total; i++) {
         #pragma HLS PIPELINE II=1
         act_t v = in_base[d.in_off + i];
@@ -1974,9 +1976,8 @@ static act_t quantized_sigmoid(act_t x)
     return (act_t)v;
 }
 
-static void run_sigmoid(const LayerDescV2 &d, const act_t in_base[], act_t out_base[])
+static void run_sigmoid(const LayerDescV2 &d, int total, const act_t in_base[], act_t out_base[])
 {
-    const int total = d.cin * d.h_in * d.w_in;
     SIGMOID: for (int i = 0; i < total; i++) {
         #pragma HLS PIPELINE II=1
         out_base[d.out_off + i] = quantized_sigmoid(in_base[d.in_off + i]);
@@ -2001,9 +2002,9 @@ static void run_sigmoid(const LayerDescV2 &d, const act_t in_base[], act_t out_b
  * burst shape -- chunked read+compute+write in one pass, no intermediate
  * buffer needed (unlike run_add's two-source case), 4 lanes unrolled per
  * word. */
-static void run_gelu(const LayerDescV2 &d, hls::burst_maxi<ap_uint<32> > in_burst, hls::burst_maxi<ap_uint<32> > out_burst)
+static void run_gelu(const LayerDescV2 &d, int total, hls::burst_maxi<ap_uint<32> > in_burst, hls::burst_maxi<ap_uint<32> > out_burst)
 {
-    const int n_words  = (d.cin * d.h_in * d.w_in) >> 2;
+    const int n_words  = total >> 2;
     const int in_off_w  = d.in_off  >> 2;
     const int out_off_w = d.out_off >> 2;
     GELU_CHUNK: for (int base = 0; base < n_words; base += ELEMWISE_CHUNK_WORDS) {
@@ -2032,9 +2033,8 @@ static void run_gelu(const LayerDescV2 &d, hls::burst_maxi<ap_uint<32> > in_burs
  * op1 (in2_off) is the C-length gate, broadcast over spatial -- confirmed
  * from tools/layer_dag_ground_truth.json: final_conv's node has fan_out=2,
  * feeding both ReduceMean AND this Mul directly from the same tensor. */
-static void run_scale(const LayerDescV2 &d, const act_t in_base[], act_t out_base[])
+static void run_scale(const LayerDescV2 &d, int HW, const act_t in_base[], act_t out_base[])
 {
-    const int HW = d.h_in * d.w_in;
     SCALE_C: for (int c = 0; c < d.cin; c++) {
         act_t gate = in_base[d.in2_off + c];
         SCALE_HW: for (int i = 0; i < HW; i++) {
@@ -2258,13 +2258,40 @@ void mac_array_top(
      * gone now (option F, desc/out_written moved to s_axilite, see the
      * function-header comment above), so this whole distance-to-run_layer
      * problem is moot for desc, not just mitigated. */
+    /* ZHR-92 round (2026-09-12): SCALAR_OP_SIZE_HOIST -- the six scalar
+     * ops used to each compute their own element count inside their own
+     * body (RELU/SIGMOID/GELU/ADD: cin*h_in*w_in, two multiplies each;
+     * GAP/SCALE: h_in*w_in, one each -- 10 multiply call sites total),
+     * every one of them reachable only through this op_type switch. HLS
+     * bound them onto the top-level shared 32x32 multiplier
+     * (mul_32s_32s_32_2_1, shared with run_layer and run_gelu) and put
+     * the op_type test INTO the multiplier's operand mux -- one arm gated
+     * by an inline 32-bit `desc_op_type == 4 | == 5` compare
+     * (cin*w_in), another by FSM state (w_in*h_in) -- confirmed by
+     * reading the exported RTL's own mux blocks, not inferred. That sink
+     * is the critical path of every thin-margin build on this line
+     * (deployed baseline: -0.167ns route_design-alone, only closes via
+     * phys_opt), and the 2026-09-12 port-reuse round showed two
+     * pre-existing near-tied arms into it swapping places under
+     * placement with ~0.3ns of variance -- i.e. the zero margin is in the
+     * sink itself, not in whatever the round changed. Computing hw and
+     * total ONCE here, unconditionally (2 multiplies, no op_type
+     * predicate on either), and passing them in as scalar parameters
+     * (same technique as the earlier d.cin/d.cout -> scalar-parameter
+     * change) removes all 10 op_type-gated call sites from the shared
+     * multiplier's opset -- verified against the binding database, see
+     * CLAUDE.md. Done as its own single-variable round on the deployed
+     * baseline (DW_OUTPUT_BURST OFF) so its effect on that sink's margin
+     * is measured cleanly. */
+    const int scalar_hw    = desc.h_in * desc.w_in;
+    const int scalar_total = desc.cin * scalar_hw;
     switch (desc.op_type) {
-        case LDESC_OP_ADD:     run_add(desc, elemwise_in_burst, elemwise_out_burst); break;
-        case LDESC_OP_GAP:     run_gap(desc, in_base, out_base); break;
-        case LDESC_OP_RELU:    run_relu(desc, in_base, out_base); break;
-        case LDESC_OP_SIGMOID: run_sigmoid(desc, in_base, out_base); break;
-        case LDESC_OP_SCALE:   run_scale(desc, in_base, out_base); break;
-        case LDESC_OP_GELU:    run_gelu(desc, elemwise_in_burst, elemwise_out_burst); break;
+        case LDESC_OP_ADD:     run_add(desc, scalar_total, elemwise_in_burst, elemwise_out_burst); break;
+        case LDESC_OP_GAP:     run_gap(desc, scalar_hw, in_base, out_base); break;
+        case LDESC_OP_RELU:    run_relu(desc, scalar_total, in_base, out_base); break;
+        case LDESC_OP_SIGMOID: run_sigmoid(desc, scalar_total, in_base, out_base); break;
+        case LDESC_OP_SCALE:   run_scale(desc, scalar_hw, in_base, out_base); break;
+        case LDESC_OP_GELU:    run_gelu(desc, scalar_total, elemwise_in_burst, elemwise_out_burst); break;
         default:                run_layer(desc, in_base, w_base, b_base, out_base, in_base_wide, out_burst, in_burst, dw_in_burst); break;
     }
     *out_written = 1;
