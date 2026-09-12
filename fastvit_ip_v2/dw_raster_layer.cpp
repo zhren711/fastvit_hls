@@ -275,16 +275,61 @@ static void dwr_produce(
 }
 #endif // DWR_INPUT_BURST
 
-// FAST path: 4 consecutive already-valid positions of the SAME channel,
-// packed into one contiguous store. SLOW path: the <4-element remainder
-// at the very end of a channel's output plane. Both write the identical
-// bytes to the identical addresses.
+// SLOW path only (see dwr_writeout_packed below for the FAST path,
+// ZHR-92 round 2026-09-08): the <4-element remainder at the very end of
+// a channel's output plane -- kept for defensive completeness, but a
+// real, structural fact about this network, not a hypothetical: every
+// real DW layer's w_out is a power of two (8/16/32/64), so out_ch_stride
+// is always a multiple of 4 and this path NEVER FIRES on any real
+// dispatched shape (verified across all 25 real DW layers x every real
+// output channel, zero exceptions -- structural, not empirical). Same
+// dead-but-kept-for-non-network-shapes convention as WRITEOUT's own
+// slow path and `pw_cached`'s fallback arm.
 template<bool FAST>
 static void dwr_writeout_impl(act_t out_base[], int base_addr, int start, act_t vals[4], int n)
 {
     for (int i = 0; i < n; i++) {
         out_base[base_addr + start + i] = vals[i];
     }
+}
+
+// FAST path (ZHR-92 round, 2026-09-08, DW_OUTPUT_BURST): packs the 4
+// already-valid bytes in wbuf[g] into one ap_uint<32> word and issues a
+// single word write via out_burst_w, replacing 4 separate elemental
+// AXI writes with 1 -- the real scheduling report for the OLD
+// dwr_writeout_impl<true> path showed each "length-4 burst" was in fact
+// 4 independent writereq+write+writeresp triples on the shared gmem_act
+// adapter (confirmed via .verbose.sched.rpt, not assumed from the burst-
+// inference message alone -- see CLAUDE.md's own "HLS burst wording vs.
+// actual RTL behavior" entry, prompted by this exact finding). Packing
+// reduces the elemental-transaction count 8->2 (2 lanes x 1 word each),
+// the only lever that changes what the shared adapter actually has to
+// accept per cycle -- lane-sequentialization (attempted-then-refuted
+// this same round) only reorders the same 8 transactions, it doesn't
+// reduce their count.
+//
+// Alignment verified structurally before implementing, not assumed (see
+// dwr_writeout_impl's own comment above): every real DW layer's w_out is
+// a multiple of 4, making out_ch_stride always a multiple of 4 and every
+// real (co, write_ptr) address mod4==0 -- checked across all 25 real DW
+// layers x every real output channel, zero exceptions. out_burst_w is
+// ap_uint<32>-typed, matching the bundle's existing 32-bit burst_maxi
+// ports (out_burst/in_burst/elemwise_*_burst/dw_in_burst) -- the crash
+// class this project hit once (ELEMWISE_BURST, 2026-09-06) is triggered
+// by two DIFFERENT-WIDTH burst_maxi ports sharing one bundle, not by a
+// plain pointer (out_base, act_t) coexisting with a burst_maxi of any
+// width, which this whole architecture already does throughout (see
+// CLAUDE.md's own corrected scope on this).
+static void dwr_writeout_packed(hls::burst_maxi<ap_uint<32> > out_burst_w, int base_addr, act_t vals[4])
+{
+    ap_uint<32> word = 0;
+    for (int k = 0; k < 4; k++) {
+#pragma HLS UNROLL
+        word.range(k * 8 + 7, k * 8) = (ap_uint<8>)vals[k];
+    }
+    out_burst_w.write_request(base_addr >> 2, 1);
+    out_burst_w.write(word);
+    out_burst_w.write_response();
 }
 
 #ifdef DWR_ENABLE_FPG_SPECIALIZATION
@@ -433,6 +478,7 @@ static void dwr_consume(
     int ci, int fpg, int K,
     act_t out_base[], int out_off, int out_ch_stride,
     int h_pad, int w_pad,
+    hls::burst_maxi<ap_uint<32> > out_burst_w,
     hls::stream<dwr_beat_t> &taps)
 {
     wt_t weight_aligned[DWR_MAX_FPG][DWR_MAX_K][DWR_MAX_K];
@@ -476,6 +522,20 @@ static void dwr_consume(
     }
 
     act_t wbuf[DWR_MAX_FPG][4];
+    // ZHR-92 round (2026-09-08): DWR_WBUF_PARTITION step -- wbuf had no
+    // ARRAY_PARTITION pragma at all (unlike weight_aligned, complete
+    // dim=0 above), and csynth's own II Violation diagnostic named it
+    // directly 3 times ("Unable to schedule 'load'/'store' operation...
+    // on array 'wbuf' due to limited memory ports") -- the classic
+    // "array touched by multiple simultaneous accesses needs
+    // partitioning" pattern this project has fixed cheaply before
+    // (line-buffer probe, DSP-pack-array probe). complete dim=1 gives
+    // each of the 2 DWR_MAX_FPG lanes its own physical memory -- 8
+    // elements total, expected near-zero resource cost. Targets ONLY the
+    // 3 wbuf-specific violations (II 1->2->3); the 2 remaining gmem_act
+    // violations (II 4->7) are a separate contention source (both lanes'
+    // out_base writes sharing one AXI port), not touched by this step.
+#pragma HLS ARRAY_PARTITION variable=wbuf complete dim=1
     int   wbuf_n[DWR_MAX_FPG];
     int   write_ptr[DWR_MAX_FPG];
     for (int g = 0; g < DWR_MAX_FPG; g++) { wbuf_n[g] = 0; write_ptr[g] = 0; }
@@ -532,7 +592,7 @@ static void dwr_consume(
                         wbuf[g][wbuf_n[g]] = (act_t)v;
                         wbuf_n[g]++;
                         if (wbuf_n[g] == 4) {
-                            dwr_writeout_impl<true>(out_base, base_addr, write_ptr[g], wbuf[g], 4);
+                            dwr_writeout_packed(out_burst_w, base_addr + write_ptr[g], wbuf[g]);
                             write_ptr[g] += 4;
                             wbuf_n[g] = 0;
                         }
@@ -602,6 +662,7 @@ void run_dw_layer_raster(
     const acc_t b_base[],
     act_t        out_base[],
     hls::burst_maxi<ap_uint<32> > dw_in_burst,
+    hls::burst_maxi<ap_uint<32> > out_burst_w,
     int cin, int cout, int h_in, int w_in,
     int K, int S, int pad, int fpg,
     int in_off, int w_off, int b_off, int out_off,
@@ -643,7 +704,7 @@ void run_dw_layer_raster(
         }
 #else
         dwr_consume(w_base, w_off, shift_off, b_base, b_off, ci, fpg, K,
-                    out_base, out_off, out_ch_stride, h_pad, w_pad, taps);
+                    out_base, out_off, out_ch_stride, h_pad, w_pad, out_burst_w, taps);
 #endif
     }
 }

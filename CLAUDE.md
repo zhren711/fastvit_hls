@@ -2398,9 +2398,20 @@ them against this build.
   expecting a 32-bit write / `Broken module found, compilation aborted!` -- a 2nd confirmed instance
   of this project's internal-compiler-crash class (after the 2026-08-24 burst_maxi same-bundle probe),
   a DIFFERENT trigger this time: mixing an 8-bit burst_maxi port onto the SAME bundle as the EXISTING
-  32-bit `out_burst`/`in_burst` ports. This is NOT the same case as the already-proven "plain pointer +
-  burst_maxi share a bundle" precedent -- the plain pointer's own width already matches the bundle's
-  dominant 32-bit width; a genuinely DIFFERENT-width burst_maxi does not. Fixed by making
+  32-bit `out_burst`/`in_burst` ports.
+  **CORRECTED, 2026-09-08 (DWR_INPUT_BURST/DW output-writeout round): the scope stated here was
+  imprecise and would have misfired on a later round if taken literally.** This is NOT "plain pointer
+  + burst_maxi sharing a bundle is safe only because the pointer happens to match the bundle's 32-bit
+  width" -- checked directly: `in_base` is `act_t*` (8-bit), not 32-bit, and it has coexisted with
+  32-bit `in_burst`/`out_burst`/`elemwise_*_burst`/`dw_in_burst` on `bundle=gmem_act` throughout this
+  entire session with zero crashes. **The real, narrower trigger is specifically two DIFFERENT-WIDTH
+  `hls::burst_maxi` PORTS sharing one bundle -- a plain pointer of ANY width coexisting with a
+  `burst_maxi` of ANY width on the same bundle has never crashed, at any point in this project's
+  history.** Before citing this crash as a reason to avoid a new plain-pointer-plus-burst_maxi
+  combination, check which of the two actual triggers applies -- conflating them would incorrectly
+  block combinations (like this session's own default architecture) that are already proven safe.
+  Original entry's own fix was correct regardless (making the new port 32-bit rather than 8-bit) --
+  only the STATED reason for why it was needed was imprecise. Fixed by making
   `elemwise_in_burst`/`elemwise_out_burst` `ap_uint<32>`-typed (matching the bundle) with 4-byte pack/
   unpack inside `run_gelu`/`run_add` (4 lanes unrolled per word -- a bonus 4x-per-cycle parallelism
   neither the old design nor the pre-registration accounted for) -- verified SAFE first, per this
@@ -2606,6 +2617,188 @@ them against this build.
   direct `in_base[]` read (re-verified csim-clean: 5/5, 4/4, 8/8, matching pre-round behavior exactly).
   **Practical consequence for any future DW timing work on this line: target `dwr_consume`'s own
   achieved II=8, not the input read.**
+  **FOLLOW-UP, 2026-09-08, same investigation: `wbuf`'s own II Violations (3 of the original 5)
+  were fixed cheaply and cleanly (`#pragma HLS ARRAY_PARTITION variable=wbuf complete dim=1`, +0.21%
+  LUT, zero BRAM/DSP, csim clean 5/5+4/4+8/8) -- but achieved II stayed at 8, not 7.** Re-running
+  csynth after the fix showed all 5 remaining violations were now `gmem_act` (previously only 2 of
+  5), confirming `gmem_act` was independently sufficient to demand the full II=8 the whole time --
+  `wbuf` was a second, separately-fixable bottleneck that happened to sit at the same ceiling, not a
+  partial contributor whose removal should have dropped II proportionally. **New standing lesson:
+  when multiple II-violation sources coexist in one diagnostic, eliminating one does NOT necessarily
+  reduce achieved II -- a source that appears at only SOME attempted-II levels may simply be masked
+  by another source's earlier failure at those same levels, not because it's a minor contributor.
+  Re-check the full violation list after each fix, don't assume proportional improvement.**
+  **DECISIVE FOLLOW-UP, same day: pulled the actual scheduling report (`.verbose.sched.rpt`) before
+  implementing the pre-registered "sequentialize the two lanes' writes" fix, and it refuted the whole
+  premise.** `dwr_writeout_impl`'s own "length-4 burst" (confirmed via `burst.xml`'s "Sequential
+  write of length 4 has been inferred", `BurstInferredPassed`) is **not a true wide/coalesced AXI
+  burst at the RTL level** -- the schedule shows it decomposed into 4 SEPARATE elemental
+  `writereq`+`write`+`writeresp` triples (one per byte), each going through the SAME shared,
+  single-accept-per-cycle `m_axi` adapter core (Core 111, "Adapter" type, II=1, but per-op latencies
+  `writereq`=9/`write`=5/`writeresp`=3 cycles). Counted 8 distinct `gmem_act` addresses computed per
+  beat when both g-lanes flush (2 lanes x 4 elements) -- achieved II=8 lines up EXACTLY with "8
+  elemental transactions, 1 accepted per cycle," not with "2 lanes x a 4-cycle burst." **This means
+  the planned fix (write all of lane g=0's 4 elements, then lane g=1's) would NOT reduce achieved
+  II at all -- it only reorders WHEN the 8 elemental transactions happen, not how many the shared
+  adapter must accept.** Not implemented -- the arithmetic itself was the stop condition, checked
+  BEFORE writing any code, per this project's own established "check before implementing" discipline
+  now applied a 3rd time on this same investigation (input-read alignment, wbuf fix, and now this).
+  **STANDING LESSON: an HLS diagnostic's own "burst inferred" wording (`BurstInferredPassed`,
+  "Sequential write of length N") describes that a LOOP-LEVEL access pattern was recognized as
+  burst-*eligible*, not that the RTL scheduler actually emits one wide, coalesced AXI transfer at
+  that length -- whether it does is a separate question the SCHEDULING report answers, not the
+  burst-inference report. This is another instance of this project's own "tool wording vs. actual
+  RTL behavior" class of finding (same family as `export_design`'s stale-cache reuse and `vitis_hls`'s
+  misleading exit code) -- before assuming a "burst inferred" message means N elements move in a
+  single wide transfer, check the actual per-operation schedule for the real number of AXI
+  transactions it produces.**
+  **PIVOT, same day: word-packing is the real lever (reduces the elemental-transaction COUNT, the
+  actual bottleneck this round's own scheduling-report read identified) -- matches the ELEMWISE_BURST/
+  ROW_READ precedent exactly (4 bytes packed into one `ap_uint<32>` write, since `wbuf[DWR_MAX_FPG][4]`
+  is already naturally 4-element-sized). Pre-implementation checks (alignment, bit-width) in progress,
+  same discipline as the prior two rounds on this investigation -- not yet implemented as of this
+  entry.**
+  **IMPLEMENTED, 2026-09-08/09 (DW_OUTPUT_BURST) -- csynth result is a clean win on BOTH axes:
+  achieved II 8 -> 2 exactly as predicted, AND isolated LUT went DOWN 1,162 (-1.57%), not up.**
+  New `dw_out_burst` port (`ap_uint<32>`, 6th burst_maxi on `bundle=gmem_act`) + `dwr_writeout_packed`
+  packs `wbuf[g]`'s 4 bytes into one word write, replacing the OLD `dwr_writeout_impl<true>`'s 4
+  elemental AXI writes. Alignment verified structurally before implementing (every real DW layer's
+  `w_out` is a power of two (8/16/32/64) => `out_ch_stride` always a multiple of 4 => every real
+  `(co, write_ptr)` address mod4==0, all 25 layers x every real output channel, zero exceptions;
+  the SLOW/remainder path is therefore DEAD CODE on every real dispatched shape, kept only for
+  non-network shapes, same convention as WRITEOUT's own slow path). csim clean 5/5 + 4/4 + 8/8.
+  Burst confirmed (`ManualBurstInstancePassed`, Length=1, Width=32). Resource delta vs the
+  elemwise_burst-only baseline: **LUT 73,929 -> 72,767 (-1,162/-1.57%), FF -324, BRAM/DSP exactly
+  flat** -- the new adapter's own ~657 LUT cost was MORE than offset by removing the old path's
+  auto-inferred-burst control logic (address tracking + FIFO handling for what HLS reported as a
+  length-4 burst but actually scheduled as 4 separate req/write/resp triples). No stop condition
+  triggered; the pre-registered elemwise-port-sharing fallback (share one burst_maxi port between
+  GELU/ADD and DW, since their use is mutually exclusive) was never needed -- recorded as an untested
+  idea for a future round, not evaluated here.
+  **NEW STANDING RULE: `HLS 200-885` and `HLS 200-880` are qualitatively different II-violation
+  classes and should be read differently.** `200-885` ("Unable to schedule ... due to limited memory
+  ports") is a RESOURCE-CONTENTION violation -- it means more ports/partitioning/fewer simultaneous
+  accesses could still improve II, i.e. there is headroom left. `200-880` ("Unable to enforce a
+  carried dependence constraint (II = N, distance = ..., offset = ...)") is a genuine ORDERING
+  dependency -- the operations cannot overlap regardless of resources, so the achieved II is the
+  STRUCTURAL MINIMUM for that code shape, not a scheduler compromise. This round's own transition
+  demonstrates it concretely: before word-packing, `CROW_CCOL` showed `200-885` on `gmem_act` at
+  achieved II=8 (resource contention, 8 elemental writes on a 1-accept-per-cycle adapter -- real
+  headroom, which packing then captured); after packing, it shows `200-880` at achieved II=2 (two
+  single-word writes to the same port genuinely cannot issue in the same cycle -- no headroom left
+  without a second physical AXI port). **On seeing `200-880`, stop trying resource-side fixes
+  (partitioning, port widening, access-count reduction) for that specific violation -- they cannot
+  help; only a structural change (a genuinely separate port, or removing one of the two dependent
+  operations) can.**
+  **REAL P&R, 2026-09-09: STOP-LOSS TRIGGERED -- the mechanism works but this build does not close
+  timing. route_design alone came back WNS=-0.418053ns**, outside both this round's own pre-registered
+  `-0.2ns` gate for attempting `phys_opt_design` AND this file's own established
+  "-0.3 to -0.5ns => needs a real source-level diagnosis, not a phys_opt attempt" band. `phys_opt`
+  was therefore NOT attempted (the pre-registered stop condition was honored, not overridden); no
+  bitstream deployed, board untouched, still on `mac_array_a3_elemwise_burst`.
+  **The striking part: real resources went DOWN on all three axes and timing STILL degraded.**
+  LUT 44,272 (83.22%) -> 43,992 (82.69%), delta -280/-0.63%; BRAM 107 -> 106.5 tiles; DSP 59 ->
+  59, exactly flat -- yet WNS went from the baseline's own route_design-alone -0.166790ns to
+  -0.418053ns, a -0.251ns degradation. Critical path was confirmed IDENTICAL to the pre-existing
+  mechanism (`desc_op_type_reg[24]` -> `mul_32s_32s_32_2_1_U1510/buff0_reg/PCIN`, 8.899ns data path,
+  59.0% logic / 41.0% route, all top-10 paths the same shape) -- **the new DW write logic appears
+  nowhere in the critical path**; the RTL restructuring (removing the old auto-inferred-burst control
+  logic, adding a 6th AXI adapter to the same bundle) evidently steered placement worse on that
+  already-marginal shared-multiplier path, independent of the aggregate resource win. This is a
+  clean, unusually stark instance of this file's own "LUT occupancy percentage does not predict WNS
+  direction" rule -- previous instances compared DIFFERENT builds at different occupancies; this one
+  is the same design getting strictly CHEAPER on every resource axis and strictly WORSE on timing,
+  which is a stronger form of the same finding.
+  **10th isolated-vs-real data point**: isolated csynth predicted LUT -1,162 (-1.57%); real P&R
+  delivered -280 (-0.63%) -- correct DIRECTION this time (unlike several prior instances), but ~2.4x
+  smaller in magnitude. Consistent with this file's own "direction-agnostic unreliable, don't plan a
+  budget around the magnitude" framing.
+  **Net position: II 8->2 is real and confirmed (csynth), the resource win is real and confirmed
+  (real P&R), csim is clean (5/5 + 4/4 + 8/8), the driver registers are wired (offsets read from the
+  fresh export, every pre-existing constant verified unshifted one-by-one) -- but the build cannot be
+  deployed as-is.** Closing it would need either a source-level fix on the pre-existing
+  `mul_32s_32s_32_2_1` shared-multiplier path (a mechanism this file already documents extensively,
+  and which has been the binding critical path on nearly every thin-margin build on this line) or
+  accepting that the DW II win is not bankable at the current placement margin. Not decided as of
+  this entry -- reported, not pursued further, per this project's own one-round discipline.
+  **ROOT-CAUSED, 2026-09-10, via the mature diagnostic flow (critical-path report + binding database
+  + baseline comparison) -- and the result RULED OUT the fix that was expected to apply.** The
+  accumulator-replaces-`index*stride` fix (this project's most-used timing lever, 5+ successful
+  applications including PW_WCHUNK's own -2.264ns -> +0.134ns recovery) has **nothing to target
+  here**: compared the FULL multiply-operation set in the binding database (`*.verbose.bind.rpt`'s
+  own opset, not the summary `.bind.rpt`) between the baseline and this build, in both `dwr_consume3`
+  (7 multiplies each, identical shapes -- `co_1`, `mul120_i`, `mul120_1_i`, plus K/bound-related,
+  only line numbers shifted) and `run_layer` (7 multiplies each, identical shapes) -- **zero new
+  multiply call sites introduced by this round.** `dwr_writeout_packed` receives `base_addr`
+  already computed and only does `base_addr >> 2` (a shift, not a multiply), so it adds no
+  `index*stride` site at all.
+  **The REAL mechanism, and this project's first PRECISE observation of the hidden cost of adding an
+  AXI port (previously only the crude datapoint that gmem_act_wide's own 5th master cost ~0.4ns of
+  WNS, mechanism unknown): the 6th write port on `gmem_act` widened the store unit's own
+  write-request FIFO and deepened its arbitration logic, and that logic landed directly on the
+  already-marginal path feeding the shared multiplier.** Direct evidence, not inference: this build's
+  critical path routes through `gmem_act_m_axi_U/store_unit_0/fifo_wreq/U_fifo_srl/`**`mem_reg[5][65]`**
+  -- 65 bits wide -- while the DWR_INPUT_BURST build's own report (one fewer write port on the same
+  bundle) shows **`mem_reg[5][64]`**, 64 bits. The baseline `elemwise_burst` path does not traverse
+  the store unit at all. Logic levels went 4 -> 6 (baseline: DSP48E1=1/LUT2=1/LUT6=2; this build:
+  DSP48E1=1/LUT4=2/LUT5=2/LUT6=1), and the path SOURCE changed from `run_layer`'s own FSM state
+  register to a `desc_op_type` register feeding that FIFO. **[RETRACTED 2026-09-12 -- see the port-reuse entry directly below: the adapter RTL is byte-identical across builds, `[64]`/`[65]` was a bit index, not a width.] Practical rule going forward (WRONG, do not cite): adding an
+  m_axi port to an existing bundle is NOT free even when it adds no new master and no new logic of
+  its own -- it widens the shared adapter's request-FIFO and arbitration logic, which on a design
+  whose critical path already runs near zero margin can cost more timing than the port's own
+  functional win. Check the store-unit FIFO width (`mem_reg[N][W]` in the timing report) before and
+  after when adding a port to a bundle that already has several.**
+  **PORT-REUSE ATTEMPT RUN AND REFUTED, 2026-09-12 -- and the 2026-09-10 "6th port widened the
+  store-unit FIFO" root cause above is RETRACTED, with direct evidence.** Passed `out_burst`
+  (PW_FLAT's existing write port) into `run_dw_layer_raster` instead of declaring `dw_out_burst`
+  (DW and PW strictly mutually exclusive; no new driver register -- the exported `xmac_array_top_hw.h`
+  ends at `DW_IN_BURST 0x100`, identical to HEAD's driver). csim clean (5/5 + 4/4 + 8/8); isolated
+  csynth: `CROW_CCOL` achieved II=2 preserved, single `200-880`, LUT 72,639 (-128 vs the 6th-port
+  build, -1,290 vs baseline); fresh export (`dw_out_reuse_export`, no `dw_out_burst` in the HDL).
+  **Real P&R (route_design alone): WNS=-0.461078ns -- WORSE than the 6th-port build's -0.418 and
+  the baseline's -0.167.** LUT 43,938/53,200 (82.59%, -334 vs baseline), BRAM 106.5, DSP 59. Outside
+  the ~-0.2ns `phys_opt_design` band -> not attempted, per the pre-registered stop; bitstream built
+  but NOT deployed, board untouched.
+  **Acceptance criterion failed in the most informative way: the timing report STILL shows
+  `mem_reg[5][65]` with the port count back at the baseline's value.** Chased that down in the
+  exported RTL: `mac_array_top_gmem_act_m_axi.v` is BYTE-IDENTICAL (`diff` = 0 lines) across all four
+  builds -- baseline (`elemwise_burst`), DWR_INPUT_BURST (`[64]`), 6th-port (`[65]`), reuse (`[65]`).
+  `fifo_wreq`'s `DATA_WIDTH` is a fixed `USER_AW + 32` regardless of how many `burst_maxi`/pointer
+  arguments share the bundle -- HLS emits ONE adapter per bundle and its width does not depend on the
+  port count at all. `mem_reg[i][j]` in an SRL FIFO is depth-slot i, BIT j: `[64]` vs `[65]` was which
+  bit of the same-width FIFO the critical path happened to route through, not a width change. **The
+  "adding an m_axi port to an existing bundle widens the shared adapter's request FIFO" rule above is
+  wrong and must not be cited; the only real cost of an extra port on a bundle is its own control
+  register (the shared-bundle != shared-register trap) and whatever placement perturbation the
+  changed netlist causes.** Went one step further to make sure nothing structural was missed: the
+  top-level shared 32x32 multipliers' operand-mux blocks (the sink of every thin-margin critical path
+  on this line), normalized for unit/line numbers, are ALSO identical between baseline and reuse --
+  same arms, same inline `desc_op_type == 4|5` compare on one unit, same registered-predicate arms on
+  the other. The baseline's worst path is the FSM-sourced 4-logic-level arm (-0.167); the three
+  post-DWR_INPUT_BURST builds' worst path is the `desc_op_type`-sourced 6-logic-level arm (-0.103 /
+  -0.418 / -0.461). Both arms exist in every build; logic delay is flat across all four (5.17-5.29ns),
+  the whole spread is ROUTE delay (3.42 -> 3.65 -> 3.83ns). **Conclusion: the packed-write builds'
+  timing loss is not attributable to any identified RTL change on the critical structures -- it is
+  the already-documented "several near-tied critical paths swap places" behavior of this design (see
+  the 150MHz sweep entry), with placement variance of roughly +-0.3ns on the shared-multiplier sink
+  between builds whose relevant RTL is identical.** The DW II 8->2 mechanism itself is sound and
+  cheaper on every resource axis; what blocks it is that the deployed baseline already sits at
+  -0.167 route-only on this same sink with zero headroom, so any netlist change is a coin flip on
+  this path.
+  **Two lessons, both process-level:** (1) a netlist NAME in a timing report (`mem_reg[5][65]`) is
+  not a structural claim -- before attributing a timing change to "widened/deepened X," diff the
+  generated RTL for X between the builds (a 10-second check that would have refuted the 2026-09-10
+  root cause before a full export+P&R round was spent on it); (2) the pre-registered acceptance
+  criterion being a specific, checkable netlist fact (not just "WNS improves") is what made this
+  round's negative result decisive in one shot instead of ambiguous.
+  **Disposition: NOT resolved, awaiting a decision.** The working tree still carries the reuse form
+  as the DEFAULT DW writeout (not `#ifdef`-gated) -- either gate it OFF like `DWR_INPUT_BURST`, or
+  pursue the only lever this round's evidence actually supports: a SOURCE-LEVEL reduction of the
+  top-level shared multiplier's own operand path (e.g. hoist `total = cin*h_in*w_in` for
+  RELU/SIGMOID/GAP/SCALE to one unconditional computation before the op_type `switch`, or give the
+  top-level scalar ops their own multiplier via `INLINE off` instead of sharing with `run_layer`/
+  `run_gelu`), which would buy margin for EVERY future round on this line, not just this one. Not
+  attempted -- one round, one hypothesis.
 - **OPEN, 2026-09-02: `accuracy_test_imgs_256/ckpt_hw_*_0000.bin` (the full-network checkpoint
   correctness reference `tools/compare_board_full_network_ckpts.py` compares real board dumps
   against) is currently WRONG/stale, and the last time it was known-good is uncertain.** Found while

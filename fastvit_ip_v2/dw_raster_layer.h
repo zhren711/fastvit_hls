@@ -96,6 +96,7 @@ void run_dw_layer_raster(
     const acc_t b_base[],
     act_t        out_base[],
     hls::burst_maxi<ap_uint<32> > dw_in_burst,
+    hls::burst_maxi<ap_uint<32> > out_burst_w,
     int cin, int cout, int h_in, int w_in,
     int K, int S, int pad, int fpg,
     int in_off, int w_off, int b_off, int out_off,

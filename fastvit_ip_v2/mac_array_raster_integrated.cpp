@@ -739,7 +739,20 @@ static void run_layer(const LayerDescV2 &d,
     // here down (PW's own dispatch, every shared helper) is untouched;
     // DW ops return before ever reaching it.
     if (d.op_type == LDESC_OP_DWCONV) {
-        run_dw_layer_raster(in_base, w_base, b_base, out_base, dw_in_burst,
+        /* ZHR-92 round (2026-09-11): DW's packed word writeout reuses
+         * PW_FLAT's own EXISTING out_burst port rather than declaring a
+         * 6th write port on gmem_act. DW and PW are strictly mutually
+         * exclusive -- this branch early-returns before any PW code runs,
+         * so the two can never issue on the same dispatch. Motivation is
+         * a real, measured root cause, not tidiness: the 6th port widened
+         * gmem_act's own store-unit write-request FIFO (mem_reg[5][65] vs
+         * [64], direct evidence from the timing report) and deepened its
+         * arbitration logic, which landed on the already-marginal path
+         * feeding the shared multiplier and cost -0.25ns of WNS -- more
+         * than the port's own functional win was worth. See CLAUDE.md's
+         * own "adding an m_axi port to an existing bundle is not free"
+         * entry. */
+        run_dw_layer_raster(in_base, w_base, b_base, out_base, dw_in_burst, out_burst,
                              d.cin, d.cout, d.h_in, d.w_in,
                              d.k, d.stride, d.pad, d.fpg,
                              d.in_off, d.w_off, d.b_off, d.out_off,
@@ -2183,6 +2196,18 @@ void mac_array_top(
 #pragma HLS INTERFACE m_axi port=dw_in_burst  offset=slave bundle=gmem_act
 #endif
 #pragma HLS INTERFACE s_axilite port=dw_in_burst bundle=control
+    /* ZHR-92 round (2026-09-11): DW's own packed word writeout
+     * (dwr_writeout_packed) does NOT get its own port -- it REUSES
+     * out_burst above. A dedicated 6th port (dw_out_burst) was built and
+     * real-P&R'd on 2026-09-08 and cost -0.25ns of WNS (-0.167 -> -0.418
+     * route_design alone) for a root cause that was measured, not guessed:
+     * the extra port widened gmem_act's own store-unit write-request FIFO
+     * (mem_reg[5][65] vs [64]) and deepened its arbitration logic, landing
+     * it on the marginal path into the shared multiplier. DW and PW are
+     * strictly mutually exclusive (run_layer early-returns for DW), so one
+     * port serves both -- and this also removes the new-AXI-Lite-register
+     * requirement entirely, sidestepping the "shared bundle != shared
+     * control register" trap rather than having to handle it. */
 /* A3 round (2026-08-23, ZHR-92, MERGE): back on bundle=gmem_act, sharing
  * the SAME physical master as in_base/out_base -- the standalone
  * gmem_act_wide master (previous round, solution18) is gone. That
