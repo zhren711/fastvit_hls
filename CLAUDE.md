@@ -2269,6 +2269,61 @@ README's table); any ARM-side binary built before 2026-08-31 will silently write
 against this bitstream. Always rebuild the driver/test harnesses from current source before using
 them against this build.
 
+## Stale-artifact list (started 2026-09-12 -- check here BEFORE reusing any script/data file below)
+
+This project has now hit "a persisted artifact or script looks valid but was generated under a
+since-superseded configuration" enough times (the individual entries are scattered through the
+working-method section above) that the known-bad items get one consolidated list. Anything here is
+NOT to be picked up and used as-is; either regenerate it against the current source or use the
+listed replacement. Add to this list whenever a new instance is found; remove an item only when it
+has actually been fixed and re-verified, not when a comment says it was.
+
+- **19 `tools/build_*.py` bundle generators still at 27-field descriptors** (`assert len(fields) ==
+  27`; `MacLayerDesc` has been 28 fields since 2026-08-31, `use_wide_path` appended). The single-op
+  driver rejects a 27-field `desc.bin` outright ("bundle needs regenerating against the current
+  28-field layout"). Exact list as of 2026-09-12: `build_dw_ot_probe_large/small.py`,
+  `build_dw_tilecount_probe_64.py`, `build_glue_decomp_test.py`, `build_glue_isolation_test.py`,
+  `build_nsteps_probe_8.py`, `build_patchhoist_probe_{cin32,cin64,nod_baseline,nod_cin96,
+  nod_cout96}.py`, `build_single_op_test_entry{7,9,75_gap,77_relu,79_sigmoid,80_scale}.py`,
+  `build_tilecount_probe_{32,64}.py`. The 13 that ARE at 28 fields: `build_full_network_test.py`,
+  `build_pw_{axi_txn,burstsize,scaling}_probes.py`, `build_single_op_test_entry{0_gelu,10_add,3,
+  5_dw,60,64,66,70,72}.py`.
+- **`build_single_op_test_entry{75_gap,77_relu,79_sigmoid,80_scale}.py` specifically**: stale on TWO
+  counts -- 27 fields (above) AND their `ref_out.bin` is copied from `accuracy_test_imgs_256/
+  entry_NN.bin`, the csim dumps regenerated 2026-09-02 by the same `mac_array_ckpt_dump.cpp` run
+  whose `ckpt_hw_*` output is known-wrong (see the open `ckpt_hw_*` issue below). **Replacement**:
+  `tools/gen_scalar_ops_csim_bundle.py` (real `desc_all.bin` descriptors, independent Python
+  reference) -> `csim_scalar_ops/` for csim (`scalar_ops_real_desc_tb.cpp`) and `board_test_scalar_
+  ops/` for the board; both used for the 2026-09-12 promotion.
+- **`accuracy_test_imgs_256/ckpt_hw_*_0000.bin`** (csim fixed-point checkpoint reference) and
+  **`entry_00..16.bin`, `entry_63/64.bin`**: regenerated 2026-09-02 by a tool whose orchestration
+  is known-wrong relative to real board output (two DW implementations gave the same wrong answer),
+  root cause never found. `tools/compare_board_full_network_ckpts.py`'s `csim_mism`/`csim_cos`
+  columns come from these and are NOT a correctness signal (they show the identical 128423/14208/
+  6808/1092/1618/1670 mismatch counts for every build since). **Use the `onnx_cos` column**
+  (`ckpt_ref_*_0000.npy`, Python-generated 2026-08-21, untouched) as the correctness judge.
+- **`mac_array_ckpt_dump.cpp` + `run_ckpt_dump.tcl`**: compiles again since 2026-09-02 (call-site
+  and linked-implementation fixes) but its output is the wrong reference above -- do not regenerate
+  `ckpt_hw_*` from it and treat the result as truth.
+- **`mac_array_tb.cpp` (legacy 17-phase suite)**: only valid paired with `mac_array.cpp`; against
+  the deployed `mac_array_raster_integrated.cpp` it aborts on the `DW_CIN_MIN_SAFE` assertion at
+  Phase0 by design. Not a regression signal for the raster architecture. Current raster suites:
+  `dw_raster_layer_tb.cpp` (5), `mac_array_raster_integrated_wiring_tb.cpp` (4),
+  `gelu_add_burst_tb.cpp` (8), `scalar_ops_real_desc_tb.cpp` (4) -- `run_csim_sohoist_all.tcl` runs
+  the first three in one session, `run_csim_scalar_ops.tcl` the fourth.
+- **`dw_linebuf_real_tile.cpp`, `verify_bundle_entry5_dw.cpp`, `writeout_edge_probe/
+  writeout_edge_probe.cpp`**: still on the pre-gmemmeta_elim1 `mac_array_top()` signature
+  (`&desc, 1, ...`); do not compile against the current header. Fix the call site before use.
+- **`accuracy_test_imgs_256/stem_output_0000.bin`**: was regenerated correctly on 2026-08-26 (has a
+  sibling `.meta.json`); listed here only as the precedent -- check the meta file's `output_scale`
+  matches `shift_table_meta.json` before trusting it after any calibration change.
+- **`mac_array_deschoist.cpp`**: a historical, self-contained copy of the whole top (own static
+  `run_gelu`/`run_add`/... with the OLD signatures). Not built by any current tcl; do not edit it
+  to "keep in sync" and do not mistake its functions for the deployed ones when grepping.
+- **Any `#ifdef`-gated variant's numbers in its own comment** (`DWR_ENABLE_FPG_SPECIALIZATION`,
+  `LB_FORCE_DSP`, `PW_FORCE_DSP`, `DWR_INPUT_BURST`, `DW_OUTPUT_BURST`, `PW_ALLOW_UNCACHED_FALLBACK`):
+  re-measure before citing -- see the "re-measured, never re-cited" rule above.
+
 ## Known open issues as of 2026-08-15
 
 - **OPEN (regression cause) / CLOSED (effect), 2026-09-05/07: GELU (+43.8%) and ADD (+46.9%) real
@@ -2902,6 +2957,60 @@ them against this build.
   reducing call-site count (hoisting a computation to one unconditional site) shrank BOTH the logic
   and the route delay on the sink. Check the sink's mux arm count in the exported RTL (the
   `always @(*)` block driving `grp_fu_NNN_p0/p1`) before assuming the margin is "just placement."**
+  **ARM INVENTORY OF THE SINK, 2026-09-12 (analysis round on the deployed `sohoist` build, no
+  build; binding DB + exported RTL + a 300-path timing report -- the pre-registered prerequisite
+  before deciding between "clean more arms" and "re-open DW_OUTPUT_BURST"):**
+  The critical sink `mul_32s_32s_32_2_1_U1485` is fed by a 2-arm top-level mux (`run_layer`'s
+  forwarded operand @state72; `scalar_hw = w_in*h_in` @state2) -- but `run_layer`'s arm is ITSELF
+  a 6-arm mux (`grp_fu_1281`, FSM states 86/88/101/103/105/122), so the sink effectively has 7
+  sources, and the worst path's source `ap_CS_fsm_reg[121]` IS state 122:
+    1. state122 -- `pw_flat_pipeline_impl<false>`'s `mul_ln579 = (rt*MAC_PR + wr_row) * d.w_out`
+       (line 579), INSIDE the `PW_FLAT` II=1 pipeline's writeout (`Predicate = in_writeout &
+       icmp_ln542`), one multiply per writeout iteration, bound OUT of the pipeline onto the shared
+       unit via an external FU port. **This is the arm on the critical path.** The `<true>` instance's
+       identical multiply is bound to a second, `run_layer`-local unit (`U1439`, 2 arms: it and #7).
+    2. state105 -- `oh * W` (line 1133, `ROW_READ` byte address, once per (rt,rr,ci)).
+    3. state103 -- `pw_ot_count * d.cin` (line 1846, per-chunk accumulator step).
+    4. state101 -- `pw_total_iters = pw_ot_count * (n_cbase*32+16)` (line 1041, per chunk).
+    5. state88  -- `w_total = d.cin * pw_ot_count` (line 1028, per chunk) -- the SAME product as #3;
+       HLS did not CSE them across the loop.
+    6. state86  -- `pw_ot_lo = wchunk * pw_ot_per_chunk` and a `cin * (~x)` term from the same
+       line-1023 expression chain (per chunk).
+    7. (on `U1439`) `pw_ot_count * d.out_ch_stride` (line 1847, per chunk).
+  `scalar_total = cin*hw` already has its own dedicated unit (`U1484`, no mux).
+  **Every one of the 7 is eliminable without a multiplier**: #1 = rt-accumulated row base passed
+  into `pw_flat_pipeline_impl` + a 4-entry `wr_row*w_out` table built with 3 adds -- NOTE this exact
+  conversion was ATTEMPTED AND REVERTED on 2026-08-25 (see the comment above line 579) because it
+  "did not change `mul_32s_32s_32_2_1`'s real INSTANCE count (still 2)" -- that was the wrong
+  metric: instance count stays 2 as long as ANY arm remains; the right metric is the arm count on
+  the sink's mux / the binding DB's opset (this session's finding), and by that metric the reverted
+  conversion removes precisely the critical arm. Re-do it, judge it by arm count + WNS. #2 = row
+  accumulator (`+= W` per row, rt base stepped by `W<<2`). #3/#5/#4/#7 = one small add-loop per
+  chunk accumulating `cin`, `out_ch_stride` and `iters_per_ot` over `pw_ot_count` iterations (<=768
+  adds x <=3 chunks per layer, ~7-23us -- negligible vs ms-scale layers, but nonzero, flag it) --
+  or at minimum reuse `w_total` for #3 (zero cost, removes one arm outright). #6 = `pw_ot_lo +=
+  pw_ot_per_chunk` accumulator. Top-level `scalar_hw`/`scalar_total`: give them NARROW operand
+  types (`h_in`,`w_in` <= 256 -> 9 bits; `cin` <= 1152 -> 11 bits) so HLS emits a different, narrow
+  multiplier core that cannot share with the 32x32 unit -- the top-level mux then disappears
+  entirely instead of needing an `ALLOCATION` pragma (which this project has seen silently ignored).
+  **Expected gain, and its ceiling (the honest answer to "how much does 2 arms -> 0 buy"):** the
+  300-path report on the `sohoist` checkpoint shows the sink at +0.138 (PCIN) / +0.230 (operand
+  register), and the next-worst DISTINCT structure at **+0.246ns**: DW's `dwr_*` -> `gmem_act`
+  store-unit `fifo_wreq` (9 logic levels, 7.81 of 9.44ns ROUTE -- a placement-distance signature);
+  then +0.450 (`gmem_w` load buffer -> DW gather, 7 levels, 8.9ns route). So removing the sink
+  outright moves WNS to about +0.25 at this placement -- a ceiling of roughly **+0.11ns**, NOT
+  another +0.3: the 4->2 round's gain was large because the sink was the only thing near zero; the
+  next structures are already within 0.1-0.3ns of it. What the cleanup buys that the number
+  understates: the ONE structure that has been the critical path on every thin-margin build of this
+  line (baseline, dummy4th, elemwise_burst, DWR_INPUT_BURST, both DW_OUTPUT_BURST forms) stops
+  existing, so its +-0.3ns placement variance stops applying. **For DW_OUTPUT_BURST specifically:
+  the two next-worst paths are DW's own writeout side and the `gmem_act` store unit -- exactly the
+  structures DW_OUTPUT_BURST modifies -- so its outcome after the cleanup is genuinely a coin flip
+  around 0 (+0.25 ceiling minus whatever it perturbs), not a prediction; but it is a DIFFERENT coin
+  than last time (route-dominated DW/store paths, not the shared multiplier).** Order recommended:
+  arm cleanup as one round (one mechanism -- call-site elimination on one FU -- several edits,
+  judged by the binding DB showing ZERO Multiplier ops in `run_layer` and the sink absent from the
+  top-10), THEN DW_OUTPUT_BURST on top of it.
 - **OPEN, 2026-09-02: `accuracy_test_imgs_256/ckpt_hw_*_0000.bin` (the full-network checkpoint
   correctness reference `tools/compare_board_full_network_ckpts.py` compares real board dumps
   against) is currently WRONG/stale, and the last time it was known-good is uncertain.** Found while
