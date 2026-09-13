@@ -1882,9 +1882,54 @@ supposedly standing in for.
   must reflect current config) is a standing TODO to verify, not a fact — especially before building
   new code (like a register-write driver) that will silently inherit whichever version is wrong.**
 
-## Current deployed baseline (updated 2026-09-07 -- supersedes every earlier baseline reference below)
+## Current deployed baseline (updated 2026-09-12 -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_elemwise_burst` is now the deployed baseline**, replacing `mac_array_a3_macpd4`
+**`mac_array_a3_sohoist` is now the deployed baseline**, replacing `mac_array_a3_elemwise_burst`
+(1,099.77ms / 83.22% LUT / WNS +0.017ns via phys_opt only, deployed 2026-09-07). This promotion is a
+**timing-margin** promotion, not a latency one: full-network time is flat by design (1,095.36 /
+1,094.50ms over two runs, -0.4%), and what changed is that the design now closes timing on
+`route_design` ALONE at **WNS +0.138388ns** -- the prior baseline was -0.167ns route-only and only
+reached +0.017ns through `phys_opt_design`, leaving no headroom for any subsequent change (see the
+"IMPORTANT CHARACTERIZATION" note in the superseded section below, which this promotion resolves).
+See `vivado_impl/bitstream_archive/mac_array_a3_sohoist_2026-09-12/README.txt` for the full writeup.
+
+**What changed** (`SCALAR_OP_SIZE_HOIST`, commit `fc6f6e0`): the six scalar ops' element-count
+multiplies (10 op_type-gated call sites feeding the top-level shared 32x32 multiplier -- the
+critical-path sink of every thin-margin build on this line) replaced by two unconditional multiplies
+in `mac_array_top` (`scalar_hw`, `scalar_total`) passed in as `int` parameters. Binding DB: top-level
+Multiplier opset 8 op_type-predicated ops -> 2 `Predicate=true`; shared multiplier's operand mux 4
+arms -> 2; one 32x32 multiplier instance gone. Critical path kept its sink and source shape but its
+data path dropped 8.707 -> 8.251ns, BOTH logic (mux LUT6 -> LUT4) and route -- structural, not a
+placement roll. Also in this build: `DW_OUTPUT_BURST` gated OFF by default (default DW path
+source-identical to the prior baseline's).
+
+Real P&R (route_design alone, NO phys_opt): WNS +0.138388ns; LUT 44,054/53,200 (82.81%, -218);
+BRAM 107/140 (76.43%, flat); DSP 56/220 (25.45%, -3).
+
+Board (2026-09-12): SE ops entry75/77/79/80 (GAP/RELU/SIGMOID/SCALE) byte-exact against an
+INDEPENDENT Python reference on real `desc_all.bin` descriptors (`tools/gen_scalar_ops_csim_bundle.py`
+-> `board_test_scalar_ops/`), first checked as a control on the prior baseline bitstream (all pass)
+and then on this one (all pass) -- the first board verification of these four ops against anything
+other than a csim dump. Controls entry3/entry5_dw/entry0_gelu/entry10_add all byte-exact. Full
+network 82/82, two runs, all 7 checkpoint files MD5-identical across runs; per-operator DWCONV
+531.13 / PWCONV 495.77 / GELU 22.90 / ADD 13.04 / SE 12.95ms, every family within +-0.2% of the
+prior baseline; ONNX cosine EXACT: 0.6313/0.1286/0.2227/0.3491/-0.2459/-0.2811. Register map
+unchanged (DW_IN_BURST at 0x100 remains the last register). Board binaries rebuilt from current
+source this round (`*_sohoist`). Golden image untouched. New csim testbench
+`scalar_ops_real_desc_tb.cpp` (`run_csim_scalar_ops.tcl`, 4/4) closes the coverage gap that
+existed for these four ops on this architecture; `tools/decompose_full_network_log.py` now does
+the per-operator decomposition from a full-network log (all 82 entries, not the log's own top-10).
+
+**Pre-registered next round: re-enable `DW_OUTPUT_BURST` on top of this build, single variable.**
+It landed at -0.418ns route-only on the old baseline (which itself was at -0.167), i.e. it needs
+roughly 0.25ns more than the old baseline had; this build has +0.138. The +0.305ns from one
+call-site cleanup says the sink's mux structure had room -- another cleanup of the same kind on
+whatever call sites remain in that mux (currently `run_layer`'s own arm and the unconditional
+`w_in*h_in`) is the candidate for the rest, before or alongside the DW_OUTPUT_BURST re-test.
+
+## Prior deployed baseline (superseded 2026-09-12, kept for history)
+
+**`mac_array_a3_elemwise_burst` was the deployed baseline from 2026-09-07 to 2026-09-12**, replacing `mac_array_a3_macpd4`
 (1,522.39ms/80.79% LUT/WNS+0.339ns, deployed 2026-09-05). Promotes the ELEMWISE_BURST mechanism
 (chunked `hls::burst_maxi<ap_uint<32>>` reads/writes for `run_gelu`/`run_add`, replacing plain un-
 bursted pointer accesses) -- see ZHR-92's own round writeup for the full diagnostic chain (the
@@ -2838,13 +2883,19 @@ them against this build.
   I.e. the improvement is in the sink's own structure, which is exactly why it should transfer to
   future rounds instead of being another placement roll. Per the pre-registered decision rule
   (">=0.2ns re-opens DW_OUTPUT_BURST; ~0.05ns means the bottleneck is not the operand side"), this
-  RE-OPENS `DW_OUTPUT_BURST` as the next single-variable round on top of this build. Not board-tested
-  this round (P&R measurement was the round's scope); NOT promoted to deployed baseline yet -- and
-  note a real coverage gap before any promotion: none of the three csim testbenches exercises
-  RELU/SIGMOID/GAP/SCALE, four of the six functions whose signature this round changed (GELU/ADD are
-  the directly-covered pair), so a board single-op pass on entries 75/77/79/80 (`board_test_entry75_
-  gap` etc., already built) is the required correctness check for those before promotion, in
-  addition to the usual full-network ONNX-cosine check.
+  RE-OPENS `DW_OUTPUT_BURST` as the next single-variable round on top of this build. **Coverage gap
+  closed and build PROMOTED the same day (see the deployed-baseline section)**: none of the three csim
+  testbenches exercised RELU/SIGMOID/GAP/SCALE (four of the six functions whose signature this round
+  changed) -- added `scalar_ops_real_desc_tb.cpp` (real `desc_all.bin` descriptors for entries
+  75/77/79/80, all 28 fields and real offsets into one shared arena; reference computed independently
+  in Python by `tools/gen_scalar_ops_csim_bundle.py`, replicating the HARDWARE's arithmetic -- the
+  placeholder `clamp(x+64,0,127)` sigmoid, truncate-toward-zero GAP division, arithmetic-shift clip --
+  not the mathematical functions; verified the test has teeth: 397/768 GAP channels would fail under
+  floor division, SIGMOID hits both clamps). 4/4 csim, then the same data as board bundles
+  (`board_test_scalar_ops/`, offsets relocated for the single-op driver): byte-exact on the prior
+  baseline bitstream (control) AND on this build. Note the four old `build_single_op_test_entry75_gap
+  .py`-style builders were never used for this -- they are among the 18 still-stale 27-field scripts
+  and their `ref_out` comes from the questionable `entry_NN.bin` csim dumps.
   **Lesson (adds to the "several near-tied arms swap places" record above): when a design's
   critical path is a SHARED functional unit whose operand mux is fed from N call sites, the number
   of arms in that mux is itself a timing lever independent of any one arm's own logic depth --
