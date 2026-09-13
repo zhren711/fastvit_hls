@@ -2811,6 +2811,48 @@ has actually been fixed and re-verified, not when a comment says it was.
   direct `in_base[]` read (re-verified csim-clean: 5/5, 4/4, 8/8, matching pre-round behavior exactly).
   **Practical consequence for any future DW timing work on this line: target `dwr_consume`'s own
   achieved II=8, not the input read.**
+  **RE-EVALUATED AFTER II 8->2, 2026-09-13 (analysis only, no build) -- DWR_INPUT_BURST stays
+  CLOSED; the arithmetic that was wrong last time was redone with the right II and the right
+  base.** Question: with `dwr_consume` now at achieved II=2 (`mac_array_a3_dwob`, DW 329.0ms), is
+  `dwr_produce` (II=1, plain per-pixel `in_base[]` AXI reads) still hidden behind it, and if not,
+  by how much? Method: per-layer real board times from the same full-network run, all 25 real DW
+  layers, against the input-pixel count `cin*h_pad*w_pad` (= both pipelines' trip count) and the
+  output count, on BOTH the II=8 (`sohoist`) and II=2 (`dwob`) baselines.
+  - Fit (R^2 0.992): DW = **4.72 cycles/input-pixel + 7.45 cycles/output + 160/channel** = 168 +
+    156 + 7ms (II=8: 7.85 / 11.47 / 273 = 279 + 240 + 12ms). The two terms are collinear (outputs
+    ~ pixels/S^2), so the split is indicative, not exact.
+  - **The decisive per-layer check: the 6-cycle II reduction materialised as -5.2 to -6.9
+    cycles/input-pixel on 23 of the 25 layers -- essentially 1:1.** If produce were the binding
+    side at X cycles/pixel, consume's II drop would have saturated at X; it did not. Consume is
+    still the bottleneck; produce is still hidden on those layers.
+  - The exceptions: **layer 1** (48ch, 128x128, k3, s2 -- 811k pixels, 23% of all DW input pixels):
+    only -3.99, i.e. ~2.0 cycles/pixel of the II saving did NOT materialise = **~16ms** -- the one
+    real "produce exposed" signature in the network (fast consume: stride 2, few outputs). Layers
+    63/69 (384ch, 8x8, k7): -4.3, but at N=196 per channel that shortfall is the per-channel fixed
+    cost (weight/bias loads, dataflow start), not produce. Everything else within ~1 cycle of -6.
+  - **Exposed produce, best estimate ~20ms; hard upper bound 57ms** (the stride-2 layers' ENTIRE
+    excess over the consume-II floor, 83.0 - 25.6ms, attributed to produce -- which it isn't, output
+    writes are in there too). Against the pre-registered thresholds (>100ms reopen / <30ms don't):
+    **don't.** And the additive cost of the prefetch is a REAL MEASUREMENT, not an estimate: the
+    2026-09-07 board run at II=8 (produce fully hidden) came back +43ms -- that IS the prefetch's
+    serial cost (~1.2 cycles/pixel over 3.55M pixels). Net if reopened: ~20 - 43 = about -23ms,
+    a regression again, at best break-even at the 57ms bound.
+  - Where DW's time actually is now (from the same fit and the stride-1 layers' ~10.8 cycles/
+    pixel vs the II=2 floor of 2): the OUTPUT side -- ~7.5 cycles per output, ~156ms, i.e. the
+    packed write's `write_request`/`write`/`write_response` latency serialised inside the II=2
+    `CROW_CCOL` pipeline (the `200-880` carried dependence), not the input read and not the II
+    itself (the II=2 floor over all DW pixels is only 71ms of the 329). If DW is attacked again,
+    that is the lever; DWR_INPUT_BURST targets the smaller, mostly-hidden component and makes it
+    additive.
+  - Code check: the dormant `DWR_INPUT_BURST` code still compiles and passes `dw_raster_layer_tb`
+    5/5 with `-DDWR_INPUT_BURST` on the current source (packed writeout + SHARED_MUL_ARMS) --
+    `dwr_produce_burst` feeds the same `taps` stream, and `dwr_consume`'s interface change was on
+    the output side only. Compatible, just not worth opening (`run_csim_dwrin_check.tcl`).
+  **Lesson, same family as the 2026-09-08 one that started this line: the input-side verdict
+  depends on the consume II, so it has to be re-derived every time the consume II changes -- and
+  it was, this time BEFORE building anything. The 1:1 "did the II saving materialise per layer"
+  check is a cheap, board-data-only way to tell which side of a producer/consumer pair is binding;
+  it needs two real runs at two different IIs, which this line now has.**
   **FOLLOW-UP, 2026-09-08, same investigation: `wbuf`'s own II Violations (3 of the original 5)
   were fixed cheaply and cleanly (`#pragma HLS ARRAY_PARTITION variable=wbuf complete dim=1`, +0.21%
   LUT, zero BRAM/DSP, csim clean 5/5+4/4+8/8) -- but achieved II stayed at 8, not 7.** Re-running
