@@ -275,7 +275,8 @@ static void dwr_produce(
 }
 #endif // DWR_INPUT_BURST
 
-// FAST path (default, DW_OUTPUT_BURST undefined): 4 consecutive
+// FAST path of the OLD writeout (only when DW_OUTPUT_BURST_OFF is given;
+// the default since 2026-09-13 is dwr_writeout_packed below): 4 consecutive
 // already-valid positions of the SAME channel, packed into one contiguous
 // store -- HLS reports this as an inferred length-4 burst, but the real
 // scheduling report shows it as 4 elemental writereq+write+writeresp
@@ -298,9 +299,12 @@ static void dwr_writeout_impl(act_t out_base[], int base_addr, int start, act_t 
 }
 
 #ifdef DW_OUTPUT_BURST
-// ZHR-92 round (2026-09-08..12): DW_OUTPUT_BURST (OFF by default --
-// MECHANISM CORRECT, BLOCKED BY BASELINE TIMING MARGIN, not rejected on
-// its own merits). Isolated csynth: CROW_CCOL achieved II 8 -> 2, LUT
+// ZHR-92 round (2026-09-08..13): DW_OUTPUT_BURST -- ON BY DEFAULT since
+// 2026-09-13 (dw_raster_layer.h defines it unless DW_OUTPUT_BURST_OFF is
+// given), deployed as mac_array_a3_dwob: DW 531.13 -> 329.0ms (-38.0%),
+// full network -18%, byte-exact. History below is kept as written at the
+// time it was blocked (OFF by default -- MECHANISM CORRECT, BLOCKED BY
+// BASELINE TIMING MARGIN, not rejected on its own merits). Isolated csynth: CROW_CCOL achieved II 8 -> 2, LUT
 // -1,162 (-1.57%), BRAM/DSP flat; real P&R: LUT/BRAM/DSP all DOWN vs the
 // deployed baseline; csim clean 5/5 + 4/4 + 8/8 in both the 6th-port and
 // the port-reuse form. What blocks it: the deployed baseline already
@@ -564,8 +568,9 @@ static void dwr_consume(
     // out_base writes sharing one AXI port), not touched by this step.
     // Gated with DW_OUTPUT_BURST (2026-09-12): on its own it did NOT move
     // achieved II (stayed 8 -- gmem_act was independently sufficient to
-    // demand it), so it only has a purpose alongside the packed write;
-    // keeping the default build source-identical to the deployed baseline.
+    // demand it), so it only has a purpose alongside the packed write --
+    // it rides along under the same macro (ON by default since 2026-09-13)
+    // as a companion of the packed write, NOT an independent gain.
 #ifdef DW_OUTPUT_BURST
 #pragma HLS ARRAY_PARTITION variable=wbuf complete dim=1
 #endif

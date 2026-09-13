@@ -748,8 +748,9 @@ static void run_layer(const LayerDescV2 &d,
     // here down (PW's own dispatch, every shared helper) is untouched;
     // DW ops return before ever reaching it.
     if (d.op_type == LDESC_OP_DWCONV) {
-        /* ZHR-92 round (2026-09-11/12): DW_OUTPUT_BURST (OFF by default,
-         * see dw_raster_layer.cpp) -- DW's packed word writeout reuses
+        /* ZHR-92 round (2026-09-11/13): DW_OUTPUT_BURST (ON by default
+         * since 2026-09-13, see dw_raster_layer.h) -- DW's packed word
+         * writeout reuses
          * PW_FLAT's own EXISTING out_burst port rather than declaring a
          * 6th write port on gmem_act. DW and PW are strictly mutually
          * exclusive -- this branch early-returns before any PW code runs,

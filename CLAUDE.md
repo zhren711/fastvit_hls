@@ -1367,6 +1367,19 @@ supposedly standing in for.
        technique only survives when the accumulated quantity is stepped alongside REAL work in the
        loop, not summed in a loop that exists only to sum. Caught in-round by re-checking the bind
        DB after the first csynth, not by csim (which passes either way).
+- **Isolated-csynth EXTRAPOLATION is unreliable (10+ instances above) -- but the SAME MECHANISM's
+  own historical isolated/real ratio can be usable, given two or more data points.** Confirmed
+  2026-09-13: before re-running P&R on DW_OUTPUT_BURST-on-SHARED_MUL_ARMS, the "will real LUT go
+  over 85%" question was answered not from the isolated number (which had just been wrong in SIGN
+  on the previous round, -283 isolated vs +568 real) but from this exact mechanism's two prior
+  real P&Rs: isolated -1,162 -> real -280 and isolated -1,290 -> real -334 (both negative, both
+  ~1/4 of isolated). Prediction: ~44,300. Real: 44,080. First time on this line a resource number
+  was forecast and hit. The distinction from the general rule: the general "isolated is
+  direction-agnostic-unreliable" verdict is about extrapolating ACROSS mechanisms (a new change's
+  isolated delta says little about its real delta); WITHIN one mechanism, re-built on a different
+  base, the isolated/real relationship has now held on three consecutive builds. Use it only with
+  >=2 prior real data points for the same mechanism, only for the same resource category, and say
+  which prior builds the ratio came from.
 - **"Use the top-N timing list to predict the next bottleneck" is NOT reliable on this design --
   placement variance is larger than the spacing between the near-tied paths.** Confirmed
   2026-09-12: the 300-path report on `sohoist` put the next-worst distinct structure at +0.246
@@ -1913,9 +1926,49 @@ supposedly standing in for.
   must reflect current config) is a standing TODO to verify, not a fact — especially before building
   new code (like a register-write driver) that will silently inherit whichever version is wrong.**
 
-## Current deployed baseline (updated 2026-09-12 -- supersedes every earlier baseline reference below)
+## Current deployed baseline (updated 2026-09-13 -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_sohoist` is now the deployed baseline**, replacing `mac_array_a3_elemwise_burst`
+**`mac_array_a3_dwob` is now the deployed baseline**, replacing `mac_array_a3_sohoist` (1,095.36ms /
+82.81% LUT / WNS +0.138ns route-only, deployed 2026-09-12). Full network **~898ms** (903.14 /
+893.46ms over two runs; per-entry sums 873.24 / 873.11, identical -- the PL-total spread is
+inter-entry host jitter), **-18%**, DW 531.13 -> **329.0ms (-38.0%)**. Cumulative on this latency
+line: 6,050ms -> ~898ms, **-85.2%**. See `vivado_impl/bitstream_archive/mac_array_a3_dwob_
+2026-09-13/README.txt` for the full writeup.
+
+**What changed** (two source changes over sohoist, both now the DEFAULT build):
+1. `SHARED_MUL_ARMS` (commit `83b4cdb`): the seven remaining call sites on the top-level shared
+   32x32 multiplier removed (accumulators + narrow-typed multiplies); `mul_32s_32s_32_2_1` now
+   exists only inside DW's own `dwr_consume3`. Alone: WNS flat (+0.128), sink gone from the top-10.
+2. `DW_OUTPUT_BURST` (port-reuse form; commit `dfd309f`, default flipped ON this round via
+   `dw_raster_layer.h` -- `DW_OUTPUT_BURST_OFF` restores the old writeout): `dwr_consume`'s
+   `CROW_CCOL` achieved II 8 -> 2 by packing each lane's 4 output bytes into one `ap_uint<32>`
+   write on PW_FLAT's existing `out_burst`. Failed real P&R twice on the sink that (1) removed;
+   on top of (1) it closed at **+0.172093ns route_design alone** -- the "different coin" outcome.
+   The `wbuf` partition pragma rides along under the same macro; on its own it never changed II.
+   Default-flip verified: flag-less csynth totals bit-identical to the tested build (245 BRAM_18K /
+   43 DSP / 39,299 FF / 72,090 LUT, `CROW_CCOL` II=2, `hw.h` identical), flag-less csim 5/5 + 4/4 +
+   8/8 + 4/4.
+
+Real P&R (route_design alone, NO phys_opt): WNS +0.172093ns; LUT 44,080/53,200 (82.86%); BRAM
+106.5/140 (76.07%); DSP 46/220 (20.91%). Worst path: `gmem_act` load-unit read-data buffer
+(9 levels, 77% route) -- a member of the route-dominated population (+0.17..+0.45 at 10ns) that
+is this design's real floor now that the shared-multiplier sink is gone. The real LUT (44,080)
+was forecast at ~44,300 from the DW mechanism's own two prior isolated/real deltas -- see the
+"same mechanism's historical ratio" rule in the working-method section.
+
+Board (2026-09-13, pre-registered order): entry5_dw FIRST, 3 runs, byte-exact, 38.9 -> 24.7-24.95ms
+(-36%); SE ops 75/77/79/80 byte-exact vs the Python reference; controls entry3 PW / entry0 GELU /
+entry10 ADD byte-exact at their usual times; full network 82/82 x2, all 7 checkpoint files
+MD5-identical across runs; per-operator DWCONV 329.0 (-38.0%, pre-registered 250-400), PWCONV
+495.3 (-0.09%), GELU 22.81, ADD 13.04, SE 12.93 (all flat); ONNX cosine EXACT
+0.6313/0.1286/0.2227/0.3491/-0.2459/-0.2811. Register map unchanged (last register `DW_IN_BURST`
+0x100); `*_sohoist` board binaries remain valid. Golden image untouched (md5 `7ee26f67...`).
+Operator split now: PW 55%, DW 37%, GELU 2.5%, ADD 1.5%, SE 1.4% -- **PW is the single largest
+operator again.**
+
+## Prior deployed baseline (superseded 2026-09-13, kept for history)
+
+**`mac_array_a3_sohoist` was the deployed baseline from 2026-09-12 to 2026-09-13**, replacing `mac_array_a3_elemwise_burst`
 (1,099.77ms / 83.22% LUT / WNS +0.017ns via phys_opt only, deployed 2026-09-07). This promotion is a
 **timing-margin** promotion, not a latency one: full-network time is flat by design (1,095.36 /
 1,094.50ms over two runs, -0.4%), and what changed is that the design now closes timing on
@@ -3107,9 +3160,11 @@ has actually been fixed and re-verified, not when a comment says it was.
   not made here. Source state: `DW_OUTPUT_BURST` is still OFF by default in the source; this build
   was made with `-DDW_OUTPUT_BURST` on the command line (`run_export_ip_dwob2.tcl`,
   `run_csim_dwob2_*.tcl`) -- flipping the default is part of the promotion decision, not done.
-  **Next round, if taken: board (single-op entry5_dw first, then the 4 SE ops + PW/GELU/ADD
-  controls, then full network x2 with checkpoint MD5 identity and ONNX cosine), judging DW's own
-  ms and the full-network total; then promote and flip the default.**
+  **BOARD ROUND DONE AND PROMOTED, 2026-09-13 -- see the deployed-baseline section
+  (`mac_array_a3_dwob`): DW 531.13 -> 329.0ms (-38.0%), full network 1,095.36 -> ~898ms (-18%),
+  everything byte-exact, ONNX cosine exact, both inside the pre-registered intervals (250-400 /
+  820-980). `DW_OUTPUT_BURST` default flipped ON (`dw_raster_layer.h`, `DW_OUTPUT_BURST_OFF` to
+  revert), flag-less build verified identical to the tested one.**
 - **OPEN, 2026-09-02: `accuracy_test_imgs_256/ckpt_hw_*_0000.bin` (the full-network checkpoint
   correctness reference `tools/compare_board_full_network_ckpts.py` compares real board dumps
   against) is currently WRONG/stale, and the last time it was known-good is uncertain.** Found while

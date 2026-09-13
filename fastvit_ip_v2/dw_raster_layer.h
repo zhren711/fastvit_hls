@@ -48,6 +48,25 @@
 #define DWR_PAD_MAX  (DWR_MAX_K / 2)
 #define DWR_WPAD_MAX (DWR_W_MAX + 2 * DWR_PAD_MAX)
 
+// ZHR-92 (2026-09-13): DW_OUTPUT_BURST is ON BY DEFAULT as of the
+// mac_array_a3_dwob deployed baseline (real board: DW 531.13ms -> 329.0ms,
+// -38.0%; full network 1,095.36ms -> ~898ms, -18%; byte-exact, ONNX cosine
+// exact). It packs each lane's 4 output bytes into one ap_uint<32> word
+// write through PW_FLAT's existing out_burst port (no 6th gmem_act port,
+// no new driver register), taking dwr_consume's CROW_CCOL from achieved
+// II=8 to II=2. It had failed real P&R twice (-0.418/-0.461ns) purely on
+// the top-level shared 32x32 multiplier sink, which the SHARED_MUL_ARMS
+// cleanup (2026-09-12) removed structurally; on top of that it closed at
+// +0.172ns route_design alone. Define DW_OUTPUT_BURST_OFF to get the old
+// 4-elemental-write path back (the deployed behaviour before 2026-09-13).
+// NOTE: the wbuf ARRAY_PARTITION pragma inside dwr_consume rides along
+// under the same macro; on its own it never changed achieved II (verified
+// 2026-09-08: II stayed 8 with only the partition applied) -- it is a
+// companion of the packed write, not an independent gain.
+#ifndef DW_OUTPUT_BURST_OFF
+#define DW_OUTPUT_BURST 1
+#endif
+
 // ZHR-92 round (2026-09-07): DWR_INPUT_BURST (OFF by default -- ATTEMPTED
 // AND REJECTED, real board result: DW 531.20ms->574.22ms, +8.1% WORSE,
 // not better. See dw_raster_layer.cpp's own DWR_INPUT_BURST comment for
@@ -97,9 +116,10 @@ void run_dw_layer_raster(
     act_t        out_base[],
     hls::burst_maxi<ap_uint<32> > dw_in_burst,
 #ifdef DW_OUTPUT_BURST
-    /* ZHR-92 (2026-09-12): DW's packed word writeout reuses PW_FLAT's own
-     * out_burst port (no 6th gmem_act port, no new driver register). OFF
-     * by default -- see dw_raster_layer.cpp's DW_OUTPUT_BURST comment. */
+    /* ZHR-92 (2026-09-12/13): DW's packed word writeout reuses PW_FLAT's
+     * own out_burst port (no 6th gmem_act port, no new driver register).
+     * ON by default since 2026-09-13 -- see the DW_OUTPUT_BURST note above
+     * and dw_raster_layer.cpp's own comment. */
     hls::burst_maxi<ap_uint<32> > out_burst_w,
 #endif
     int cin, int cout, int h_in, int w_in,
