@@ -1346,6 +1346,37 @@ supposedly standing in for.
   recurring (same source) or a genuinely different one exposed by the same structural change (different
   source, same sink). Both rounds here were diagnosed this way, not guessed, and each fix was surgical
   because of it.**
+- **Getting a multiply OFF the shared 32x32 unit -- the technique list, with the one that does NOT
+  work (2026-09-12, `SHARED_MUL_ARMS` round).** Two techniques have each been verified in the
+  binding DB (`*.verbose.bind.rpt` opset) AND the exported module list, which is the only way to
+  judge them -- instance count and csim are both blind to this:
+    1. **Loop-carried accumulator, INCREMENTING form only**: the product is `index*stride` where
+       `index` steps by 1 inside a real loop -- replace with `base += stride` stepped in that loop
+       (rt/rr row bases, `wr_row_off` next to `wr_row`, `pw_ot_lo += per_chunk`). Used successfully
+       6+ times on this line (PW_WCHUNK's two fixes, ot_out_ch_base, the three this round).
+    2. **Narrow operand types**: `ap_uint<11> x ap_uint<15>` etc., sized from the real descriptor
+       ranges with csim asserts on the ranges -- HLS emits a DIFFERENT core (`mul_11ns_15ns_26_1_1`,
+       `mul_20ns_9ns_21_1_1`) that structurally cannot be bound onto `mul_32s_32s_32`, so the op
+       leaves the shared unit's mux without any `ALLOCATION` pragma (silently ignored once here).
+       Cost: the small `_1_1` cores are LUT-fabric multipliers (~+100-200 LUT each in real P&R),
+       DSP goes DOWN. Verified twice in one round (top-level `scalar_hw`/`total`, run_layer's four
+       per-chunk products).
+    X. **A standalone add-loop ("add the invariant N times") does NOT work**: HLS's loop-idiom
+       pass rewrites `for (i<N) acc += c` into `N*c` -- an i32 multiply, bound straight back onto
+       the shared unit (binding DB showed `mul_ln1056/_1/_2` with the loop gone). The accumulator
+       technique only survives when the accumulated quantity is stepped alongside REAL work in the
+       loop, not summed in a loop that exists only to sum. Caught in-round by re-checking the bind
+       DB after the first csynth, not by csim (which passes either way).
+- **"Use the top-N timing list to predict the next bottleneck" is NOT reliable on this design --
+  placement variance is larger than the spacing between the near-tied paths.** Confirmed
+  2026-09-12: the 300-path report on `sohoist` put the next-worst distinct structure at +0.246
+  (DW -> `gmem_act` store FIFO) and the prediction "remove the sink -> WNS ~ +0.25" was made from
+  it. After the sink was actually removed (`SHARED_MUL_ARMS`), WNS was +0.128, the worst path was
+  one (`dwr_produce2`'s `ROW_COL` pointer carry chain) that had NOT appeared anywhere in the
+  previous top-300, and the +0.246 path was not in the new top-8. The ordering of the
+  route-dominated population (+0.13..+0.45 at 10ns) is re-rolled by every placement, so a rank
+  read off one build's report is a sample, not a forecast. Use such a list to say "there is a
+  population of N structures within X ns" (that held), never "the next one is Y at Z ns."
 - All results — including negative ones — get written back to the relevant Linear issue as a
   comment, not just left in chat or local memory. Real numbers over assumptions: this project has
   been burned before by static-report/simulation readings that turned out wrong (ZHR-5's "140x
@@ -3053,6 +3084,32 @@ has actually been fixed and re-verified, not when a comment says it was.
   bitstream. DW_OUTPUT_BURST re-test is the pre-registered next round; whether to run it on this
   source (sink gone; its own writeout side + `gmem_w`/store paths are now the ones near zero) is
   the decision point.**
+  **DW_OUTPUT_BURST RE-TEST ON TOP OF SHARED_MUL_ARMS, 2026-09-13 (`-DDW_OUTPUT_BURST`, port-reuse
+  form, real P&R, no board yet): route_design alone WNS = +0.172093ns -- CLOSED, better than the
+  deployed `sohoist` (+0.138) and than `sma` alone (+0.128).** Pre-registered order held: (1)
+  csynth first -- isolated LUT 72,090 (-1,418 vs sma), `CROW_CCOL` achieved II=2 with the single
+  `200-880`, no 32x32 unit in `run_layer`/top, register map unchanged (last register `DW_IN_BURST`
+  0x100; the reuse form needs no new driver register); the real-LUT question was answered from this
+  mechanism's own two prior real deltas (-280, -334, both negative, ~1/4 of isolated) -> expected
+  ~44,300, below the 85% "this is a resource problem" line, so P&R was run; (2) csim 5/5 + 4/4 +
+  8/8 + 4/4; (3) WNS above. Real utilization: LUT 44,080/53,200 (82.86%, **-542 vs sma's 44,622**
+  -- the mechanism's real delta was negative a third time, larger than before), BRAM 106.5, DSP 46.
+  Worst path: `gmem_act` load unit's read-data buffer (`buff_rdata/dout_vld_reg -> raddr_reg`, 9
+  logic levels, 7.41 of 9.57ns route); then +0.178 (descriptor register CE), +0.238/+0.316 (DW's
+  own consume / `gmem_w` -> DW gather). The store-unit `fifo_wreq` paths are in the top-300 (156
+  mentions) but not the top-6 distinct. **This is the "different coin" outcome, and it came up
+  heads: the two builds that killed this mechanism (-0.418/-0.461) both died on the shared
+  multiplier sink; with that sink structurally removed, the SAME mechanism, same source form,
+  closes with margin to spare, on a placement whose worst path is just another member of the
+  route-dominated population.** Third real P&R of this mechanism, first to close. Not board-tested
+  this round (the round's pre-registered scope was csynth/csim/P&R) -- the DW II 8->2 win (predicted
+  from `CROW_CCOL`'s 8 -> 2, i.e. DW's ~531ms should drop substantially) is a BOARD claim and is
+  not made here. Source state: `DW_OUTPUT_BURST` is still OFF by default in the source; this build
+  was made with `-DDW_OUTPUT_BURST` on the command line (`run_export_ip_dwob2.tcl`,
+  `run_csim_dwob2_*.tcl`) -- flipping the default is part of the promotion decision, not done.
+  **Next round, if taken: board (single-op entry5_dw first, then the 4 SE ops + PW/GELU/ADD
+  controls, then full network x2 with checkpoint MD5 identity and ONNX cosine), judging DW's own
+  ms and the full-network total; then promote and flip the default.**
 - **OPEN, 2026-09-02: `accuracy_test_imgs_256/ckpt_hw_*_0000.bin` (the full-network checkpoint
   correctness reference `tools/compare_board_full_network_ckpts.py` compares real board dumps
   against) is currently WRONG/stale, and the last time it was known-good is uncertain.** Found while
