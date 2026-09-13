@@ -3011,6 +3011,48 @@ has actually been fixed and re-verified, not when a comment says it was.
   arm cleanup as one round (one mechanism -- call-site elimination on one FU -- several edits,
   judged by the binding DB showing ZERO Multiplier ops in `run_layer` and the sink absent from the
   top-10), THEN DW_OUTPUT_BURST on top of it.
+  **ARM CLEANUP RUN, 2026-09-12 (`SHARED_MUL_ARMS`, real P&R, no board): the sink is GONE as
+  designed, and WNS did not move -- +0.128ns vs +0.138 -- because a path that was not even in the
+  previous build's top-300 came out worst at the new placement.** All seven conversions built
+  (line-579 row product -> `rt_row_base` + `wr_row_off` accumulators; `oh*W` -> `rt_in_base` +
+  `rr_w`; `pw_ot_lo` accumulator; the four per-chunk `pw_ot_count` products and the top-level
+  `scalar_hw`/`scalar_total` -> NARROW-typed multiplies). csim 5/5 + 4/4 + 8/8 + 4/4. Binding DB
+  (criterion 1): `run_layer` has zero 32x32 multiply ops, the top has zero; `mul_32s_32s_32_2_1`
+  exists only inside DW's own `dwr_consume3` (2 instances, unchanged, dedicated); `run_layer`'s 4
+  remaining multiply ops are the narrow per-chunk products (i21/i22) on one 1-DSP narrow unit. Real
+  P&R route_design alone: **WNS +0.128041ns**, LUT 44,622 (83.88%, +568 -- isolated had said -283;
+  the narrow `mul_*_1_1` cores are LUT-fabric multipliers), BRAM 107 flat, DSP 46 (-10). Criterion 2
+  met: the shared unit is absent from the top-10 (only 32x32 path in the top-300: DW's own, at
+  +0.395, 2 logic levels). **New worst path: `dwr_produce2`'s `ROW_COL` pipeline, `select_ln209_reg
+  -> read_ptr[4]/CE`, 13 logic levels (CARRY4x9), 9.138ns with 5.53ns ROUTE -- absent from the
+  `sohoist` build's entire top-300.** Behind it: +0.241 (`pw_flat_pipeline_impl<true>` -> the
+  `LayerDescV2` descriptor RAM, 6 levels, 80% route), +0.264/+0.310 (`gmem_w` load buffer -> DW
+  gather, the +0.450 path from before, now worse), +0.395 (DW's own multiplier). The +0.246 DW ->
+  `gmem_act` store-FIFO path that bounded the prediction is not in the new top-8 at all.
+  **Reading: the pre-registered "+0.18 would mean the store-unit path bites first" case happened in
+  a stronger form -- the floor is not one specific next path, it is a POPULATION of route-dominated
+  paths (DW producer carry chain, descriptor RAM reads, `gmem_w` -> DW gather, DW -> store FIFO) all
+  within ~+0.13..+0.45 of zero at 10ns, and any placement lands one of them at ~+0.13 +- 0.1. The
+  shared-multiplier sink is permanently gone (a real structural result: no future netlist change
+  can re-trigger its +-0.3 swing), but it was not the floor -- it was the first of several
+  near-tied structures. This is the SAME "near-tied paths swap places" record, third confirmation,
+  now with the previous #1 removed and the population still there.**
+  **NEW HLS LESSON from this round: an add-loop is NOT a way to avoid a multiplier.** The first
+  form of the per-chunk fix (one `PIPELINE II=1` loop accumulating `cin`, `out_ch_stride`,
+  `iters_per_ot` over `pw_ot_count` iterations) was rewritten by HLS's loop-idiom pass back into
+  three i32 multiplies on the same shared unit (binding DB: `mul_ln1056/_1/_2`, predicate
+  `icmp_ln1056`) -- "add a loop-invariant N times" is recognised as `N*c`. The accumulator technique
+  only works when the accumulated quantity is genuinely loop-carried across REAL work (a row base
+  stepped inside the row loop), not a standalone summation loop. What did work, both here and at
+  the top level: narrow operand types (`ap_uint<11>` x `ap_uint<15>` etc.), which force a
+  different multiplier core (`mul_11ns_15ns_26_1_1`) that cannot be bound onto `mul_32s_32s_32`
+  -- verified in the binding DB and the exported module list, both times.
+  **Disposition: source kept (not gated -- it is a strict structural cleanup with csim clean, P&R
+  closed, no regression, and it removes the sink permanently), NOT promoted (same margin as the
+  deployed `sohoist`, +568 LUT, no board round run), working tree is one step AHEAD of the deployed
+  bitstream. DW_OUTPUT_BURST re-test is the pre-registered next round; whether to run it on this
+  source (sink gone; its own writeout side + `gmem_w`/store paths are now the ones near zero) is
+  the decision point.**
 - **OPEN, 2026-09-02: `accuracy_test_imgs_256/ckpt_hw_*_0000.bin` (the full-network checkpoint
   correctness reference `tools/compare_board_full_network_ckpts.py` compares real board dumps
   against) is currently WRONG/stale, and the last time it was known-good is uncertain.** Found while

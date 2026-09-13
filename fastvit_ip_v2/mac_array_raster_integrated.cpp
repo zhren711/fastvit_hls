@@ -312,7 +312,7 @@ static void pw_flat_pipeline_impl(
     const wt_t pw_shift_cache[MAX_PW_BIAS_CACHE],
     act_t out_base[],
     hls::burst_maxi<ap_uint<32> > &out_burst,
-    int rt, int colt, int r_sz, int col_sz,
+    int rt_row_base, int colt, int r_sz, int col_sz,
     int ot_start, int ot_count, int ot_out_ch_base_init, int total_iters_in)
 {
     #pragma HLS ARRAY_PARTITION variable=pw_patch_full cyclic factor=MAC_PD dim=1
@@ -402,6 +402,7 @@ static void pw_flat_pipeline_impl(
     int ot_out_ch_base = ot_out_ch_base_init;  /* == ot*d.out_ch_stride, ABSOLUTE -- passed in, not multiplied here */
     int ot_idx = ot_start;       /* ABSOLUTE ot -- indexes pw_bias_cache/pw_shift_cache/DRAM addressing */
     int wr_row = 0, wr_col = 0;  /* writeout row/col -- wrap-pair, not idx/MAC_PC and idx%MAC_PC */
+    int wr_row_off = 0;          /* == wr_row * d.w_out, ACCUMULATED alongside wr_row (SHARED_MUL_ARMS round, 2026-09-12) */
     int shift_reg = d.out_shift; /* recomputed at each ot's compute->writeout transition */
 
     PW_FLAT: for (int i = 0; i < total_iters; i++) {
@@ -560,15 +561,22 @@ static void pw_flat_pipeline_impl(
                 val = (act_t)clip_shift(total, shift_reg);
             }
             /* A3 shared-multiplier round (2026-08-25, ZHR-92, U2598
-             * candidate #1) -- ATTEMPTED AND REVERTED. Converting
-             * (rt*MAC_PR+wr_row)*d.w_out below to an rt-loop accumulator
-             * (run_layer) + a 4-entry wr_row table (built via 3 adds, same
-             * call shape as this file's other accumulator conversions) held
-             * csim 17/17 but did NOT change mul_32s_32s_32_2_1's real
-             * instance count in the exported RTL (still 2, same as
-             * baseline) -- this term is not one of the two surviving
-             * physical instances. Ruled out, not a dead end: the real
-             * owner of those two instances is still unidentified. */
+             * candidate #1) -- ATTEMPTED AND REVERTED at the time: converting
+             * (rt*MAC_PR+wr_row)*d.w_out to an rt-loop accumulator + wr_row
+             * table held csim but "did NOT change mul_32s_32s_32_2_1's real
+             * instance count (still 2)". THAT WAS THE WRONG METRIC (SHARED_
+             * MUL_ARMS round, 2026-09-12): the instance count stays 2 as long
+             * as ANY call site remains bound to the shared unit; the thing
+             * that sets the sink's delay is the number of ARMS in its operand
+             * mux (binding DB opset / the always@(*) block driving grp_fu_*),
+             * and by that metric this multiply -- executed INSIDE the PW_FLAT
+             * II=1 pipeline, once per writeout iteration, bound out through an
+             * external FU port -- was the arm ON the critical path (FSM state
+             * 122 -> mul_32s_32s_32_2_1, every thin-margin build on this
+             * line). Re-done here as: rt_row_base (== rt*MAC_PR*w_out,
+             * accumulated in run_layer's rt loop, passed in) + wr_row_off
+             * (== wr_row*w_out, accumulated next to wr_row above). Zero
+             * multiplies. Judged by the binding DB + WNS, not instance count. */
             if (wr_row < r_sz) {
                 /* ZHR-92 round (2026-09-02): PW_FIX_OUTADDR -- timing-only
                  * probe, mirrors PW_FIX_WADDR exactly (see its comment
@@ -576,7 +584,7 @@ static void pw_flat_pipeline_impl(
 #ifdef PW_FIX_OUTADDR
                 int byte_addr = d.out_off;
 #else
-                int byte_addr = d.out_off + ot_out_ch_base + (rt * MAC_PR + wr_row) * d.w_out + colt * MAC_PC;
+                int byte_addr = d.out_off + ot_out_ch_base + rt_row_base + wr_row_off + colt * MAC_PC;
 #endif
                 if (FAST_WRITEOUT) {
                     row_word.range(wr_col * 8 + 7, wr_col * 8) = val;
@@ -648,13 +656,14 @@ static void pw_flat_pipeline_impl(
                 ot_idx++;
                 wr_row = 0;
                 wr_col = 0;
+                wr_row_off = 0;
             }
         } else {
             k++;
             if (!in_writeout) {
                 ch_off += MAC_PD;
             } else {
-                if (wr_col == MAC_PC - 1) { wr_col = 0; wr_row++; }
+                if (wr_col == MAC_PC - 1) { wr_col = 0; wr_row++; wr_row_off += d.w_out; }
                 else { wr_col++; }
             }
         }
@@ -671,10 +680,10 @@ static void pw_flat_pipeline(
     const wt_t pw_shift_cache[MAX_PW_BIAS_CACHE],
     act_t out_base[],
     hls::burst_maxi<ap_uint<32> > &out_burst,
-    int rt, int colt, int r_sz, int col_sz,
+    int rt_row_base, int colt, int r_sz, int col_sz,
     int ot_start, int ot_count, int ot_out_ch_base_init, int total_iters_in)
 {
-    pw_flat_pipeline_impl<true>(d, w_base, pw_weight_cache, pw_cached, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz, ot_start, ot_count, ot_out_ch_base_init, total_iters_in);
+    pw_flat_pipeline_impl<true>(d, w_base, pw_weight_cache, pw_cached, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt_row_base, colt, r_sz, col_sz, ot_start, ot_count, ot_out_ch_base_init, total_iters_in);
 }
 
 /* Serves only layers whose w_out isn't a multiple of MAC_PC -- verified
@@ -693,10 +702,10 @@ static void pw_flat_pipeline_narrow(
     const wt_t pw_shift_cache[MAX_PW_BIAS_CACHE],
     act_t out_base[],
     hls::burst_maxi<ap_uint<32> > &out_burst,
-    int rt, int colt, int r_sz, int col_sz,
+    int rt_row_base, int colt, int r_sz, int col_sz,
     int ot_start, int ot_count, int ot_out_ch_base_init, int total_iters_in)
 {
-    pw_flat_pipeline_impl<false>(d, w_base, pw_weight_cache, pw_cached, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz, ot_start, ot_count, ot_out_ch_base_init, total_iters_in);
+    pw_flat_pipeline_impl<false>(d, w_base, pw_weight_cache, pw_cached, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt_row_base, colt, r_sz, col_sz, ot_start, ot_count, ot_out_ch_base_init, total_iters_in);
 }
 
 /* ---- round 11: run_dwconv/run_pwconv are GONE. This is the only tile
@@ -1018,14 +1027,54 @@ static void run_layer(const LayerDescV2 &d,
      * why it's safe, unlike a fixed-step version would. */
     int pw_w_chunk_off = 0;
     int pw_ot_out_ch_base = 0;
+    /* SHARED_MUL_ARMS round (2026-09-12): wchunk*pw_ot_per_chunk was arm #6
+     * of the shared multiplier; now a per-chunk accumulator. */
+    int pw_ot_lo = 0;
+    /* iters_per_ot: PW_FLAT_STEPS_PER_CBASE and PW_FLAT_WRITEOUT_ELEMS are
+     * compile-time constants (8 and 16), so this is a shift+add, no
+     * multiplier. */
+    const int pw_iters_per_ot = pw_n_cbase * PW_FLAT_STEPS_PER_CBASE + PW_FLAT_WRITEOUT_ELEMS;
 
     PW_WCHUNK: for (int wchunk = 0; wchunk < pw_n_chunks; wchunk++) {
-    int pw_ot_lo = wchunk * pw_ot_per_chunk;
     int pw_ot_count = pw_ot_per_chunk;
     if (pw_cached_ok) {
         int remain = d.cout - pw_ot_lo;
         if (pw_ot_count > remain) pw_ot_count = remain;
-        int w_total = d.cin * pw_ot_count;
+    }
+    /* SHARED_MUL_ARMS round (2026-09-12): the four per-chunk products of
+     * pw_ot_count -- w_total = cin*pw_ot_count (PW_WEIGHT_HOIST bound, AND
+     * the pw_w_chunk_off step, the same product HLS bound twice), the
+     * pw_ot_out_ch_base step (pw_ot_count*out_ch_stride) and pw_total_iters
+     * (pw_ot_count*iters_per_ot) -- were four of the six run_layer arms on
+     * the shared 32x32 multiplier (FSM states 88/101/103, plus the local
+     * U1439). FIRST ATTEMPT this round: one add-loop accumulating all
+     * three sums over pw_ot_count iterations -- HLS's loop-idiom pass
+     * recognised "add a loop-invariant N times" and rewrote it BACK into
+     * three i32 multiplies on the same shared unit (binding DB:
+     * mul_ln1056/_1/_2, Predicate icmp_ln1056) -- an add-loop is not a
+     * way to avoid a multiplier here. What works (same technique as the
+     * top-level scalar_hw/scalar_total): NARROW operand types, so HLS
+     * emits distinct small multiplier cores (mul_11ns_11ns_22 etc.) that
+     * cannot be bound onto mul_32s_32s_32 at all -- no arm, no mux.
+     * Ranges (real network): pw_ot_count <= cout <= 1152 (11 bits), cin <=
+     * 1152 (11), out_ch_stride = h_out*w_out <= 16384 (15), iters_per_ot =
+     * n_cbase*8+16 <= 304 (10); products 22/26/21 bits. Asserted in csim
+     * (silent truncation otherwise). Verified in the binding DB, not
+     * assumed. */
+#ifndef __SYNTHESIS__
+    assert(pw_ot_count >= 0 && pw_ot_count < (1 << 11) && d.cin < (1 << 11) && d.out_ch_stride >= 0 && d.out_ch_stride < (1 << 15) && pw_iters_per_ot < (1 << 10));
+#endif
+    const ap_uint<11> pw_cnt_n    = pw_ot_count;
+    const ap_uint<11> pw_cin_n    = d.cin;
+    const ap_uint<15> pw_stride_n = d.out_ch_stride;
+    const ap_uint<10> pw_ipo_n    = pw_iters_per_ot;
+    const ap_uint<22> w_total_n          = pw_cnt_n * pw_cin_n;
+    const ap_uint<26> pw_chunk_ch_span_n = pw_cnt_n * pw_stride_n;
+    const ap_uint<21> pw_total_iters_n   = pw_cnt_n * pw_ipo_n;
+    const int w_total          = (int)w_total_n;
+    const int pw_chunk_ch_span = (int)pw_chunk_ch_span_n;
+    const int pw_total_iters   = (int)pw_total_iters_n;
+    if (pw_cached_ok) {
         PW_WEIGHT_HOIST: for (int i = 0; i < w_total; i++) {
             #pragma HLS PIPELINE II=1
             pw_weight_cache[i] = w_base[d.w_off + pw_w_chunk_off + i];
@@ -1038,10 +1087,23 @@ static void run_layer(const LayerDescV2 &d,
      * the full real-P&R diagnosis (critical path moved to run_layer's own
      * FSM after the first fix, still sinking into the shared multiplier,
      * this time via total_iters's multiply). Passed in as total_iters_in. */
-    int pw_total_iters = pw_ot_count * (pw_n_cbase * PW_FLAT_STEPS_PER_CBASE + PW_FLAT_WRITEOUT_ELEMS);
+    /* pw_total_iters: now a narrow-typed product above (SHARED_MUL_ARMS
+     * round, 2026-09-12) -- same value, not on the shared 32x32 unit. */
 
+    /* SHARED_MUL_ARMS round (2026-09-12): rt*MAC_PR*W (ROW_READ input rows)
+     * and rt*MAC_PR*w_out (PW writeout rows) as rt-loop accumulators --
+     * stepped by MAC_PR*W / MAC_PR*w_out (MAC_PR is a compile-time 4, a
+     * shift), so neither ever touches a multiplier. Re-initialised per
+     * PW_WCHUNK chunk because the rt loop restarts per chunk. */
+    int pw_rt_in_base  = 0;
+    int pw_rt_row_base = 0;
     for (int rt = 0; rt < d.n_row_tiles; rt++) {
         int r_sz = (rt == d.n_row_tiles - 1) ? d.last_row_tile : MAC_PR;
+        int rt_row_base = pw_rt_row_base;   /* == rt*MAC_PR*w_out for THIS rt */
+        int rr_w = 0;                       /* == rr*W inside ROW_READ, stepped there */
+        int rt_in_base  = pw_rt_in_base;    /* == rt*MAC_PR*W for THIS rt */
+        pw_rt_row_base += MAC_PR * d.w_out; /* for the NEXT rt */
+        pw_rt_in_base  += MAC_PR * W;
 
         /* A3 row-hoist round (2026-08-25, ZHR-92) stage 1: PW-only row-
          * level burst hoist. PW_PATCH_HOIST (below, per-(rt,colt)) issues
@@ -1129,11 +1191,17 @@ static void run_layer(const LayerDescV2 &d,
                  * is what actually discards this row's data downstream via
                  * a data-path valid, not this loop. */
                 bool r_valid = rr < r_sz;
-                int oh = rt * MAC_PR + (r_valid ? rr : 0);
+                /* SHARED_MUL_ARMS round (2026-09-12): oh*W was one of the 6
+                 * run_layer arms on the shared 32x32 multiplier (FSM state
+                 * 105). oh_w == (rt*MAC_PR + (r_valid ? rr : 0)) * W, built
+                 * from pw_rt_in_base (rt loop accumulator, += MAC_PR*W per
+                 * rt) and rr_w (+= W per rr). Zero multiplies. */
+                int oh_w = rt_in_base + (r_valid ? rr_w : 0);
+                rr_w += W;
                 int ch_base = 0;    /* == ci * d.in_ch_stride, accumulated -- no runtime multiply */
                 int flat_base = 0;  /* == ci * W, accumulated -- row_buf's own flat layout */
                 ROW_READ_CH: for (int ci = 0; ci < Cin; ci++) {
-                    int byte_addr = d.in_off + ch_base + oh * W;
+                    int byte_addr = d.in_off + ch_base + oh_w;
                     int word_addr0 = byte_addr >> 2;
                     int r = byte_addr & 3;
                     int n_words = (r + W + 3) >> 2;
@@ -1830,9 +1898,9 @@ static void run_layer(const LayerDescV2 &d,
                  * mechanism entirely. */
                 bool pw_narrow = (d.last_col_tile < MAC_PC) || ((d.out_off & 3) != 0);
                 if (pw_narrow) {
-                    pw_flat_pipeline_narrow(d, w_base, pw_weight_cache, pw_cached_ok, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz, pw_ot_lo, pw_ot_count, pw_ot_out_ch_base, pw_total_iters);
+                    pw_flat_pipeline_narrow(d, w_base, pw_weight_cache, pw_cached_ok, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt_row_base, colt, r_sz, col_sz, pw_ot_lo, pw_ot_count, pw_ot_out_ch_base, pw_total_iters);
                 } else {
-                    pw_flat_pipeline(d, w_base, pw_weight_cache, pw_cached_ok, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt, colt, r_sz, col_sz, pw_ot_lo, pw_ot_count, pw_ot_out_ch_base, pw_total_iters);
+                    pw_flat_pipeline(d, w_base, pw_weight_cache, pw_cached_ok, pw_patch_full, pw_bias_cache, pw_shift_cache, out_base, out_burst, rt_row_base, colt, r_sz, col_sz, pw_ot_lo, pw_ot_count, pw_ot_out_ch_base, pw_total_iters);
                 }
             }
         }
@@ -1843,8 +1911,9 @@ static void run_layer(const LayerDescV2 &d,
      * CHUNK (at most 3x per real layer), not once per (rt,colt) spatial
      * tile the way the fixed regression did -- a real, large reduction in
      * call-site frequency even though a multiply is still here. */
-    pw_w_chunk_off += pw_ot_count * d.cin;
-    pw_ot_out_ch_base += pw_ot_count * d.out_ch_stride;
+    pw_w_chunk_off    += w_total;            /* == pw_ot_count * d.cin (narrow product above) */
+    pw_ot_out_ch_base += pw_chunk_ch_span;   /* == pw_ot_count * d.out_ch_stride (narrow product above) */
+    pw_ot_lo          += pw_ot_per_chunk;    /* == (wchunk+1) * pw_ot_per_chunk */
     } // end PW_WCHUNK
 }
 
@@ -2283,8 +2352,34 @@ void mac_array_top(
      * CLAUDE.md. Done as its own single-variable round on the deployed
      * baseline (DW_OUTPUT_BURST OFF) so its effect on that sink's margin
      * is measured cleanly. */
-    const int scalar_hw    = desc.h_in * desc.w_in;
-    const int scalar_total = desc.cin * scalar_hw;
+    /* SHARED_MUL_ARMS round (2026-09-12): the hoisted scalar_hw was still
+     * one arm (the unconditional w_in*h_in @state2) of the top-level 2-arm
+     * mux into the shared 32x32 multiplier. Narrow operand types (real
+     * network: h_in/w_in <= 128, cin <= 1152; declared 9/20/11 bits, see
+     * below, asserted in csim) make HLS emit a different, narrow
+     * multiplier core that cannot share with mul_32s_32s_32 -- so the
+     * top-level mux disappears by construction, without relying on an
+     * ALLOCATION pragma (silently ignored once on this project). Whether
+     * HLS actually keeps them narrow is verified in the binding DB, not
+     * assumed. */
+    /* Widths: h_in 9 bits (real max 128), w_in 20 bits (real max 128, but
+     * gelu_add_burst_tb.cpp's synthetic shapes put the whole element count
+     * in w_in, up to 786,432 -- kept, it's the GELU/ADD regression suite),
+     * cin 11 bits (real max 1152); products 21 / 32 bits. Any of these
+     * would be silently truncated for an out-of-range descriptor, so the
+     * ranges are asserted in csim. */
+#ifndef __SYNTHESIS__
+    assert(desc.h_in >= 0 && desc.h_in < (1 << 9) && desc.w_in >= 0 && desc.w_in < (1 << 20) && desc.cin >= 0 && desc.cin < (1 << 11));
+    assert((long long)desc.h_in * desc.w_in < (1LL << 21));
+    assert((long long)desc.cin * desc.h_in * desc.w_in < (1LL << 31));
+#endif
+    const ap_uint<9>  sz_h = desc.h_in;
+    const ap_uint<20> sz_w = desc.w_in;
+    const ap_uint<11> sz_c = desc.cin;
+    const ap_uint<21> scalar_hw_n    = sz_h * sz_w;
+    const ap_uint<32> scalar_total_n = sz_c * scalar_hw_n;
+    const int scalar_hw    = (int)scalar_hw_n;
+    const int scalar_total = (int)scalar_total_n;
     switch (desc.op_type) {
         case LDESC_OP_ADD:     run_add(desc, scalar_total, elemwise_in_burst, elemwise_out_burst); break;
         case LDESC_OP_GAP:     run_gap(desc, scalar_hw, in_base, out_base); break;
