@@ -2911,8 +2911,9 @@ has actually been fixed and re-verified, not when a comment says it was.
   `writeresp` left the body). (3) `write` did NOT leave the pipeline. Cost of the shape:
   `CROW_CCOL` is no longer flattened (`CROW` is now a sequential outer loop around three small
   pipelined loops) -- per row ~20 cycles of request-loop + `CCOL` fill/drain + response-loop
-  overhead over all 47,776 DW rows = ~9.6ms, plus the B-wait once per valid lane-row (~30 cycles x
-  32,760 rows = ~9.8ms) -- against the ~156ms of per-write waits it removes. csim sanity (raster tb,
+  overhead over all 97,344 DW rows (sum of cin*h_pad) = ~19.5ms, plus the B-wait once per valid
+  lane-row (~30 cycles x 72,192 valid rows = ~21.7ms, fpg=1 basis) -- ~41ms of new per-row cost
+  against the ~156ms of per-write waits it removes: net ~-115ms expected, not -130. csim sanity (raster tb,
   `-DDWR_ROWBURST`): the three fpg=1 cases PASS byte-exact (confirms request/write/response
   counting per row), the two fpg=2 cases FAIL (59385/98304, 23762/49152) -- exactly the two-open-
   bursts interleaving problem, by construction, step 2's question.
