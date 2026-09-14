@@ -584,7 +584,10 @@ static void dwr_consume(
     // Fix 1 kept here too: nested ROW/COL, mirroring dwr_produce, instead
     // of a total_beats(=h_pad*w_pad)-bounded flat loop.
 #if defined(DW_OUTPUT_BURST) && defined(DWR_ROWBURST)
-    /* ZHR-92 (2026-09-14) DWR_ROWBURST -- STEP-1 MECHANISM PROBE, OFF by
+    /* ZHR-92 (2026-09-14) DWR_ROWBURST -- ON BY DEFAULT since 2026-09-14
+     * (dw_raster_layer.h; DWR_ROWBURST_OFF reverts), deployed as
+     * mac_array_a3_rowburst. History below is as written during the round.
+     * Originally a STEP-1 MECHANISM PROBE, OFF by
      * default. The deployed packed writeout issues write_request + write +
      * write_response for EVERY 4 outputs, all three inside one CROW_CCOL
      * iteration (sched: writereq ST_9, write ST_10, 5-stage writeresp

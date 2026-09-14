@@ -68,6 +68,21 @@
 #define DW_OUTPUT_BURST 1
 #endif
 
+// ZHR-92 (2026-09-14): DWR_ROWBURST is ON BY DEFAULT as of the
+// mac_array_a3_rowburst deployed baseline (real board: DW 329.0 -> 224.7ms,
+// -31.7%; full network ~898 -> ~790ms, -12%; byte-exact, ONNX cosine exact).
+// Requires DW_OUTPUT_BURST. It moves the packed write's request and response
+// from "once per 4 outputs, inside the CROW_CCOL iteration" (each write
+// waited ~30 cycles for its own B response inside the II=2 pipeline: 522,240
+// waits, ~156ms) to once per lane-ROW outside the pipelined loop; lane 1's
+// words go through a per-row buffer drained after lane 0's burst (AXI data
+// order = AW order), which also leaves ONE bus write per iteration and took
+// CCOL from achieved II=2 to II=1. Define DWR_ROWBURST_OFF to get the
+// per-word form back. See dw_raster_layer.cpp's DWR_ROWBURST comment.
+#if defined(DW_OUTPUT_BURST) && !defined(DWR_ROWBURST_OFF)
+#define DWR_ROWBURST 1
+#endif
+
 // ZHR-92 round (2026-09-07): DWR_INPUT_BURST (OFF by default -- ATTEMPTED
 // AND REJECTED, real board result: DW 531.20ms->574.22ms, +8.1% WORSE,
 // not better. See dw_raster_layer.cpp's own DWR_INPUT_BURST comment for

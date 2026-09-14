@@ -1926,9 +1926,58 @@ supposedly standing in for.
   must reflect current config) is a standing TODO to verify, not a fact — especially before building
   new code (like a register-write driver) that will silently inherit whichever version is wrong.**
 
-## Current deployed baseline (updated 2026-09-13 -- supersedes every earlier baseline reference below)
+## Current deployed baseline (updated 2026-09-14 -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_dwob` is now the deployed baseline**, replacing `mac_array_a3_sohoist` (1,095.36ms /
+**`mac_array_a3_rowburst` is now the deployed baseline**, replacing `mac_array_a3_dwob` (~898ms /
+DW 329.0ms / WNS +0.172ns, deployed 2026-09-13). Full network **~790ms** (791.96 / 789.26ms over
+two runs, per-entry sums 769.97 / 769.28), **-12%**; DW 329.0 -> **224.7ms (-31.7%)**. Cumulative
+on this latency line: 6,050ms -> ~790ms, **-86.9%**. Archive + full writeup:
+`vivado_impl/bitstream_archive/mac_array_a3_rowburst_2026-09-14/README.txt`.
+
+**What changed** (`DWR_ROWBURST`, commit `5079957`, default ON since this round via
+`dw_raster_layer.h` -- `DWR_ROWBURST_OFF` reverts; requires `DW_OUTPUT_BURST`): the packed DW
+output write's request/response moved from once-per-word-inside-the-iteration (each write waited
+~30 cycles for its own B response inside the II=2 pipeline: 522,240 waits, ~156ms) to once per
+lane-row outside the pipelined loop; lane 1's words go through a per-row buffer drained after lane
+0's burst (AXI data order = AW order). Side effect: one bus write per iteration -> `CROW_CCOL`
+achieved **II 2 -> 1** (the `200-880` was a property of the lane structure, not the hardware --
+see the corrected `200-880` rule above). Verified in the schedule BEFORE implementing (step 1
+probe: writereq/writeresp out of the iteration body, write(word) still inside) -- not the
+`PW_WRITEOUT_FLUSH` shape. Default-flip verified: flag-less csynth totals bit-identical to the
+tested build (246/33/38,792/72,878, CCOL II=1, `hw.h` identical), flag-less csim 5/5+4/4+8/8+4/4.
+
+Real P&R (route_design alone, NO phys_opt): **WNS +0.311772ns** (best since macpd4's +0.339);
+LUT 44,243/53,200 (83.16%, +163 vs dwob -- isolated said +788); BRAM 107 (flat); DSP 36/220
+(16.36%, -10, exactly as isolated: lane bases once per channel replaced the per-write
+`co*out_ch_stride`). Worst path: `gmem_w` load buffer -> DW gather (10 levels, 95% route) -- the
+route-dominated population; `dwr_produce`'s carry chain left the top-5.
+
+Board (2026-09-14, pre-registered order, 30s timeouts): entry5_dw FIRST, 3 runs, byte-exact,
+24.8 -> 14.2ms (-43%); SE ops 75/77/79/80 byte-exact; controls entry3/entry0_gelu/entry10_add
+byte-exact at their usual times; full network 82/82 x2, all 7 checkpoint files MD5-identical;
+DWCONV 224.74 / 224.58 (-31.7%), PWCONV 496.3 (+0.2%), GELU/ADD/SE flat; ONNX cosine EXACT
+0.6313/0.1286/0.2227/0.3491/-0.2459/-0.2811. Register map unchanged. Golden untouched.
+Operator split now: **PW 63%**, DW 28%, GELU 2.9%, ADD 1.7%, SE 1.6%.
+
+**The landing point's information (the round's most important number): DW landed at 224.7, the
+"II gain NOT realised" end of the pre-registered 182-217.** Refit on this run (R^2 0.995): DW =
+**6.08 cycles/input-pixel + 0.30 cycles/output + 90/channel** (dwob: 4.72 / 7.45 / 160). The
+output term collapsed 156 -> 6ms -- the mechanism did exactly what it was designed to do -- and the
+per-pixel term is now 216 of DW's 225ms: ~6 cycles per input pixel, UNIFORM across stride-1 and
+stride-2 layers (5.7-7.0; the tiny fpg=2 s1 layer 74 at 11.2 is row-overhead-dominated), where
+consume at II=1 needs ~1.3-3.6. **`dwr_produce`'s plain per-pixel `in_base[]` AXI read is now THE
+DW bottleneck, definitively -- exposed by roughly (6.08 - 1) x 3.55M pixels = ~180ms.** This is the
+third time the "did the II saving materialise per layer" method decided a question on this line,
+and it reverses the 2026-09-13 DWR_INPUT_BURST verdict's premise: that verdict ("produce hidden,
+don't reopen") was correct at consume II=2 and is now void at II=1. The input side needs its own
+handshake-count treatment -- the SAME shape as this round (row-granularity `read_request` outside
+the pipelined loop, word-packed `read()`s inside it, so the reads stay overlapped with consume
+through the DATAFLOW pair), NOT `DWR_INPUT_BURST`'s serial per-channel prefetch (which pulls the
+read out of the overlap and was measured at +43ms of additive cost). Not started.
+
+## Prior deployed baseline (superseded 2026-09-14, kept for history)
+
+**`mac_array_a3_dwob` was the deployed baseline from 2026-09-13 to 2026-09-14**, replacing `mac_array_a3_sohoist` (1,095.36ms /
 82.81% LUT / WNS +0.138ns route-only, deployed 2026-09-12). Full network **~898ms** (903.14 /
 893.46ms over two runs; per-entry sums 873.24 / 873.11, identical -- the PL-total spread is
 inter-entry host jitter), **-18%**, DW 531.13 -> **329.0ms (-38.0%)**. Cumulative on this latency
@@ -3002,6 +3051,15 @@ has actually been fixed and re-verified, not when a comment says it was.
   (partitioning, port widening, access-count reduction) for that specific violation -- they cannot
   help; only a structural change (a genuinely separate port, or removing one of the two dependent
   operations) can.**
+  **CORRECTED 2026-09-14 (`DWR_ROWBURST` step 2): `200-880` says "this SHAPE cannot do better" --
+  it does NOT say the shape is necessary.** The `CROW_CCOL` II=2 was read (2026-09-09/14) as a
+  structural floor needing "a genuinely separate port" -- wrong conclusion from a right diagnostic.
+  The carried dependence was between the two g-lanes' bus writes in the SAME iteration; routing
+  lane 1's words through a per-row buffer (drained after the row, behind lane 0's burst) leaves one
+  bus write per iteration and `CCOL` went to achieved II=1 with no new port at all. The `200-880`
+  premise ("two writes per iteration on one port") was a property of the code's lane structure,
+  not of the hardware. Before concluding a `200-880` needs a physical resource, ask whether the two
+  dependent operations have to be in the same iteration in the first place.
   **REAL P&R, 2026-09-09: STOP-LOSS TRIGGERED -- the mechanism works but this build does not close
   timing. route_design alone came back WNS=-0.418053ns**, outside both this round's own pre-registered
   `-0.2ns` gate for attempting `phys_opt_design` AND this file's own established
