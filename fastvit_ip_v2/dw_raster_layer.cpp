@@ -509,6 +509,9 @@ static void dwr_consume(
     int h_pad, int w_pad,
 #ifdef DW_OUTPUT_BURST
     hls::burst_maxi<ap_uint<32> > out_burst_w,
+#ifdef DWR_ROWBURST
+    int S, int w_out,
+#endif
 #endif
     hls::stream<dwr_beat_t> &taps)
 {
@@ -580,7 +583,57 @@ static void dwr_consume(
 
     // Fix 1 kept here too: nested ROW/COL, mirroring dwr_produce, instead
     // of a total_beats(=h_pad*w_pad)-bounded flat loop.
+#if defined(DW_OUTPUT_BURST) && defined(DWR_ROWBURST)
+    /* ZHR-92 (2026-09-14) DWR_ROWBURST -- STEP-1 MECHANISM PROBE, OFF by
+     * default. The deployed packed writeout issues write_request + write +
+     * write_response for EVERY 4 outputs, all three inside one CROW_CCOL
+     * iteration (sched: writereq ST_9, write ST_10, 5-stage writeresp
+     * ST_11-15), so each write waits ~30 cycles for its own B response
+     * inside the II=2 pipeline: 522,240 writes x ~30 = ~156ms of DW's 329ms
+     * (real-board fit, 7.45 cycles/output). This variant moves ONLY the
+     * request and the response to the ROW boundary -- one
+     * write_request(row_addr, w_out/4) per lane before the CCOL loop, one
+     * write_response() per lane after it -- and leaves write(word) exactly
+     * where it is inside the pipelined loop. Row validity mirrors
+     * dwr_produce's own row_phase logic (rows < K-1 and stride-skipped rows
+     * emit nothing). Row base advances by w_out per VALID row (accumulator,
+     * no multiply). NOT yet correct for fpg=2: two open bursts on one port
+     * cannot interleave data (AXI AW order), and both lanes emit words at
+     * the same pixels -- that is step 2's question; this step only asks
+     * whether HLS keeps write(word) in the pipeline (II=2) and lifts
+     * writereq/writeresp out of the iteration body -- if write leaves the
+     * pipeline too, that is PW_WRITEOUT_FLUSH's failed shape and this stops.
+     * Costs CROW/CCOL flattening (fill/drain per row) -- expected, small. */
+    int row_phase = 0;
+    int row_off = 0;                       /* == (valid rows so far) * w_out */
+    const int n_words_row = w_out >> 2;    /* real w_out is always a multiple of 4 */
     CROW: for (int prow = 0; prow < h_pad; prow++) {
+        bool row_valid;
+        if (prow < K - 1) {
+            row_valid = false;
+        } else if (prow == K - 1) {
+            row_phase = 0;
+            row_valid = true;
+        } else {
+            row_phase++;
+            if (row_phase == S) row_phase = 0;
+            row_valid = (row_phase == 0);
+        }
+        if (row_valid) {
+            for (int g = 0; g < DWR_MAX_FPG; g++) {
+                if (g < fpg) {
+#ifdef DWR_HOIST_BASE_ADDR
+                    int row_addr = base_addr_arr[g] + row_off;
+#else
+                    int row_addr = out_off + (ci * fpg + g) * out_ch_stride + row_off;
+#endif
+                    out_burst_w.write_request(row_addr >> 2, n_words_row);
+                }
+            }
+        }
+#else
+    CROW: for (int prow = 0; prow < h_pad; prow++) {
+#endif
         CCOL: for (int pcol = 0; pcol < w_pad; pcol++) {
 #pragma HLS PIPELINE II=1
             dwr_beat_t beat = taps.read();
@@ -630,7 +683,16 @@ static void dwr_consume(
                         wbuf[g][wbuf_n[g]] = (act_t)v;
                         wbuf_n[g]++;
                         if (wbuf_n[g] == 4) {
-#ifdef DW_OUTPUT_BURST
+#if defined(DW_OUTPUT_BURST) && defined(DWR_ROWBURST)
+                            {
+                                ap_uint<32> word = 0;
+                                for (int k = 0; k < 4; k++) {
+#pragma HLS UNROLL
+                                    word.range(k * 8 + 7, k * 8) = (ap_uint<8>)wbuf[g][k];
+                                }
+                                out_burst_w.write(word);   /* request issued at row start, response at row end */
+                            }
+#elif defined(DW_OUTPUT_BURST)
                             dwr_writeout_packed(out_burst_w, base_addr + write_ptr[g], wbuf[g]);
 #else
                             dwr_writeout_impl<true>(out_base, base_addr, write_ptr[g], wbuf[g], 4);
@@ -642,6 +704,14 @@ static void dwr_consume(
                 }
             }
         }
+#if defined(DW_OUTPUT_BURST) && defined(DWR_ROWBURST)
+        if (row_valid) {
+            for (int g = 0; g < DWR_MAX_FPG; g++) {
+                if (g < fpg) out_burst_w.write_response();
+            }
+            row_off += w_out;
+        }
+#endif
     }
     for (int g = 0; g < DWR_MAX_FPG; g++) {
         bool g_valid = (g < fpg);
@@ -751,6 +821,9 @@ void run_dw_layer_raster(
                     out_base, out_off, out_ch_stride, h_pad, w_pad,
 #ifdef DW_OUTPUT_BURST
                     out_burst_w,
+#ifdef DWR_ROWBURST
+                    S, w_out,
+#endif
 #endif
                     taps);
 #endif

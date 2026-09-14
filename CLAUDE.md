@@ -2895,6 +2895,39 @@ has actually been fixed and re-verified, not when a comment says it was.
   **Verdict on the round's question: DW is not "at its ceiling" -- but the way forward is fewer
   write handshakes inside the existing pipeline, not a second port. PW (55%) remains the largest
   operator; this DW lever (~130ms) is comparable in size to anything visible on PW right now.**
+  **STEP 1 DONE, 2026-09-14 -- `DWR_ROWBURST` mechanism probe (OFF by default, inside
+  `DW_OUTPUT_BURST`; `run_csynth_rowburst_probe.tcl`, `run_csim_rowburst_probe.tcl`): the schedule
+  has the RIGHT shape -- request/response left the iteration body, `write(word)` stayed in the
+  pipeline at II=2. NOT the `PW_WRITEOUT_FLUSH` shape. Proceed to step 2.** The probe: one
+  `write_request(row_addr, w_out/4)` per lane in a tiny loop BEFORE `CCOL`, `write(word)` unchanged
+  inside `CCOL`, one `write_response()` per lane in a tiny loop AFTER `CCOL`; row validity mirrors
+  `dwr_produce`'s `row_phase` logic (needs `S`, `w_out` passed in); row base is an accumulator.
+  Schedule reports (`rowburst_probe/s1/.autopilot/db/*.verbose.sched.rpt`), counted per module:
+  (1) `writereq`: ONLY in `dwr_consume3_Pipeline_VITIS_LOOP_623_5` (the per-row request loop, trip
+  2, 6 cycles); `writeresp`: ONLY in `..._VITIS_LOOP_709_10` (the per-row response loop, trip 2,
+  the 5-stage op at ST_2-6) -- ZERO of either inside `Pipeline_CCOL`. (2) `write`: 2 ops (one per
+  lane) inside `Pipeline_CCOL` at ST_10/ST_11; `CCOL` achieved II=2 (same `200-880` as before, two
+  writes per iteration -- unchanged structural floor), iteration latency 15 -> 10 (the 5-stage
+  `writeresp` left the body). (3) `write` did NOT leave the pipeline. Cost of the shape:
+  `CROW_CCOL` is no longer flattened (`CROW` is now a sequential outer loop around three small
+  pipelined loops) -- per row ~20 cycles of request-loop + `CCOL` fill/drain + response-loop
+  overhead over all 47,776 DW rows = ~9.6ms, plus the B-wait once per valid lane-row (~30 cycles x
+  32,760 rows = ~9.8ms) -- against the ~156ms of per-write waits it removes. csim sanity (raster tb,
+  `-DDWR_ROWBURST`): the three fpg=1 cases PASS byte-exact (confirms request/write/response
+  counting per row), the two fpg=2 cases FAIL (59385/98304, 23762/49152) -- exactly the two-open-
+  bursts interleaving problem, by construction, step 2's question.
+  **Step 2 recommendation, read off this schedule (not decided):** the request and response already
+  live in tiny per-row loops OUTSIDE `CCOL`, so the most natural fpg=2 fix in THIS structure is a
+  third such per-row loop: lane 1's words go into a small per-row buffer (`ap_uint<32>[16]` max;
+  fpg=2 layers have w_out <= 32 -> <= 8 words) inside `CCOL` instead of the port, and after `CCOL`
+  a drain loop issues lane 1's request, writes the buffered words, then both responses -- AW order
+  is lane 0 then lane 1, data order matches, no interleaving. The buffer's state lives entirely
+  within one `CROW` iteration (reset per row; ordinary loop-carried, not DATAFLOW cross-region
+  state, which is where this line's three DATAFLOW failures were). The lane split is by unrolled
+  lane INDEX (g=0 -> port, g=1 -> buffer), a compile-time distinction, so there is no runtime
+  `if(fpg==1)` on the hot path either -- it covers 100% of outputs with one code path. The
+  fpg=1-only alternative (runtime path select, keep the per-word form for fpg=2) covers 89% and
+  adds a runtime-gated region; not preferred on this schedule's evidence, but it is the user's call.
   **FOLLOW-UP, 2026-09-08, same investigation: `wbuf`'s own II Violations (3 of the original 5)
   were fixed cheaply and cleanly (`#pragma HLS ARRAY_PARTITION variable=wbuf complete dim=1`, +0.21%
   LUT, zero BRAM/DSP, csim clean 5/5+4/4+8/8) -- but achieved II stayed at 8, not 7.** Re-running
