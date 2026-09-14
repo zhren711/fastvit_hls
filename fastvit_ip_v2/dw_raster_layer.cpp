@@ -190,8 +190,37 @@ static void dwr_produce_burst(
 static void dwr_produce(
     const act_t in_base[], int in_off, int ci, int in_ch_stride,
     int h_in, int w_in, int K, int S,
+#ifdef DWR_ROWREAD
+    hls::burst_maxi<ap_uint<32> > in_burst_r,
+#endif
     hls::stream<dwr_beat_t> &taps)
 {
+#ifdef DWR_ROWREAD
+    /* ZHR-92 (2026-09-14) DWR_ROWREAD -- STEP-1 MECHANISM PROBE, OFF by
+     * default. After DWR_ROWBURST took the output side's per-write B-waits
+     * away, the real-board refit put DW at 6.08 cycles per INPUT pixel
+     * (216 of 225ms) with consume at II=1 needing ~1.3-3.6 -- this loop's
+     * plain per-pixel in_base[] AXI read is now the DW bottleneck. This is
+     * the SAME shape as DWR_ROWBURST, on the read side: one
+     * read_request(row_addr, w_in/4) per in-image row, issued BEFORE the COL
+     * loop; the word-packed read() stays INSIDE the pipelined COL loop (one
+     * 32-bit read per 4 in-image pixels, the byte peeled off by a >>8 per
+     * pixel -- no dynamic bit index). It is NOT DWR_INPUT_BURST's shape:
+     * that one prefetched the whole channel into a buffer in a SEPARATE
+     * serial stage before the produce/consume DATAFLOW pair started, so its
+     * read cost was additive (real board: +43ms) -- here the reads stay
+     * inside produce, overlapped with consume through the DATAFLOW pair.
+     * Alignment verified before writing this: all 79,872 real DW input row
+     * starts (in_off + ci*in_ch_stride + row*w_in, 25 layers) are mod4==0;
+     * padding never touches addressing (pad pixels are zero-filled without
+     * a read, in-image reads run from real_col=0). Port: dw_in_burst, the
+     * DW-dedicated 32-bit read port that already exists on gmem_act with
+     * its driver register already wired (0x100) -- zero interface change.
+     * Judgment (csynth, before anything else): readreq outside the COL
+     * body, read() inside it, COL achieved II=1 -- if read() leaves the
+     * pipeline, that is the DWR_INPUT_BURST shape and this stops. */
+    (void)in_base;
+#endif
     act_t lb0[DWR_WPAD_MAX], lb1[DWR_WPAD_MAX], lb2[DWR_WPAD_MAX];
     act_t lb3[DWR_WPAD_MAX], lb4[DWR_WPAD_MAX], lb5[DWR_WPAD_MAX];
 
@@ -202,13 +231,22 @@ static void dwr_produce(
     const int h_pad = h_in + 2 * pad;
     const int w_pad = w_in + 2 * pad;
     const int ci_base = in_off + ci * in_ch_stride;
-
+#ifdef DWR_ROWREAD
+    int row_byte = ci_base;                /* == ci_base + (in-image rows so far) * w_in */
+    const int n_words_in_row = w_in >> 2;  /* real w_in is always a multiple of 4 */
+    ap_uint<32> cur_word = 0;
+#else
     int read_ptr = 0;
+#endif
     int row_phase = 0;
-
     ROW: for (int prow = 0; prow < h_pad; prow++) {
         int real_row = prow - pad;
         bool row_in_image = (real_row >= 0) && (real_row < h_in);
+#ifdef DWR_ROWREAD
+        if (row_in_image) {
+            in_burst_r.read_request(row_byte >> 2, n_words_in_row);
+        }
+#endif
 
         bool row_valid;
         if (prow < K - 1) {
@@ -244,7 +282,14 @@ static void dwr_produce(
             dwr_beat_t beat;
             beat.valid = row_valid && col_valid;
 
+#ifdef DWR_ROWREAD
+            if (col_in_image && ((real_col & 3) == 0)) {
+                cur_word = in_burst_r.read();      /* request issued at row start; one read per 4 in-image pixels */
+            }
+            act_t new_pixel = col_in_image ? (act_t)(ap_int<8>)cur_word.range(7, 0) : (act_t)0;
+#else
             act_t new_pixel = col_in_image ? in_base[ci_base + read_ptr] : (act_t)0;
+#endif
 
             act_t v5 = lb5[pcol]; lb5[pcol] = new_pixel;
             act_t v4 = lb4[pcol]; lb4[pcol] = v5;
@@ -269,8 +314,15 @@ static void dwr_produce(
                     beat.window[r][c] = window[r][c];
             taps.write(beat);
 
+#ifdef DWR_ROWREAD
+            if (col_in_image) cur_word = cur_word >> 8;
+#else
             if (col_in_image) read_ptr++;
+#endif
         }
+#ifdef DWR_ROWREAD
+        if (row_in_image) row_byte += w_in;
+#endif
     }
 }
 #endif // DWR_INPUT_BURST
@@ -817,7 +869,7 @@ void run_dw_layer_raster(
     int in_ch_stride, int out_ch_stride, int h_out, int w_out)
 {
     (void)cout; (void)pad;
-#ifndef DWR_INPUT_BURST
+#if !defined(DWR_INPUT_BURST) && !defined(DWR_ROWREAD)
     (void)dw_in_burst;
 #endif
     const int p = K / 2;
@@ -839,7 +891,11 @@ void run_dw_layer_raster(
 #ifdef DWR_INPUT_BURST
         dwr_produce_burst(ch_buf, h_in, w_in, K, S, taps);
 #else
-        dwr_produce(in_base, in_off, ci, in_ch_stride, h_in, w_in, K, S, taps);
+        dwr_produce(in_base, in_off, ci, in_ch_stride, h_in, w_in, K, S,
+#ifdef DWR_ROWREAD
+                    dw_in_burst,
+#endif
+                    taps);
 #endif
 #ifdef DWR_ENABLE_FPG_SPECIALIZATION
         if (fpg == 1) {
