@@ -2853,6 +2853,48 @@ has actually been fixed and re-verified, not when a comment says it was.
   it was, this time BEFORE building anything. The 1:1 "did the II saving materialise per layer"
   check is a cheap, board-data-only way to tell which side of a producer/consumer pair is binding;
   it needs two real runs at two different IIs, which this line now has.**
+  **DW OUTPUT SIDE COSTED, 2026-09-14 (analysis only, no build): a second physical write port is
+  NOT worth it, the 8-byte lane merge is infeasible, and the premise "II 2->1 halves the 156ms" is
+  wrong -- the 156ms is per-write ROUND-TRIP STALL, not II, and the lever is handshake COUNT.**
+  1. Second write port: `bundle=gmem_act` already carries 8 ports (`in_base`, `out_base`,
+     `in_base_wide`, `out_burst`, `in_burst`, `elemwise_in/out_burst`, `dw_in_burst`) -- all on ONE
+     adapter with ONE AXI write channel; a 9th port on the same bundle gives nothing (the `200-880`
+     is "two bus writes on port gmem_act per cycle", a per-bundle limit). A real second write path
+     means a second BUNDLE = a new AXI master: BD change (`sc_data` NUM_SI 3->4), a new adapter
+     (~+950 LUT, from `dummy4th`'s measured +1.78pp), a new driver register per port on it (the
+     shared-bundle trap), and -- the two data points this line has for "add a master" -- **~-0.4 to
+     -0.5ns of route-only WNS** (`gmem_act_wide`'s 5th master ~0.4ns; `dummy4th` on macpd4: +0.339
+     -> -0.133). From +0.172 that lands at about -0.25..-0.33, at/over the phys_opt band edge.
+     And the payoff is NOT 78ms: the consume II=2 floor over all 3.552M DW input pixels is only
+     71ms of DW's 329, so II 2->1 saves AT MOST 35.5ms (10.8% of DW, 4.0% of the network) -- the
+     stalls above the II floor don't shrink with II. 35ms for ~0.45ns of margin: no.
+  2. 8-byte merge of the two g-lanes' words: needs contiguous targets; 3. they aren't: lane g's
+     row base is `out_off + (ci*fpg+g)*out_ch_stride` (`dw_raster_layer.cpp:544-548`), so the two
+     lanes sit `out_ch_stride = h_out*w_out` >= 64 bytes apart. Infeasible without changing the
+     output layout, which is a network-wide contract (PW reads channel-major). Closed.
+  **What the 156ms actually is (fit: 7.45 cycles/output = 29.8 cycles per packed 4-byte write --
+  the same ~30-35 cycles/transaction this project back-solved for reads on 2026-09-04): the
+  `CROW_CCOL` schedule (`dwr_consume3_Pipeline_CROW_CCOL.verbose.sched.rpt`) puts `writereq`
+  (ST_9), `write` (ST_10) and a 5-stage `writeresp` (ST_11-15) in the SAME iteration, so every
+  packed write waits for its own B response inside the II=2 pipeline -- ~30 cycles of stall per
+  write, 522,240 writes = 156ms.** The lever is therefore handshake COUNT: one `write_request(addr,
+  w_out/4)` + one `write_response()` per lane-ROW with the `write(word)`s staying exactly where they
+  are in the pipeline -- 79,872 request/response pairs instead of 522,240 (x6.5 fewer), and if the
+  ~30-cycle stall is paid once per lane-row: ~24ms instead of 156, **~130ms saving, ~15% of the
+  network** -- the largest single lever left anywhere in the design by this arithmetic, and a
+  different shape from the failed `PW_WRITEOUT_FLUSH` (that pulled the data writes OUT of the
+  pipeline into a serial stage; this leaves them in place and moves only the request/response to
+  row boundaries -- but the difference must be verified in the schedule, not assumed: a
+  `writeresp` at row end still stalls ~30 cycles once per row, that IS the model). **Open design
+  question before any implementation: the two g-lanes.** Two open bursts on one AXI port cannot
+  interleave write data (AXI requires data in AW order), and fpg=2 lanes produce words at the same
+  pixels -- 4 of 25 real DW layers (11% of DW outputs). Options: row-buffer lane 1 (<= 64 bytes)
+  and issue its burst after lane 0's row closes; or restrict the row-burst form to fpg=1 (89% of
+  outputs) -- via a compile-time/template split, NOT a runtime `if(fpg==1)` in the pipeline (this
+  file's own runtime-gate rule; and `DWR_ENABLE_FPG_SPECIALIZATION`'s own history). Not decided.
+  **Verdict on the round's question: DW is not "at its ceiling" -- but the way forward is fewer
+  write handshakes inside the existing pipeline, not a second port. PW (55%) remains the largest
+  operator; this DW lever (~130ms) is comparable in size to anything visible on PW right now.**
   **FOLLOW-UP, 2026-09-08, same investigation: `wbuf`'s own II Violations (3 of the original 5)
   were fixed cheaply and cleanly (`#pragma HLS ARRAY_PARTITION variable=wbuf complete dim=1`, +0.21%
   LUT, zero BRAM/DSP, csim clean 5/5+4/4+8/8) -- but achieved II stayed at 8, not 7.** Re-running
