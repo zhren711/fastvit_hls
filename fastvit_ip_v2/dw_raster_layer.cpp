@@ -196,7 +196,10 @@ static void dwr_produce(
     hls::stream<dwr_beat_t> &taps)
 {
 #ifdef DWR_ROWREAD
-    /* ZHR-92 (2026-09-14) DWR_ROWREAD -- STEP-1 MECHANISM PROBE, OFF by
+    /* ZHR-92 (2026-09-14) DWR_ROWREAD -- ON BY DEFAULT since 2026-09-14
+     * (dw_raster_layer.h; DWR_ROWREAD_OFF reverts), deployed as
+     * mac_array_a3_rowread: DW 224.6 -> 115.5ms. History below as written
+     * during the round. Originally a STEP-1 MECHANISM PROBE, OFF by
      * default. After DWR_ROWBURST took the output side's per-write B-waits
      * away, the real-board refit put DW at 6.08 cycles per INPUT pixel
      * (216 of 225ms) with consume at II=1 needing ~1.3-3.6 -- this loop's

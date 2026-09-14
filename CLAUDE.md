@@ -1380,6 +1380,17 @@ supposedly standing in for.
   base, the isolated/real relationship has now held on three consecutive builds. Use it only with
   >=2 prior real data points for the same mechanism, only for the same resource category, and say
   which prior builds the ratio came from.
+- **The "gate it OFF, keep it" convention has a payoff beyond documentation: a rejected round's
+  INFRASTRUCTURE (a port, its driver register, a testbench hook) can be reused directly by a later
+  round -- so do not strip it when gating the mechanism.** Confirmed 2026-09-14 (`DWR_ROWREAD`):
+  the row-granularity input-read fix needed a 32-bit `burst_maxi` read port on `gmem_act` for DW.
+  `dw_in_burst` -- added by the REJECTED `DWR_INPUT_BURST` round (2026-09-07), kept as a live port
+  with its AXI-Lite register (0x100) already wired into all three ARM call sites, and `(void)`-ed
+  in the default build ever since -- was exactly that port: zero interface change, no new adapter,
+  no new register, no driver rebuild, no chance of the "shared bundle != shared register" trap.
+  Reusing `in_burst` (the first idea) would have needed a signature change through
+  `run_dw_layer_raster`. When a round is gated OFF, list in its comment what infrastructure it
+  leaves behind (ports, registers, tb hooks) so a later round can find it.
 - **"Use the top-N timing list to predict the next bottleneck" is NOT reliable on this design --
   placement variance is larger than the spacing between the near-tied paths.** Confirmed
   2026-09-12: the 300-path report on `sohoist` put the next-worst distinct structure at +0.246
@@ -1926,9 +1937,53 @@ supposedly standing in for.
   must reflect current config) is a standing TODO to verify, not a fact — especially before building
   new code (like a register-write driver) that will silently inherit whichever version is wrong.**
 
-## Current deployed baseline (updated 2026-09-14 -- supersedes every earlier baseline reference below)
+## Current deployed baseline (updated 2026-09-14, later -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_rowburst` is now the deployed baseline**, replacing `mac_array_a3_dwob` (~898ms /
+**`mac_array_a3_rowread` is now the deployed baseline**, replacing `mac_array_a3_rowburst` (~790ms /
+DW 224.6ms / WNS +0.312ns, same day). Full network **~679ms** (679.35 / 679.43ms over two runs,
+per-entry sums 659.9 / 659.4), **-14%**; DW 224.6 -> **115.5ms (-48.6%)**. Cumulative on this
+latency line: 6,050ms -> ~679ms, **-88.8%**. Archive + writeup:
+`vivado_impl/bitstream_archive/mac_array_a3_rowread_2026-09-14/README.txt`.
+
+**What changed** (`DWR_ROWREAD`, commit `c659a97`, default ON since this round via
+`dw_raster_layer.h` -- `DWR_ROWREAD_OFF` reverts; mutually exclusive with `DWR_INPUT_BURST`):
+the input-side twin of `DWR_ROWBURST` -- one `read_request(row_addr, w_in/4)` per in-image row
+BEFORE `dwr_produce`'s COL loop, the word-packed `read()` INSIDE the pipelined loop (COL II=1,
+iteration latency 12 -> 3), reads staying overlapped with consume through the DATAFLOW pair. NOT
+`DWR_INPUT_BURST`'s serial per-channel prefetch (additive, measured +43ms). Port: `dw_in_burst`,
+left behind by that rejected round with its driver register already wired -- zero interface
+change (see the infrastructure-reuse rule in the working-method section). Alignment checked
+first: all 79,872 real DW input row starts mod4==0; padding never touches addressing. Step-1
+schedule probe before implementing: readreq only in the ROW body, read() only in `Pipeline_COL`,
+COL II=1 -- and ZERO II violations design-wide, the first time on this line. Default-flip
+verified: flag-less csynth totals bit-identical (246/29/37,979/71,873, `hw.h` identical),
+flag-less csim 5/5+4/4+8/8+4/4.
+
+Real P&R (route_design alone, NO phys_opt): **WNS +0.112692ns** (rowburst +0.312 -- a placement
+roll on the SAME worst structure, `gmem_w` load buffer -> DW consume gather, 12 levels, 96%
+route; not the new read code); LUT 44,422/53,200 (83.50%, +179 vs rowburst -- isolated said
+-1,005, opposite sign); BRAM 107 (flat); DSP 32/220 (14.55%, -4 as isolated).
+
+Board (2026-09-14, pre-registered order, 30s timeouts, golden untouched): entry5_dw FIRST, 3
+runs, byte-exact, 14.2 -> 5.6ms (-60%; 38.9ms three rounds ago); SE ops 75/77/79/80 byte-exact;
+controls entry3/entry0_gelu/entry10_add byte-exact; full network 82/82 x2, all 7 checkpoint
+files MD5-identical; DWCONV 115.56 / 115.51 (-48.6%, pre-registered 100-150 = "input-side
+handshake WAS the bottleneck, same mechanism as the output side, same fix"), PWCONV 495.3 (flat),
+GELU/ADD/SE flat; ONNX cosine EXACT 0.6313/0.1286/0.2227/0.3491/-0.2459/-0.2811. Register map
+unchanged. Operator split now: **PW 73%**, DW 17%, GELU 3.4%, ADD 1.9%, SE 1.9%.
+
+**Refit on this run (R^2 0.88): DW = 1.29 cycles/input-pixel + 1.30 cycles/output + 886/channel
+= 46 + 27 + 39ms** (history: dwob 4.72/7.45/160 -> rowburst 6.08/0.30/90 -> here). The pixel
+term is at the II=1 floor (35.5ms). What is left of DW is three small terms, the per-CHANNEL one
+now the largest (~886 cycles/channel: `dwr_consume`'s pre-loop weight/bias loads as `fpg*(2+K^2)`
+individual DRAM reads, DATAFLOW start, the per-row loop overheads folded in). DW at 17% of the
+network is no longer where the time is -- **PW (73%) is the target now**, and the two DW rounds'
+finding transfers as a question: PW's own `ROW_READ`/`WRITEOUT` already use row-granularity
+bursts, but its remainder was never decomposed with the II-materialisation method.
+
+## Prior deployed baseline (superseded 2026-09-14, kept for history)
+
+**`mac_array_a3_rowburst` was the deployed baseline for part of 2026-09-14**, replacing `mac_array_a3_dwob` (~898ms /
 DW 329.0ms / WNS +0.172ns, deployed 2026-09-13). Full network **~790ms** (791.96 / 789.26ms over
 two runs, per-entry sums 769.97 / 769.28), **-12%**; DW 329.0 -> **224.7ms (-31.7%)**. Cumulative
 on this latency line: 6,050ms -> ~790ms, **-86.9%**. Archive + full writeup:

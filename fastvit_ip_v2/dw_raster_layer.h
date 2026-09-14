@@ -83,6 +83,20 @@
 #define DWR_ROWBURST 1
 #endif
 
+// ZHR-92 (2026-09-14): DWR_ROWREAD is ON BY DEFAULT as of the
+// mac_array_a3_rowread deployed baseline (real board: DW 224.6 -> 115.5ms,
+// -48.6%; full network ~790 -> ~679ms, -14%; byte-exact, ONNX cosine exact).
+// The input-side twin of DWR_ROWBURST: one read_request(row_addr, w_in/4)
+// per in-image row before dwr_produce's COL loop, word-packed read() inside
+// it (COL II=1, iteration latency 12 -> 3), through the already-present
+// dw_in_burst port (left behind by the rejected DWR_INPUT_BURST round, driver
+// register 0x100 already wired). Independent of DW_OUTPUT_BURST/DWR_ROWBURST.
+// Mutually exclusive with DWR_INPUT_BURST (both replace dwr_produce's read).
+// Define DWR_ROWREAD_OFF to get the per-pixel in_base[] read back.
+#if !defined(DWR_INPUT_BURST) && !defined(DWR_ROWREAD_OFF)
+#define DWR_ROWREAD 1
+#endif
+
 // ZHR-92 round (2026-09-07): DWR_INPUT_BURST (OFF by default -- ATTEMPTED
 // AND REJECTED, real board result: DW 531.20ms->574.22ms, +8.1% WORSE,
 // not better. See dw_raster_layer.cpp's own DWR_INPUT_BURST comment for
