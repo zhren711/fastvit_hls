@@ -603,10 +603,36 @@ static void dwr_consume(
      * whether HLS keeps write(word) in the pipeline (II=2) and lifts
      * writereq/writeresp out of the iteration body -- if write leaves the
      * pipeline too, that is PW_WRITEOUT_FLUSH's failed shape and this stops.
-     * Costs CROW/CCOL flattening (fill/drain per row) -- expected, small. */
+     * Costs CROW/CCOL flattening (fill/drain per row) -- expected, small.
+     *
+     * STEP 1 RESULT (2026-09-14, csynth): writereq only in the per-row
+     * request loop, writeresp only in the per-row response loop, write(word)
+     * inside Pipeline_CCOL at II=2 (iteration latency 15 -> 10). Right shape.
+     *
+     * STEP 2 (same day): the two g-lanes. Two open bursts on one AXI port
+     * cannot interleave write data (data must follow AW order), and both
+     * lanes emit words at the same pixels -- so lane 1's words go into a
+     * small PER-ROW buffer (l1buf, <= DWR_ROWBUF_WORDS; real fpg=2 layers have
+     * w_out <= 32 -> <= 8 words) instead of the port, and a third per-row
+     * loop after CCOL issues lane 1's request, drains l1buf, then collects
+     * both responses: AW order lane 0 -> lane 1, data order identical, no
+     * interleaving. The lane split is by the UNROLLED lane index (g==0 ->
+     * port, g==1 -> buffer), a compile-time distinction: no runtime
+     * if(fpg==1) on the hot path, one code path for 100% of outputs. l1buf's
+     * state lives entirely inside one CROW iteration (reset per row) --
+     * ordinary loop-carried state, NOT the DATAFLOW cross-region state that
+     * this line's three DATAFLOW failures were about. Lane base addresses
+     * are computed once per CHANNEL (before CROW), so no per-row multiply. */
     int row_phase = 0;
     int row_off = 0;                       /* == (valid rows so far) * w_out */
     const int n_words_row = w_out >> 2;    /* real w_out is always a multiple of 4 */
+    int lane_base[DWR_MAX_FPG];
+#pragma HLS ARRAY_PARTITION variable=lane_base complete dim=0
+    for (int g = 0; g < DWR_MAX_FPG; g++) {
+#pragma HLS UNROLL
+        lane_base[g] = out_off + (ci * fpg + ((g < fpg) ? g : 0)) * out_ch_stride;
+    }
+    ap_uint<32> l1buf[DWR_ROWBUF_WORDS];
     CROW: for (int prow = 0; prow < h_pad; prow++) {
         bool row_valid;
         if (prow < K - 1) {
@@ -619,17 +645,9 @@ static void dwr_consume(
             if (row_phase == S) row_phase = 0;
             row_valid = (row_phase == 0);
         }
+        int l1_n = 0;                      /* lane-1 words buffered this row */
         if (row_valid) {
-            for (int g = 0; g < DWR_MAX_FPG; g++) {
-                if (g < fpg) {
-#ifdef DWR_HOIST_BASE_ADDR
-                    int row_addr = base_addr_arr[g] + row_off;
-#else
-                    int row_addr = out_off + (ci * fpg + g) * out_ch_stride + row_off;
-#endif
-                    out_burst_w.write_request(row_addr >> 2, n_words_row);
-                }
-            }
+            out_burst_w.write_request((lane_base[0] + row_off) >> 2, n_words_row);
         }
 #else
     CROW: for (int prow = 0; prow < h_pad; prow++) {
@@ -690,7 +708,12 @@ static void dwr_consume(
 #pragma HLS UNROLL
                                     word.range(k * 8 + 7, k * 8) = (ap_uint<8>)wbuf[g][k];
                                 }
-                                out_burst_w.write(word);   /* request issued at row start, response at row end */
+                                if (g == 0) {
+                                    out_burst_w.write(word);   /* lane 0: request issued at row start, response at row end */
+                                } else {
+                                    l1buf[l1_n] = word;        /* lane 1: drained after CCOL, behind lane 0's burst */
+                                    l1_n++;
+                                }
                             }
 #elif defined(DW_OUTPUT_BURST)
                             dwr_writeout_packed(out_burst_w, base_addr + write_ptr[g], wbuf[g]);
@@ -706,6 +729,13 @@ static void dwr_consume(
         }
 #if defined(DW_OUTPUT_BURST) && defined(DWR_ROWBURST)
         if (row_valid) {
+            if (fpg > 1) {
+                out_burst_w.write_request((lane_base[1] + row_off) >> 2, n_words_row);
+                L1_DRAIN: for (int i = 0; i < n_words_row; i++) {
+#pragma HLS PIPELINE II=1
+                    out_burst_w.write(l1buf[i]);
+                }
+            }
             for (int g = 0; g < DWR_MAX_FPG; g++) {
                 if (g < fpg) out_burst_w.write_response();
             }

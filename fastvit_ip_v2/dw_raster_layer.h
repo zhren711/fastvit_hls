@@ -47,6 +47,7 @@
 #define DWR_H_MAX    128
 #define DWR_PAD_MAX  (DWR_MAX_K / 2)
 #define DWR_WPAD_MAX (DWR_W_MAX + 2 * DWR_PAD_MAX)
+#define DWR_ROWBUF_WORDS (DWR_W_MAX / 4)   /* DWR_ROWBURST: lane-1 per-row word buffer (real fpg=2 layers use <= 8) */
 
 // ZHR-92 (2026-09-13): DW_OUTPUT_BURST is ON BY DEFAULT as of the
 // mac_array_a3_dwob deployed baseline (real board: DW 531.13ms -> 329.0ms,
