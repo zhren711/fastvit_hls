@@ -250,6 +250,11 @@ typedef ap_int<32>  acc_t;   /* accumulator / bias */
 #define ELEMWISE_CHUNK 4096
 #define ELEMWISE_CHUNK_WORDS (ELEMWISE_CHUNK / 4)
 
+/* ZHR-92 (2026-09-15) SE_BURST: per-channel bound for run_gap's channel-sum
+ * buffer and run_scale's gate buffer (the SE block's GAP/SCALE are the only
+ * users; real cin=768). Both functions assert cin <= this in csim. */
+#define ELEMWISE_MAX_CH 1024
+
 /* A3 round 3 (2026-08-21, ZHR-92): bound for run_reduce_unified's
  * per-step gather buffers (lane_in_all/lane_w_all), see mac_array.cpp's
  * header comment on the drive_mac removal for the full rationale. Must

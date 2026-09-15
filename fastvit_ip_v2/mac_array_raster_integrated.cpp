@@ -2272,6 +2272,69 @@ static void run_add(const LayerDescV2 &d, int total,
  * csim-level goal, but a synthesis-cost item to revisit later, not
  * solved now (matches the project's "don't optimize efficiency this
  * round" discipline). */
+#ifdef SE_BURST
+/* ZHR-92 (2026-09-15) SE_BURST -- STEP-1/csim probe, OFF by default. The
+ * busy-poll harness (same day) put the SE block's GAP at 7.63 and SCALE at
+ * 11.08 cycles/element (3.75 / 5.45ms): plain-pointer, one-byte-per-
+ * iteration loops -- the exact shape run_gelu had at 8.6x before
+ * ELEMWISE_BURST. Same mechanism here, over the same elemwise_in/out_burst
+ * ports (gmem_act; GAP/SCALE never run concurrently with GELU/ADD).
+ * GAP is a REDUCTION: read side only (whole plane, chunked like GELU, a
+ * loop-carried channel counter -- no division inside the pipeline: the
+ * per-channel sum/HW stays in a separate sequential loop, as today), the
+ * one-byte-per-channel output keeps the plain out_base[] write (768 writes
+ * for the real layer; no alignment question on the output). SCALE is
+ * elementwise: gate vector burst-loaded once (cin bytes at in2_off,
+ * word-aligned), then run_gelu's own chunked read/compute/write. Alignment
+ * verified on the real descriptors before writing this (entries 75/80:
+ * in_off, in2_off, out_off all mod4==0, HW=64, cin=768). */
+static void run_gap(const LayerDescV2 &d, int total, int HW,
+                    hls::burst_maxi<ap_uint<32> > in_burst, act_t out_base[])
+{
+#ifndef __SYNTHESIS__
+    assert(d.cin <= ELEMWISE_MAX_CH && (HW % 4) == 0 && (d.in_off % 4) == 0 &&
+           "SE_BURST run_gap: cin > ELEMWISE_MAX_CH or unaligned HW/in_off");
+#endif
+    const int n_words  = total >> 2;
+    const int wpc      = HW >> 2;          /* words per channel (real: 16) */
+    const int in_off_w = d.in_off >> 2;
+    acc_t ch_sum[ELEMWISE_MAX_CH];
+    int   c = 0, cnt = 0;
+    acc_t sum = 0;
+    GAP_CHUNK: for (int base = 0; base < n_words; base += ELEMWISE_CHUNK_WORDS) {
+        int this_chunk = (n_words - base < ELEMWISE_CHUNK_WORDS) ? (n_words - base) : ELEMWISE_CHUNK_WORDS;
+        in_burst.read_request(in_off_w + base, this_chunk);
+        GAP_RD: for (int i = 0; i < ELEMWISE_CHUNK_WORDS; i++) {
+            #pragma HLS PIPELINE II=1
+            if (i < this_chunk) {
+                ap_uint<32> wi = in_burst.read();
+                acc_t s4 = 0;
+                for (int k = 0; k < 4; k++) {
+                    #pragma HLS UNROLL
+                    s4 += (acc_t)(act_t)wi.range(k * 8 + 7, k * 8);
+                }
+                acc_t nsum = sum + s4;
+                int ncnt = cnt + 1;
+                if (ncnt == wpc) {
+                    ch_sum[c] = nsum;
+                    sum = 0; cnt = 0; c++;
+                } else {
+                    sum = nsum; cnt = ncnt;
+                }
+            }
+        }
+    }
+    /* PIPELINE off: HLS auto-pipelined this loop in the first csynth and
+     * replaced the sequential sdiv (216 LUT) with a pipelined one (2,512
+     * LUT, latency 47). 768 sequential divisions cost ~0.25ms -- keep the
+     * small divider, as the pre-SE_BURST GAP_C loop had. */
+    GAP_OUT: for (int cc = 0; cc < d.cin; cc++) {
+        #pragma HLS PIPELINE off
+        acc_t avg = ch_sum[cc] / HW;
+        out_base[d.out_off + cc] = (act_t)clip_shift(avg, d.out_shift);
+    }
+}
+#else
 static void run_gap(const LayerDescV2 &d, int HW, const act_t in_base[], act_t out_base[])
 {
     GAP_C: for (int c = 0; c < d.cin; c++) {
@@ -2284,6 +2347,7 @@ static void run_gap(const LayerDescV2 &d, int HW, const act_t in_base[], act_t o
         out_base[d.out_off + c] = (act_t)clip_shift(avg, d.out_shift);
     }
 }
+#endif /* SE_BURST */
 
 static void run_relu(const LayerDescV2 &d, int total, const act_t in_base[], act_t out_base[])
 {
@@ -2372,6 +2436,60 @@ static void run_gelu(const LayerDescV2 &d, int total, hls::burst_maxi<ap_uint<32
  * op1 (in2_off) is the C-length gate, broadcast over spatial -- confirmed
  * from tools/layer_dag_ground_truth.json: final_conv's node has fan_out=2,
  * feeding both ReduceMean AND this Mul directly from the same tensor. */
+#ifdef SE_BURST
+static void run_scale(const LayerDescV2 &d, int total, int HW,
+                      hls::burst_maxi<ap_uint<32> > in_burst, hls::burst_maxi<ap_uint<32> > out_burst)
+{
+#ifndef __SYNTHESIS__
+    assert(d.cin <= ELEMWISE_MAX_CH && (d.cin % 4) == 0 && (HW % 4) == 0 &&
+           (d.in_off % 4) == 0 && (d.in2_off % 4) == 0 && (d.out_off % 4) == 0 &&
+           "SE_BURST run_scale: cin > ELEMWISE_MAX_CH, cin%4, or unaligned HW/in_off/in2_off/out_off");
+#endif
+    const int n_words   = total >> 2;
+    const int wpc       = HW >> 2;
+    const int in_off_w  = d.in_off  >> 2;
+    const int out_off_w = d.out_off >> 2;
+    act_t gate_buf[ELEMWISE_MAX_CH];
+    #pragma HLS ARRAY_PARTITION variable=gate_buf cyclic factor=4 dim=1
+    /* gate vector: cin bytes at in2_off, one burst */
+    const int n_gate_w = d.cin >> 2;
+    in_burst.read_request(d.in2_off >> 2, n_gate_w);
+    SCALE_GATE: for (int i = 0; i < ELEMWISE_MAX_CH / 4; i++) {
+        #pragma HLS PIPELINE II=1
+        if (i < n_gate_w) {
+            ap_uint<32> wg = in_burst.read();
+            for (int k = 0; k < 4; k++) {
+                #pragma HLS UNROLL
+                gate_buf[i * 4 + k] = (act_t)wg.range(k * 8 + 7, k * 8);
+            }
+        }
+    }
+    int c = 0, cnt = 0;
+    SCALE_CHUNK: for (int base = 0; base < n_words; base += ELEMWISE_CHUNK_WORDS) {
+        int this_chunk = (n_words - base < ELEMWISE_CHUNK_WORDS) ? (n_words - base) : ELEMWISE_CHUNK_WORDS;
+        in_burst.read_request(in_off_w + base, this_chunk);
+        out_burst.write_request(out_off_w + base, this_chunk);
+        SCALE_W: for (int i = 0; i < ELEMWISE_CHUNK_WORDS; i++) {
+            #pragma HLS PIPELINE II=1
+            if (i < this_chunk) {
+                ap_uint<32> wi = in_burst.read();
+                act_t gate = gate_buf[c];
+                ap_uint<32> wo = 0;
+                for (int k = 0; k < 4; k++) {
+                    #pragma HLS UNROLL
+                    act_t x = (act_t)wi.range(k * 8 + 7, k * 8);
+                    acc_t prod = (acc_t)x * (acc_t)gate;
+                    wo.range(k * 8 + 7, k * 8) = (ap_uint<8>)(act_t)clip_shift(prod, d.out_shift);
+                }
+                out_burst.write(wo);
+                int ncnt = cnt + 1;
+                if (ncnt == wpc) { cnt = 0; c++; } else { cnt = ncnt; }
+            }
+        }
+        out_burst.write_response();
+    }
+}
+#else
 static void run_scale(const LayerDescV2 &d, int HW, const act_t in_base[], act_t out_base[])
 {
     SCALE_C: for (int c = 0; c < d.cin; c++) {
@@ -2383,6 +2501,7 @@ static void run_scale(const LayerDescV2 &d, int HW, const act_t in_base[], act_t
         }
     }
 }
+#endif /* SE_BURST */
 
 /* A3 interface resource-budget check (2026-08-21, ZHR-92). Round 5-15's
  * resource numbers are compute-core-only (HW Interfaces section confirmed
@@ -2652,10 +2771,18 @@ void mac_array_top(
     const int scalar_total = (int)scalar_total_n;
     switch (desc.op_type) {
         case LDESC_OP_ADD:     run_add(desc, scalar_total, elemwise_in_burst, elemwise_out_burst); break;
+#ifdef SE_BURST
+        case LDESC_OP_GAP:     run_gap(desc, scalar_total, scalar_hw, elemwise_in_burst, out_base); break;
+#else
         case LDESC_OP_GAP:     run_gap(desc, scalar_hw, in_base, out_base); break;
+#endif
         case LDESC_OP_RELU:    run_relu(desc, scalar_total, in_base, out_base); break;
         case LDESC_OP_SIGMOID: run_sigmoid(desc, scalar_total, in_base, out_base); break;
+#ifdef SE_BURST
+        case LDESC_OP_SCALE:   run_scale(desc, scalar_total, scalar_hw, elemwise_in_burst, elemwise_out_burst); break;
+#else
         case LDESC_OP_SCALE:   run_scale(desc, scalar_hw, in_base, out_base); break;
+#endif
         case LDESC_OP_GELU:    run_gelu(desc, scalar_total, elemwise_in_burst, elemwise_out_burst); break;
         default:                run_layer(desc, in_base, w_base, b_base, out_base, in_base_wide, out_burst, in_burst, dw_in_burst); break;
     }
