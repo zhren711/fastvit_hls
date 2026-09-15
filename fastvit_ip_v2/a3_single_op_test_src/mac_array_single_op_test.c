@@ -268,10 +268,11 @@ int main(int argc, char **argv) {
          * from "just slow" without risking a premature false-timeout on
          * a legitimately longer real layer. */
         if (elapsed_ms > 30000.0) { timed_out = 1; break; }
-        usleep(1000);
+        /* ZHR-92 (2026-09-15): busy-poll, no usleep -- see
+         * mac_wait_done_timeout()\'s comment in mac_array_driver.c (the old
+         * usleep(1000) quantized every reported time to ~1.08ms). */
     }
-    printf(">>> poll_count = %ld (independent cross-check: poll_count * ~1.08ms measured usleep granularity = %.1f ms)\n",
-           poll_count, poll_count * 1.0768);
+    printf(">>> poll_count = %ld (busy-poll, ~1.3us per iteration -- no usleep)\n", poll_count);
     clock_gettime(CLOCK_MONOTONIC, &t1);
     double elapsed_ms = (t1.tv_sec - t0.tv_sec) * 1000.0 + (t1.tv_nsec - t0.tv_nsec) / 1e6;
 
@@ -283,7 +284,7 @@ int main(int argc, char **argv) {
                "from what was loaded).\n", (unsigned long)MAC_ARRAY_CTRL_PHYS);
         return 2;
     }
-    printf(">>> ap_done set after %.2f ms (AP_START write -> ap_done observed, poll interval ~1ms)\n", elapsed_ms);
+    printf(">>> ap_done set after %.3f ms (AP_START write -> ap_done observed, busy-poll ~1.3us)\n", elapsed_ms);
 
     struct timespec ti0, ti1;
     clock_gettime(CLOCK_MONOTONIC, &ti0);

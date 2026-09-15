@@ -262,7 +262,10 @@ int main(int argc, char **argv) {
          * for future measurement rounds: this changes the per-entry poll
          * granularity from 0.5ms to 1ms -- the ~65ms/1.79% fixed-overhead
          * floor measured 2026-08-28 was on the OLD 0.5ms loop and will
-         * shift slightly (not re-measured after this change). */
+         * shift slightly (not re-measured after this change).
+         * ZHR-92 (2026-09-15): mac_wait_done_timeout() is now a BUSY-POLL
+         * (~1.3us resolution); until then its usleep(1000) made every
+         * per-entry time below a multiple of ~1.08ms. */
         int timed_out = mac_wait_done_timeout(30000);
         clock_gettime(CLOCK_MONOTONIC, &e1);
         entry_ms[i] = (e1.tv_sec - e0.tv_sec) * 1000.0 + (e1.tv_nsec - e0.tv_nsec) / 1e6;
@@ -285,7 +288,7 @@ int main(int argc, char **argv) {
         /* ZHR-92 (2026-08-24): print+flush immediately after EVERY entry,
          * not just checkpoint hits -- if the NEXT entry hangs, this is
          * the last line we're guaranteed to have seen. */
-        printf(">>> [%2d] done: %.2fms, out_written=%u%s\n",
+        printf(">>> [%2d] done: %.3fms, out_written=%u%s\n",
                i, entry_ms[i], out_written_val, written_ok[i] ? "" : "  <-- FAIL (defect-5 symptom)");
         fflush(stdout);
         if (!written_ok[i]) {

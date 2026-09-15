@@ -2010,7 +2010,9 @@ supposedly standing in for.
 **`mac_array_a3_dwrow` is now the deployed baseline**, replacing `mac_array_a3_merge4` (~378ms /
 DW 115.6ms / WNS +0.461ns, same day). Full network **~343ms** (343.21 / 342.65ms over two runs,
 per-entry sums 321.1 / 321.2), **-9.3%**; DW 115.6 -> **79.0ms (-31.7%)**. Cumulative on this
-latency line: 6,050ms -> ~343ms, **-94.3%**. Archive + writeup:
+latency line: 6,050ms -> ~343ms, **-94.3%**. **With the busy-poll harness (same bitstream, see the
+HARNESS CORRECTION below): ~295ms, DW 66.4 / PW 181.3 -- the numbers to compare future rounds
+against.** Archive + writeup:
 `vivado_impl/bitstream_archive/mac_array_a3_dwrow_2026-09-15/README.txt`.
 
 **Step 0 correction that redirected the round**: the merge4 refit's "886 cycles/channel" was NOT a
@@ -2052,8 +2054,35 @@ fill-drain, per-lane request/response loops) + the fpg=2 lane-1 drain. PW (193ms
 from the merge4 refit: 1.11 cyc/`PW_FLAT` iteration (146ms; floor 131) + 50 cycles per (rt,ci)
 request (22ms -- MERGE4 took this term from 61 to 22) + 0.72 cyc/weight byte (21ms).
 
-**MEASUREMENT-RESOLUTION CAVEAT, found this round, applies to EVERY per-layer fit on this project
-(standing rule)**: the full-network harness's per-entry `done:` times are quantized to ~1.08ms --
+**HARNESS CORRECTION, same day, later round (`*_busypoll` ARM binaries, commit see below) -- the
+reference full-network number for THIS bitstream is now ~295ms, not ~343ms, and every number in
+this file measured before it carries ~+0.56ms per entry of ARM-side poll overshoot.** The
+harness's `mac_wait_done_timeout()` ended in `usleep(1000)`, which on this board sleeps 1.075ms
+(measured; `usleep(0)` is already 0.074ms -- the floor is scheduler granularity, so no `usleep`
+value reaches 0.1ms). Replaced by a busy-poll (AP_CTRL read 0.14us + `clock_gettime` 1.1us per
+iteration, both measured; the ARM is idle while the PL runs, so free). Same bitstream, ARM binary
+only. Results: single-entry resolution ~1us, repeatability entry5_dw 2.912ms x10 with stdev
+~0.001ms (the sleeping harness had read 3.59/3.95/4.56 for the same entry); full network
+**295.79 / 294.55ms** (sleeping harness 343.21 / 342.65), per-entry sums 275.0 / 275.0, 7
+checkpoint files MD5-identical across runs AND identical to the dwrow round's, ONNX cosine exact.
+Per-entry overshoot old-new: mean 0.563ms (min 0.007, max 1.073, uniform ~U(0,1.08) as a poll
+would give), sum 46.1ms = **13.5% of the old total -- a real end-to-end latency gain, not just a
+measurement fix, since the next dispatch starts when the ARM SEES ap_done.** Two consequences
+for this file's history: (1) the "~0.58ms per-entry dispatch floor" measured 2026-08-28 (to
+~zero variance over 20 runs) WAS the harness's own half-poll-interval overshoot, not the IP's
+dispatch cost -- the true floor is < 0.01ms (SE entry77 reads 0.011ms, GELU min 0.087ms); (2)
+every operator split above is shifted by 0.56ms x its entry count: with the busy-poll harness
+**DWCONV 66.36, PWCONV 181.27, GELU 13.02, ADD 5.05, SE 9.27ms** (PW 61%, DW 22%, GELU 4.4%,
+ADD 1.7%, SE 3.1%) -- GELU/ADD/SE were roughly half poll overshoot, not "near their floors."
+Clean DW refit (R^2 0.999): **0.95 cyc/pixel (33.8ms, at the II=1 floor) + 24 cycles per padded
+row (23.2ms) + 196 cycles per channel (8.6ms -- the consume prologue, visible for the first time)
++ ~0/output.** The per-row term's true post-DWR_ROW_PF value is 24, not the ~35 estimated above
+from quantized data. **Rule: compare full-network numbers only within one harness generation;
+any pre-busypoll number re-cited against a post-busypoll one must first subtract 0.56ms x entry
+count (or be re-measured).** The `*_sohoist` binaries remain on the board for that A/B.
+
+**MEASUREMENT-RESOLUTION CAVEAT (RESOLVED by the harness correction above -- kept for the record
+of why every earlier per-layer fit had this floor)**: the full-network harness's per-entry `done:` times are quantized to ~1.08ms --
 every one of the 82 values is a multiple of 1.08/1.09ms (`mac_array_full_network_test.c`'s
 `usleep(500)` poll actually sleeps ~1.08ms on this kernel). Totals are fine (+-0.5ms per entry
 averages out), but each per-layer value carries +-50k cycles: DW's 25 layers are now 2.16 / 3.24 /

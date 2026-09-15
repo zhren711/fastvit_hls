@@ -161,7 +161,7 @@ int main(int argc, char **argv) {
          * full-network-hang investigation's "check the default is on
          * everywhere" pass. */
         if (elapsed_ms > 30000.0) { timed_out = 1; break; }
-        usleep(1000);
+        /* ZHR-92 (2026-09-15): busy-poll, no usleep -- see mac_array_driver.c */
     }
     clock_gettime(CLOCK_MONOTONIC, &t1);
     double elapsed_ms = (t1.tv_sec - t0.tv_sec) * 1000.0 + (t1.tv_nsec - t0.tv_nsec) / 1e6;
@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
         printf(">>> TIMEOUT after %.1f ms -- ap_done never set. DO NOT trust any output.\n", elapsed_ms);
         return 2;
     }
-    printf(">>> ap_done set after %.2f ms\n", elapsed_ms);
+    printf(">>> ap_done set after %.3f ms (busy-poll ~1.3us)\n", elapsed_ms);
 
     mac_cache_invalidate(out_phys, ref_size);
     /* out_written is a register, not DRAM -- no invalidate needed. */

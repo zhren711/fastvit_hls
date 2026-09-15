@@ -47,6 +47,18 @@ void mac_wait_done(void) {
         ;
 }
 
+/* ZHR-92 (2026-09-15) BUSY-POLL: this loop used to end in usleep(1000),
+ * which on this board's kernel sleeps ~1.075ms (measured: usleep(0) is
+ * already 0.074ms -- the floor is scheduler granularity, so no usleep()
+ * value can reach a 0.1ms resolution). Every per-entry time the
+ * full-network harness ever reported was therefore a multiple of ~1.08ms,
+ * i.e. +-50k cycles per entry -- fine for totals, useless for per-layer
+ * fits once DW layers dropped to 2-4ms. Busy-polling costs ~1.3us per
+ * iteration (AP_CTRL read 0.14us + clock_gettime 1.1us, both measured on
+ * the board) and the ARM has nothing else to do while the PL runs (the
+ * dispatch is strictly serial), so the CPU cost is free. The timeout is
+ * still checked on every iteration. MAC_WAIT_SLEEP_US restores a sleeping
+ * poll for anyone who needs the old behaviour. */
 int mac_wait_done_timeout(int timeout_ms) {
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);
@@ -55,7 +67,9 @@ int mac_wait_done_timeout(int timeout_ms) {
         clock_gettime(CLOCK_MONOTONIC, &t1);
         double elapsed_ms = (t1.tv_sec - t0.tv_sec) * 1000.0 + (t1.tv_nsec - t0.tv_nsec) / 1e6;
         if (elapsed_ms > timeout_ms) return 1;
-        usleep(1000);
+#ifdef MAC_WAIT_SLEEP_US
+        usleep(MAC_WAIT_SLEEP_US);
+#endif
     }
 }
 
