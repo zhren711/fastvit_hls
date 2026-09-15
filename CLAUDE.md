@@ -1964,9 +1964,56 @@ supposedly standing in for.
   must reflect current config) is a standing TODO to verify, not a fact — especially before building
   new code (like a register-write driver) that will silently inherit whichever version is wrong.**
 
-## Current deployed baseline (updated 2026-09-14, later -- supersedes every earlier baseline reference below)
+## Current deployed baseline (updated 2026-09-15 -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_rowread` is now the deployed baseline**, replacing `mac_array_a3_rowburst` (~790ms /
+**`mac_array_a3_pwdefer` is now the deployed baseline**, replacing `mac_array_a3_rowread` (~679ms /
+PW 495.1ms / WNS +0.113ns, 2026-09-14). Full network **~496ms** (501.70 / 491.45ms over two runs,
+per-entry sums 470.2 / 471.8), **-27%**; PW 495.1 -> **306.6ms (-38%)**. Cumulative on this latency
+line: 6,050ms -> ~496ms, **-91.8%**. Archive + writeup:
+`vivado_impl/bitstream_archive/mac_array_a3_pwdefer_2026-09-15/README.txt`.
+
+**What changed** (`PW_DEFER_WRESP`, commit `fa44bd0`, default ON since this round via the define
+after the includes in `mac_array_raster_integrated.cpp` -- `PW_DEFER_WRESP_OFF` reverts): PW's
+writeout had DW's pre-ROWBURST shape (writereq ST_9 / write ST_10 / 5-stage writeresp ST_11-15,
+all in one II=1 `PW_FLAT` iteration -- every output word waited for its own B response; fit: 18
+cycles x 907,056 words = 163ms). One tile's 4 rows are `w_out` apart so a row burst does not apply;
+the fix defers only the RESPONSE: request + write unchanged at `wr_col==3`, `write_response()`
+popped at writeout row starts (`wr_col==0`) once >= 8 are pending (the ot two back; gap >=
+2*(n_cbase*8+16)-4 >= 60 cycles for every real cin), <= 8 in flight vs the adapter's 16
+(`NUM_WRITE_OUTSTANDING = USER_MAXREQS = 16`, read from the exported RTL), <= 8 drained after the
+loop. Step-1 schedule probe first: writereq/write on predicate `wr_col==3`, writeresp on the
+DISJOINT `wr_col==0 & pending>=8` -- same loop, different iterations; the data write never left
+the pipeline. Default-flip verified: flag-less csynth totals bit-identical (246/29/38,060/72,353,
+`hw.h` identical), flag-less csim on all SIX suites.
+
+**csim coverage correction made this round**: the "four standard suites" never touched PW; the
+only PW coverage (`pw_weight_hoist_tb.cpp` 6, `pw_scaling_probe_tb.cpp` 20) had been on the stale
+9-arg signature since 09-06. Re-paired; `run_csim_pw_suites.tcl`; the standard set is six suites
+(see the stale-artifact list).
+
+Real P&R (route_design alone, NO phys_opt): **WNS +0.291791ns** (rowread +0.113 -- placement roll;
+worst path a DW consume carry chain, 95% route); LUT 43,909/53,200 (82.54%, -513 vs rowread --
+isolated said +480, opposite sign); BRAM 107 (flat); DSP 32 (flat).
+
+Board (2026-09-15, pre-registered order, 30s timeouts, golden untouched): entry3 (PW-only) FIRST,
+3 runs, byte-exact, 17.1 -> 7.5ms (-56%); chunked/boundary PW entries 60/64/66/70/72 byte-exact
+(big-cin ones gain little -- ROW_READ-request dominated, as the fit says); controls entry5_dw / SE
+ops / entry0_gelu / entry10_add byte-exact and flat; full network 82/82 x2, all 7 checkpoint files
+MD5-identical; PWCONV 305.71 / 307.46 (-38%; pre-registered 350-380 "mechanism works" -> BELOW
+it), DWCONV 115.5 flat, GELU/ADD/SE flat; ONNX cosine EXACT. Operator split now: **PW 62%**, DW
+23%, GELU 4.6%, ADD 2.6%, SE 2.6%.
+
+**Refit on this run (R^2 0.994): PW 307ms = 1.12 cycles per `PW_FLAT` iteration (147ms; floor
+131) + ~0 per output word (-0.11 -- the 163ms term is GONE, the mechanism removed its target
+entirely) + 71 cycles per `ROW_READ` request (128ms) + 1.05 cycles per weight byte (30ms).** Next
+lever, by the same arithmetic: the `ROW_READ` requests (128-153ms, ~45% of PW) -- 71-85 cycles per
+request for only w/4 (2-16) words: issue the 4 `rr` requests (or a ci-group's 16) back-to-back
+before the fill loops so the request latencies overlap (`NUM_READ_OUTSTANDING=16`). Step-1 probe
+first, as always.
+
+## Prior deployed baseline (superseded 2026-09-15, kept for history)
+
+**`mac_array_a3_rowread` was the deployed baseline from 2026-09-14 to 2026-09-15**, replacing `mac_array_a3_rowburst` (~790ms /
 DW 224.6ms / WNS +0.312ns, same day). Full network **~679ms** (679.35 / 679.43ms over two runs,
 per-entry sums 659.9 / 659.4), **-14%**; DW 224.6 -> **115.5ms (-48.6%)**. Cumulative on this
 latency line: 6,050ms -> ~679ms, **-88.8%**. Archive + writeup:

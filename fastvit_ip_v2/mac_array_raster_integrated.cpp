@@ -16,6 +16,20 @@
 // run_dw_layer_raster in isolation -- mac_array.cpp itself remains the
 // untouched golden rollback.
 #include "dw_raster_layer.h"
+
+/* ZHR-92 (2026-09-15): PW_DEFER_WRESP is ON BY DEFAULT as of the
+ * mac_array_a3_pwdefer deployed baseline (real board: PW 495.1 -> 306.6ms,
+ * -38%; full network ~679 -> ~496ms, -27%; byte-exact, ONNX cosine exact).
+ * PW_FLAT's write_response() is deferred to the ot two back (popped at
+ * writeout row starts once >= 8 are pending; <= 8 in flight vs the
+ * adapter's 16), so no output word waits for its own B response inside the
+ * II=1 pipeline any more -- the real-board fit's 18-cycle-per-word term
+ * (163ms) went to ~0. Request and write are unchanged. Define
+ * PW_DEFER_WRESP_OFF to get the in-iteration response back. See
+ * pw_flat_pipeline_impl's own comment. */
+#ifndef PW_DEFER_WRESP_OFF
+#define PW_DEFER_WRESP 1
+#endif
 /* ZHR-92 angle-B step (2026-08-24, final): explicit-API burst for
  * WRITEOUT (PW's own write, inside pw_flat_pipeline). Fast path
  * (hls::burst_maxi<ap_uint<32>>, out_burst) requires BOTH col_sz==MAC_PC
@@ -405,7 +419,10 @@ static void pw_flat_pipeline_impl(
     int wr_row_off = 0;          /* == wr_row * d.w_out, ACCUMULATED alongside wr_row (SHARED_MUL_ARMS round, 2026-09-12) */
     int shift_reg = d.out_shift; /* recomputed at each ot's compute->writeout transition */
 #ifdef PW_DEFER_WRESP
-    /* ZHR-92 (2026-09-14) PW_DEFER_WRESP -- STEP-1 MECHANISM PROBE, OFF by
+    /* ZHR-92 (2026-09-14/15) PW_DEFER_WRESP -- ON BY DEFAULT since 2026-09-15
+     * (see the define after the includes; PW_DEFER_WRESP_OFF reverts),
+     * deployed as mac_array_a3_pwdefer. History below as written during
+     * the round. Originally a STEP-1 MECHANISM PROBE, OFF by
      * default. The deployed FAST_WRITEOUT issues write_request + write +
      * write_response for every 4-byte output word, all three inside ONE
      * PW_FLAT iteration (sched: writereq ST_9, write ST_10, 5-stage
