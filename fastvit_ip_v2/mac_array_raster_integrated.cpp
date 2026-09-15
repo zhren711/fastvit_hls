@@ -404,6 +404,36 @@ static void pw_flat_pipeline_impl(
     int wr_row = 0, wr_col = 0;  /* writeout row/col -- wrap-pair, not idx/MAC_PC and idx%MAC_PC */
     int wr_row_off = 0;          /* == wr_row * d.w_out, ACCUMULATED alongside wr_row (SHARED_MUL_ARMS round, 2026-09-12) */
     int shift_reg = d.out_shift; /* recomputed at each ot's compute->writeout transition */
+#ifdef PW_DEFER_WRESP
+    /* ZHR-92 (2026-09-14) PW_DEFER_WRESP -- STEP-1 MECHANISM PROBE, OFF by
+     * default. The deployed FAST_WRITEOUT issues write_request + write +
+     * write_response for every 4-byte output word, all three inside ONE
+     * PW_FLAT iteration (sched: writereq ST_9, write ST_10, 5-stage
+     * writeresp ST_11-15 -- the IDENTICAL stage numbers DW's CROW_CCOL had
+     * before DWR_ROWBURST), so every word waits ~18-30 cycles for its own B
+     * response inside the II=1 pipeline: 907,056 words x 18 cycles = ~163ms
+     * of PW's 495ms (real-board fit, R^2 0.992). Unlike DW, one tile's 4
+     * rows are w_out apart -- a row burst does not apply; but the stall is
+     * the RESPONSE wait, not the request count. This variant keeps the
+     * request and the write exactly where they are (wr_col==MAC_PC-1) and
+     * DEFERS the response: pop one write_response() at each writeout ROW
+     * START (wr_col==0) only once >= 8 are pending, i.e. the responses of
+     * the ot two back are collected during this ot's writeout rows. Gap
+     * between a write and its pop >= 2*(n_cbase*8+16) - 4 >= 60 cycles for
+     * every real cin -- longer than the B round trip -- so the pop should
+     * find its response already there. Max in flight = 8 (4 of ot n-2 + 4
+     * of ot n-1 at an ot boundary); the gmem_act adapter allows 16
+     * (NUM_WRITE_OUTSTANDING = USER_MAXREQS = 16, read from the exported
+     * RTL). The <= 8 responses still pending after the loop are drained by
+     * PW_WRESP_DRAIN below (once per pw_flat_pipeline_impl call). This is
+     * NOT the PW_WRITEOUT_FLUSH shape (2026-09-04, +142%): the data write
+     * never leaves the pipeline. Step-1 judgment: in the PW_FLAT schedule,
+     * writereq/write still inside at II=1, writeresp still inside but on a
+     * DISJOINT predicate (wr_col==0 & pending>=8 vs wr_col==3) -- not
+     * outside the loop the way DW's is, because here the deferral is to a
+     * later ITERATION of the same loop. */
+    ap_uint<5> w_pending = 0;    /* write_requests issued minus responses popped, <= 8 */
+#endif
 
     PW_FLAT: for (int i = 0; i < total_iters; i++) {
         #pragma HLS PIPELINE II=1
@@ -588,11 +618,23 @@ static void pw_flat_pipeline_impl(
 #endif
                 if (FAST_WRITEOUT) {
                     row_word.range(wr_col * 8 + 7, wr_col * 8) = val;
+#ifdef PW_DEFER_WRESP
+                    if (wr_col == 0 && w_pending >= 8) {
+                        out_burst.write_response();   /* response of the ot two back */
+                        w_pending--;
+                    }
+                    if (wr_col == MAC_PC - 1) {
+                        out_burst.write_request(byte_addr >> 2, 1);
+                        out_burst.write(row_word);
+                        w_pending++;
+                    }
+#else
                     if (wr_col == MAC_PC - 1) {
                         out_burst.write_request(byte_addr >> 2, 1);
                         out_burst.write(row_word);
                         out_burst.write_response();
                     }
+#endif
                 } else {
                     if (wr_col < col_sz) {
                         out_base[byte_addr + wr_col] = val;
@@ -668,6 +710,13 @@ static void pw_flat_pipeline_impl(
             }
         }
     }
+#ifdef PW_DEFER_WRESP
+    if (FAST_WRITEOUT) {
+        PW_WRESP_DRAIN: for (int r = 0; r < (int)w_pending; r++) {
+            out_burst.write_response();
+        }
+    }
+#endif
 }
 
 static void pw_flat_pipeline(
