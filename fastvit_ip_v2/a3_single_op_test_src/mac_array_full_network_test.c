@@ -196,6 +196,24 @@ int main(int argc, char **argv) {
      * Answers "where does PL-total minus sum(entry_ms) go". */
     double gap_ms[N_HW_SEQ];
     struct timespec prev_e1;
+    /* ZHR-92 (2026-09-15, host-gap round): everything that is NOT dispatch
+     * is moved out of the timed window. The per-entry gap was measured at
+     * 63us (48 register writes ~9us + two printf/fflush ~40us + reads) and
+     * the six checkpoint dumps at 16.0ms (cache invalidate + fwrite of up to
+     * 196KB to the board's filesystem) -- 20.8ms of the 287.5ms "PL total"
+     * was harness file I/O, not inference. Now: the checkpoint is
+     * invalidated and memcpy'd to RAM inside the loop (it must be captured
+     * before a later entry overwrites the arena region) and written to disk
+     * after t1; the per-entry "done" line is printed after t1 from the
+     * arrays; only the one-line "dispatching" progress marker (needed to
+     * name the entry if the board hangs) stays before AP_START. */
+    uint8_t *ckpt_buf[6];
+    uint32_t out_written_arr[N_HW_SEQ];
+    int n_done = 0;
+    for (int k = 0; k < N_CKPT; k++) {
+        ckpt_buf[k] = (uint8_t*)malloc((size_t)g_ckpts[k].size);
+        if (!ckpt_buf[k]) { fprintf(stderr, "malloc ckpt_buf[%d] failed\n", k); return 1; }
+    }
     int ckpt_cursor = 0;
     int any_fail = 0;
 
@@ -294,12 +312,11 @@ int main(int argc, char **argv) {
          * way DRAM is). */
         uint32_t out_written_val = R32(MAC_OUT_WRITTEN_DATA);
         written_ok[i] = (out_written_val != 0);
-        /* ZHR-92 (2026-08-24): print+flush immediately after EVERY entry,
-         * not just checkpoint hits -- if the NEXT entry hangs, this is
-         * the last line we're guaranteed to have seen. */
-        printf(">>> [%2d] done: %.3fms, gap_before=%.3fms, out_written=%u%s\n",
-               i, entry_ms[i], gap_ms[i], out_written_val, written_ok[i] ? "" : "  <-- FAIL (defect-5 symptom)");
-        fflush(stdout);
+        /* (2026-09-15) the "done" line is now printed after t1; the NEXT
+         * entry's "dispatching" marker still names a hung entry, and
+         * reaching it implies this one completed. */
+        out_written_arr[i] = out_written_val;
+        n_done = i + 1;
         if (!written_ok[i]) {
             fprintf(stderr, ">>> entry %d: out_written[%d]=0 -- defect-5 symptom (ap_done set, write never happened)\n", i, i);
             any_fail = 1;
@@ -309,17 +326,31 @@ int main(int argc, char **argv) {
             struct CkptEntry *ck = &g_ckpts[ckpt_cursor];
             uintptr_t ck_phys = arena_phys + (uintptr_t)ck->out_off;
             mac_cache_invalidate(ck_phys, (size_t)ck->size);
-            char out_path[700];
-            snprintf(out_path, sizeof(out_path), "%s/ckpt_board_%s.bin", dir, ck->tag);
-            FILE *of = fopen(out_path, "wb");
-            if (of) { fwrite(arena_v + ck->out_off, 1, (size_t)ck->size, of); fclose(of); }
-            printf("  [%2d] dumped checkpoint '%s' -> %s (%d bytes)\n", i, ck->tag, out_path, ck->size);
+            memcpy(ckpt_buf[ckpt_cursor], arena_v + ck->out_off, (size_t)ck->size);
             ckpt_cursor++;
         }
     }
 
     clock_gettime(CLOCK_MONOTONIC, &t1);
     double total_ms = (t1.tv_sec - t0.tv_sec) * 1000.0 + (t1.tv_nsec - t0.tv_nsec) / 1e6;
+
+    /* Deferred per-entry report (same line format as before -- the
+     * decomposition tool parses "done: X.XXXms"). */
+    for (int i = 0; i < n_done; i++) {
+        printf(">>> [%2d] done: %.3fms, gap_before=%.3fms, out_written=%u%s\n",
+               i, entry_ms[i], gap_ms[i], out_written_arr[i], written_ok[i] ? "" : "  <-- FAIL (defect-5 symptom)");
+    }
+    /* Deferred checkpoint files. */
+    for (int k = 0; k < ckpt_cursor; k++) {
+        struct CkptEntry *ck = &g_ckpts[k];
+        char out_path[700];
+        snprintf(out_path, sizeof(out_path), "%s/ckpt_board_%s.bin", dir, ck->tag);
+        FILE *of = fopen(out_path, "wb");
+        if (of) { fwrite(ckpt_buf[k], 1, (size_t)ck->size, of); fclose(of); }
+        printf("  [%2d] dumped checkpoint '%s' -> %s (%d bytes) [captured in-loop, written after t1]\n",
+               ck->seq_index, ck->tag, out_path, ck->size);
+    }
+    fflush(stdout);
 
     /* Dump entry 81's raw output too (the trailing GELU past the
      * established 7-checkpoint 'se' endpoint) -- no accuracy reference
