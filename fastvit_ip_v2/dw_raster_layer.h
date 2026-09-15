@@ -97,8 +97,12 @@
 #define DWR_ROWREAD 1
 #endif
 
-// ZHR-92 (2026-09-15) DWR_ROW_PF / DWR_DEFER_WRESP -- STEP-1 MECHANISM PROBES,
-// OFF by default (define on the command line). Target: the per-ROW fixed cost
+// ZHR-92 (2026-09-15) DWR_ROW_PF / DWR_DEFER_WRESP -- ON BY DEFAULT as of the
+// mac_array_a3_dwrow deployed baseline (real board: DW 115.6 -> 79.0ms, -31.7%;
+// full network ~378 -> ~343ms, -9.3%; byte-exact, ONNX cosine exact; WNS
+// +0.211 route-only, real LUT +634 vs isolated +626). Define DWR_ROW_PF_OFF /
+// DWR_DEFER_WRESP_OFF to revert either. History below is as written during
+// the step-1 round. Target: the per-ROW fixed cost
 // of the DW DATAFLOW pair. Refit of the merge4 full-network run with a per-row
 // term (R^2 0.879 -> 0.977; per-channel term drops to ~0): DW 115ms = 0.89
 // cycles/input-pixel + 0.59/output + ~73 cycles per padded row x 97,344 rows
@@ -120,6 +124,12 @@
 //                     unchanged. Same shape as PW_DEFER_WRESP.
 // Requires DWR_ROWREAD (PF) and DW_OUTPUT_BURST+DWR_ROWBURST (DEFER).
 #define DWR_WRESP_DEFER_ROWS 2
+#if defined(DWR_ROWREAD) && !defined(DWR_ROW_PF_OFF)
+#define DWR_ROW_PF 1
+#endif
+#if defined(DW_OUTPUT_BURST) && defined(DWR_ROWBURST) && !defined(DWR_DEFER_WRESP_OFF)
+#define DWR_DEFER_WRESP 1
+#endif
 
 // ZHR-92 round (2026-09-07): DWR_INPUT_BURST (OFF by default -- ATTEMPTED
 // AND REJECTED, real board result: DW 531.20ms->574.22ms, +8.1% WORSE,

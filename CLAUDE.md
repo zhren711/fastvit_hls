@@ -1391,6 +1391,15 @@ supposedly standing in for.
   base, the isolated/real relationship has now held on three consecutive builds. Use it only with
   >=2 prior real data points for the same mechanism, only for the same resource category, and say
   which prior builds the ratio came from.
+- **Exception condition for the "isolated csynth is direction-agnostic-unreliable" rule: a
+  PURE-CONTROL-LOGIC increment (no new datapath, no new array, no new multiplier, no new port) can
+  match closely.** Confirmed 2026-09-15 (`DWR_ROW_PF`+`DWR_DEFER_WRESP`): isolated +626 LUT, real
+  +634 -- the closest match on this line by far, against a history of 2-7x misses in both
+  directions. All the large misses involved a new mechanism (an adapter, a burst-tile DMA, a
+  template duplication, an array partition, a DATAFLOW split) that real synthesis re-bound
+  differently; a handful of counters, compares and a small extra loop have nothing for Vivado to
+  re-decide. One data point -- use it as "small control-only deltas are probably about right,"
+  not as a rule for anything touching the datapath or memory.
 - **The "gate it OFF, keep it" convention has a payoff beyond documentation: a rejected round's
   INFRASTRUCTURE (a port, its driver register, a testbench hook) can be reused directly by a later
   round -- so do not strip it when gating the mechanism.** Confirmed 2026-09-14 (`DWR_ROWREAD`):
@@ -1429,6 +1438,27 @@ supposedly standing in for.
     round starts from measured terms, not the previous round's projection.
   Every round of this line since the first ROWBURST probe followed exactly this, and the
   pre-registered ranges bracketed every real landing point.
+- **When two costs are coupled (one hides the other, or they overlap), find a layer SHAPE that
+  amplifies only one of them -- the shape difference across real layers separates what a single
+  aggregate number cannot.** Three instances now, all board-data-only, no new build needed:
+  (1) the per-layer "did the II saving materialise 1:1" check (2026-09-13: consume's II 8->2 landed
+  as -5.2..-6.9 cycles/pixel on 23 layers but only -4.0 on layer 1, the stride-2/few-output layer
+  where produce is exposed -- named which side of the DATAFLOW pair was binding); (2) the per-W
+  prediction check on MERGE4 (W=8 layers save 111 cycles/group, W=64 only 55 -- the ordering across
+  W separated the request term from the compute term); (3) the DW per-row round (2026-09-15):
+  produce's read latency and consume's B-wait overlap per row, so if the combined fix lands short,
+  the stride-2 layers -- half the valid rows (responses), same read count -- say which side still
+  binds. Same family: the refit itself (a per-ROW term vs a per-CHANNEL term is only separable
+  because rows/channel ranges 10..130 across real layers). Before spending a board round to
+  "isolate X," look for an existing layer whose shape already isolates it.
+- **The "check the number before designing" rule, contrast of two outcomes on the same operator:**
+  DWR_INPUT_BURST (2026-09-07) was designed on a comment's "achieved II=2" (real: 8) and the error
+  surfaced only AFTER a full P&R + board round (+43ms, reverted). The DW per-row round (2026-09-15)
+  was about to target the consume prologue on the refit's "886 cycles/channel"; re-fitting with a
+  per-row term BEFORE writing code (R^2 0.879 -> 0.977, per-channel term -> ~0, prologue already
+  burst-inferred and hidden) redirected the round to the real term (~73 cycles/row, ~71ms) at the
+  cost of one numpy fit. Same rule, one round's worth of difference -- the check is cheap only when
+  it happens first.
 - **"Use the top-N timing list to predict the next bottleneck" is NOT reliable on this design --
   placement variance is larger than the spacing between the near-tied paths.** Confirmed
   2026-09-12: the 300-path report on `sohoist` put the next-worst distinct structure at +0.246
@@ -1977,7 +2007,65 @@ supposedly standing in for.
 
 ## Current deployed baseline (updated 2026-09-15, latest -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_merge4` is now the deployed baseline**, replacing `mac_array_a3_pwpf` (~418ms /
+**`mac_array_a3_dwrow` is now the deployed baseline**, replacing `mac_array_a3_merge4` (~378ms /
+DW 115.6ms / WNS +0.461ns, same day). Full network **~343ms** (343.21 / 342.65ms over two runs,
+per-entry sums 321.1 / 321.2), **-9.3%**; DW 115.6 -> **79.0ms (-31.7%)**. Cumulative on this
+latency line: 6,050ms -> ~343ms, **-94.3%**. Archive + writeup:
+`vivado_impl/bitstream_archive/mac_array_a3_dwrow_2026-09-15/README.txt`.
+
+**Step 0 correction that redirected the round**: the merge4 refit's "886 cycles/channel" was NOT a
+per-channel cost -- a per-row (`h_pad`) term takes the DW fit from R^2 0.879 to 0.977 and the
+per-channel term collapses to ~0: DW 115ms = 0.89 cyc/input-pixel + 0.59/output + **~73 cycles per
+padded row x 97,344 rows (~71ms)**. The consume prologue (bias/shift/kernel loads) is already
+burst-inferred and hidden -- it was about to be targeted; the refit (one numpy fit, before any
+code) redirected the round. Per row both sides of the DATAFLOW pair paid one AXI latency that
+OVERLAP each other (produce's `read_request` -> first `read()` ~35 cycles, consume's
+`write_response` B-wait ~30), so removing one alone only exposes the other -- both built, gated
+separately, measured TOGETHER by decision.
+
+**What changed** (`DWR_ROW_PF` + `DWR_DEFER_WRESP`, commit `f06feca` + default flip, ON via
+`dw_raster_layer.h` -- `DWR_ROW_PF_OFF` / `DWR_DEFER_WRESP_OFF` revert): produce issues row r+1's
+`read_request` at the start of row r (row 0 primed before `ROW`; `read()` unchanged inside `COL`;
+<= 2 outstanding) -- the PW_ROWREAD_PREFETCH shape; consume pops a valid row's responses two valid
+rows later (<= 4 in flight vs 16; flat one-response-per-iteration drain after `CROW` -- the first
+drain form, g loop inside a row loop, was `200-885` II=2, fixed) -- the PW_DEFER_WRESP shape. No
+new multiply (bind DB unchanged). Step-1 schedule: no data op left its pipeline, ZERO II violations
+design-wide, produce per-row FSM states unchanged (12). Isolated LUT +626.
+
+Real P&R (route_design alone, NO phys_opt): **WNS +0.210849ns** (merge4 +0.461 -- placement roll;
+worst path `gmem_w` load buffer -> DW consume gather, 0 logic levels, 96% route -- the
+route-dominated population, not the new code); **LUT 45,224 (85.01%, +634 -- isolated said +626,
+the closest isolated/real match on this line, see the exception noted in the working-method
+section)**; BRAM 107 / DSP 32 flat. Register map unchanged (`*_sohoist` binaries valid).
+
+Board (2026-09-15, pre-registered order, 30s timeouts, golden untouched): entry5_dw x3 byte-exact
+3.59 / 3.95 / 4.56ms (merge4 ~5.5; pre-registered ~4.0); controls entry3 / GELU / ADD / entry64 /
+entry66 / SE ops byte-exact and flat; full network 82/82 x2, all 7 checkpoint files MD5-identical;
+**DWCONV 78.96 / 78.92 (-31.7%, the pre-registered 68-85 "both latencies hidden" band)**, PW /
+GELU / ADD / SE flat; ONNX cosine EXACT. Landing vs model: -36.6ms = 37.6 cycles per padded row,
+i.e. per-row 73 -> ~35 (pre-registered 25-40); layer 1 (largest, least quantized) per-row residual
+72.9 -> 21.2. Operator split now: **PW 56%**, DW 23%, GELU 6.7%, ADD 3.8%, SE 3.8%.
+
+**Where DW's remaining ~79ms is, roughly**: ~30ms pixel floor (II=1 over 3.55M padded pixels) +
+~50ms per-row FSM glue (produce's 12-state ROW body incl. the 8-cycle `readreq` op, CCOL/COL
+fill-drain, per-lane request/response loops) + the fpg=2 lane-1 drain. PW (193ms) is unchanged
+from the merge4 refit: 1.11 cyc/`PW_FLAT` iteration (146ms; floor 131) + 50 cycles per (rt,ci)
+request (22ms -- MERGE4 took this term from 61 to 22) + 0.72 cyc/weight byte (21ms).
+
+**MEASUREMENT-RESOLUTION CAVEAT, found this round, applies to EVERY per-layer fit on this project
+(standing rule)**: the full-network harness's per-entry `done:` times are quantized to ~1.08ms --
+every one of the 82 values is a multiple of 1.08/1.09ms (`mac_array_full_network_test.c`'s
+`usleep(500)` poll actually sleeps ~1.08ms on this kernel). Totals are fine (+-0.5ms per entry
+averages out), but each per-layer value carries +-50k cycles: DW's 25 layers are now 2.16 / 3.24 /
+4.33ms each, so a per-row vs per-pixel split (or any stride-2-vs-stride-1 diagnostic on DW) is at
+the resolution limit from this harness -- differences inside ~1ms per entry are NOT signal. PW's
+layers were large enough that it never mattered. **A finer poll (a driver-only change, no
+bitstream) is the prerequisite for decomposing DW again or for any per-layer analysis of the small
+ops (GELU/ADD/SE, 13-23ms each, entries far smaller).**
+
+## Prior deployed baseline (superseded 2026-09-15, kept for history)
+
+**`mac_array_a3_merge4` was the deployed baseline for part of 2026-09-15**, replacing `mac_array_a3_pwpf` (~418ms /
 PW 231ms / WNS +0.131ns, same day). Full network **~378ms** (378.16 / 377.60ms over two runs,
 per-entry sums 357.9 / 357.8), **-9.5%**; PW 231.2 -> **193.4ms (-16%)**. Cumulative on this
 latency line: 6,050ms -> ~378ms, **-93.8%**. Archive + writeup:
