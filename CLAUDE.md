@@ -1391,6 +1391,33 @@ supposedly standing in for.
   Reusing `in_burst` (the first idea) would have needed a signature change through
   `run_dw_layer_raster`. When a round is gated OFF, list in its comment what infrastructure it
   leaves behind (ports, registers, tb hooks) so a later round can find it.
+- **THE TWO-STEP PROCESS that decided three DW rounds in two days (2026-09-13/14: DW 329 -> 225 ->
+  115.5ms, entry5_dw 38.9 -> 5.4ms) -- reusable, and each step is cheap. Use it for any
+  "an AXI access inside a pipeline is expensive" question.**
+    **Step 0 -- decompose from BOARD data, never from csynth or comments.** Take the last full-
+    network run's per-entry ms for every real layer of the operator, and fit them to 2-3
+    PHYSICAL counts from the descriptors (input pixels, outputs, rows/channels/tiles; the loop's
+    own trip count as the floor). `tools/decompose_full_network_log.py` gives the per-entry ms;
+    a 10-line numpy `lstsq` gives the terms. Read the coefficients as cycles-per-thing and
+    compare to the II floor; the term far above its floor is the target. R^2 should be >0.99
+    with physical terms -- if it is not, the model is missing a term, not the data.
+    **Step 1 -- schedule-shape probe BEFORE implementing (csynth only, ~5 min).** Write the
+    minimal variant and count, per module, where `readreq`/`read`/`writereq`/`writeresp` land in
+    `*.verbose.sched.rpt` (`grep -c` per file). The shape that works: request and response in
+    small loops OUTSIDE the pipelined loop, the data op (`read()`/`write()`) still INSIDE it at the
+    same II. The shape that fails (PW_WRITEOUT_FLUSH 2026-09-04, +142%; DWR_INPUT_BURST
+    2026-09-07, +43ms): the DATA op leaves the pipeline into a serial stage. If the data op
+    moved, stop -- no csim, no P&R. This catches the failure in 5 minutes that those two rounds
+    caught after a full P&R + board each.
+    **Step 2 -- pre-register the board landing point as a RANGE with a reading per sub-range,
+    then read the II-materialisation per layer.** For each layer, did the cycles-per-thing drop by
+    the amount the fix predicts? A 1:1 drop = that side was binding and is now fixed; a
+    shortfall concentrated in the fast layers = the OTHER side of the producer/consumer pair is
+    now binding (this is what found produce after ROWBURST and drove ROWREAD); a uniform
+    shortfall = a third cost source, refit. Then re-fit (step 0 again) on the new run so the next
+    round starts from measured terms, not the previous round's projection.
+  Every round of this line since the first ROWBURST probe followed exactly this, and the
+  pre-registered ranges bracketed every real landing point.
 - **"Use the top-N timing list to predict the next bottleneck" is NOT reliable on this design --
   placement variance is larger than the spacing between the near-tied paths.** Confirmed
   2026-09-12: the 300-path report on `sohoist` put the next-worst distinct structure at +0.246
@@ -1977,9 +2004,29 @@ unchanged. Operator split now: **PW 73%**, DW 17%, GELU 3.4%, ADD 1.9%, SE 1.9%.
 term is at the II=1 floor (35.5ms). What is left of DW is three small terms, the per-CHANNEL one
 now the largest (~886 cycles/channel: `dwr_consume`'s pre-loop weight/bias loads as `fpg*(2+K^2)`
 individual DRAM reads, DATAFLOW start, the per-row loop overheads folded in). DW at 17% of the
-network is no longer where the time is -- **PW (73%) is the target now**, and the two DW rounds'
-finding transfers as a question: PW's own `ROW_READ`/`WRITEOUT` already use row-granularity
-bursts, but its remainder was never decomposed with the II-materialisation method.
+network is no longer where the time is -- **PW (73%) is the target now.**
+**PW DECOMPOSED, 2026-09-14 (step 0 + step 1's schedule check, no build), the same way as DW:**
+schedule check first -- `pw_flat_pipeline_impl_*_Pipeline_PW_FLAT` has `writereq` at ST_9, `write`
+at ST_10 and a 5-stage `writeresp` at ST_11-15, ALL inside the II=1 `PW_FLAT` iteration -- the
+IDENTICAL stage numbers DW's `CROW_CCOL` had before ROWBURST: every 4-byte output word waits for
+its own B response inside the pipeline. (`ROW_READ` is already the right shape: requests in
+`run_layer`'s `ROW_READ_CH` loop, reads inside `ROW_READ_FILL`.) Fit on the `rowread` run, all 26
+PW layers, physical terms (R^2 0.992; 0.998 with weight bytes): **PW 495.1ms = 1.35 cycles per
+`PW_FLAT` iteration (177ms; floor 1.0 = 131ms) + 18.0 cycles per output WORD WRITE (907,056
+writes, 163ms) + 83.5 cycles per `ROW_READ` REQUEST (179,904 requests, 150ms)** (+0.89
+cycles/weight byte, 26ms, when added). Two handshake terms = ~310ms = 63% of PW. Measured/floor
+per layer 2.9-6.6x (the two SE fc layers 8.8x/32x, tiny). This is the "73.5% unexplained" from
+the 1,806ms era re-measured on the current architecture -- it is now two named mechanisms.
+**Candidate fixes (not built), both keeping the data op inside the pipeline:** (a) WRITEOUT: the
+4 rows of one tile are NOT contiguous (w_out apart), so a DW-style row burst does not apply
+directly -- but the stall is the RESPONSE wait, not the request count: defer `write_response()`
+to a later iteration (pop the previous-but-one ot's 4 responses during this ot's writeout rows;
+<=16 outstanding respected; drain after the loop) -- keeps request+write where they are, ~0
+stall for every real cin (the gap is >= 2 x (n_cbase*8+16) >= 64 cycles); (b) ROW_READ: 83
+cycles per request for only w/4 (2-16) words is request latency + fill/drain per request --
+issue the 4 `rr` requests (or a ci-group's 16) back-to-back before the fill loops so the
+latencies overlap (NUM_READ_OUTSTANDING=16). Rough ceiling: 163 -> ~30ms and 150 -> ~50ms,
+PW ~495 -> ~260ms, network ~679 -> ~450ms. Each is its own step-1 probe first.
 
 ## Prior deployed baseline (superseded 2026-09-14, kept for history)
 
