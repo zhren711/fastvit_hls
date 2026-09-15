@@ -1490,7 +1490,8 @@ void mac_array_top(
     hls::burst_maxi<ap_uint<32> > in_burst,
     hls::burst_maxi<ap_uint<32> > elemwise_in_burst,
     hls::burst_maxi<ap_uint<32> > elemwise_out_burst,
-    hls::burst_maxi<ap_uint<32> > dw_in_burst)
+    hls::burst_maxi<ap_uint<32> > dw_in_burst,
+    hls::burst_maxi<ap_uint<32> > w_burst)
 {
     /* ZHR-92 round (2026-09-07): mac_array.cpp's own mac_array_top had
      * already drifted out of sync with mac_array.h's shared prototype
@@ -1506,7 +1507,7 @@ void mac_array_top(
      * any of these three ports, matching its own pre-existing unused
      * elemwise-burst gap) -- not a new decision, just restoring
      * buildability so dw_raster_layer_tb.cpp's 5/5 check can run at all. */
-    (void)elemwise_in_burst; (void)elemwise_out_burst; (void)dw_in_burst;
+    (void)elemwise_in_burst; (void)elemwise_out_burst; (void)dw_in_burst; (void)w_burst;
 #pragma HLS INTERFACE s_axilite port=desc     bundle=control
 #pragma HLS INTERFACE m_axi port=in_base      offset=slave bundle=gmem_act
 #pragma HLS INTERFACE m_axi port=w_base       offset=slave bundle=gmem_w

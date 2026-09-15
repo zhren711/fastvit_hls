@@ -145,6 +145,7 @@ int main(int argc, char **argv) {
      * "never leave a register that shares a bundle 'probably fine to
      * skip'" discipline as in_base_wide/in_burst/out_burst above. */
     W64(MAC_DW_IN_BURST_LO, MAC_DW_IN_BURST_HI, in_phys);
+    W64(MAC_W_BURST_LO, MAC_W_BURST_HI, in_phys);   /* PW_WHOIST_WIDE port, own register */
 
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);

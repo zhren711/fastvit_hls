@@ -134,6 +134,13 @@
  * address into MAC_IN_BASE_* and MAC_DW_IN_BURST_*. */
 #define MAC_DW_IN_BURST_LO         0x100
 #define MAC_DW_IN_BURST_HI         0x104
+/* ZHR-92 (2026-09-15) PW_WHOIST_WIDE: w_burst, the 32-bit burst_maxi read port
+ * on bundle gmem_w (offsets read from the fresh export's xmac_array_top_hw.h,
+ * 0x10c/0x110). Program it to the SAME physical base as w_base -- its own
+ * register, not shared with w_base's (the shared-bundle != shared-register
+ * trap, closed pre-emptively here as for dw_in_burst). */
+#define MAC_W_BURST_LO             0x10c
+#define MAC_W_BURST_HI             0x110
 
 /* Must stay byte-layout-identical to fastvit_ip_v2/mac_array.h's
  * LayerDescV2 (int fields, same order) -- this is now what gets written

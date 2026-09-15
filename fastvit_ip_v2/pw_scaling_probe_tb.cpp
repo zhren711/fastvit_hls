@@ -57,7 +57,8 @@ static bool run_case(const char *tag) {
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(in_buf.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(in_buf.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(in_buf.data())),
-                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(in_buf.data())));
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(in_buf.data())),
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(wbuf.data())));
 
     int mismatches = 0;
     for (size_t i = 0; i < ref_bytes.size(); i++)

@@ -151,7 +151,8 @@ static bool run_case(const char *name, int cin, int cout, int h, int w, uint32_t
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())),
-                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())));
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())),
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(wbuf.data())));
 
     int mismatches = 0;
     for (int i = 0; i < TOTAL; i++)

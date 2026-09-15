@@ -259,6 +259,7 @@ int main(int argc, char **argv) {
          * register trap as every burst port above. Wired up before this
          * round's first board attempt this time, not after a hang. */
         W64(MAC_DW_IN_BURST_LO, MAC_DW_IN_BURST_HI, arena_phys);
+        W64(MAC_W_BURST_LO, MAC_W_BURST_HI, w_phys);   /* PW_WHOIST_WIDE port, own register */
 
         /* ZHR-92 (2026-08-24): print+flush BEFORE dispatch too -- if this
          * entry is the one that hangs, the process gets killed and any

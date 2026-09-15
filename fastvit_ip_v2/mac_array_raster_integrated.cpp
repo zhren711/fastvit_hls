@@ -839,7 +839,8 @@ static void run_layer(const LayerDescV2 &d,
                        act_t out_base[], const ap_uint<32> in_base_wide[],
                        hls::burst_maxi<ap_uint<32> > &out_burst,
                        hls::burst_maxi<ap_uint<32> > &in_burst,
-                       hls::burst_maxi<ap_uint<32> > &dw_in_burst)
+                       hls::burst_maxi<ap_uint<32> > &dw_in_burst,
+                       hls::burst_maxi<ap_uint<32> > &w_burst)
 {
     // ZHR-92 (2026-08-30): single consolidated shape-range check, csim-
     // only (see mac_array.h's own header comment on
@@ -1184,10 +1185,41 @@ static void run_layer(const LayerDescV2 &d,
     const int pw_chunk_ch_span = (int)pw_chunk_ch_span_n;
     const int pw_total_iters   = (int)pw_total_iters_n;
     if (pw_cached_ok) {
+#ifdef PW_WHOIST_WIDE
+        /* ZHR-92 (2026-09-15) PW_WHOIST_WIDE -- STEP-1 probe, OFF by default.
+         * One 32-bit word per cycle from w_burst (bundle gmem_w), 4 bytes
+         * into pw_weight_cache per iteration, requests chunked at
+         * ELEMWISE_CHUNK_WORDS like GELU/ADD. Alignment verified on the real
+         * descriptors before writing this: every one of the 26 PW layers'
+         * chunk start (w_off + chunk*ot_per_chunk*cin) is mod4==0 and cin is
+         * a multiple of 4, so w_total is a whole number of words. */
+#ifndef __SYNTHESIS__
+        assert(((d.w_off + pw_w_chunk_off) % 4) == 0 && (w_total % 4) == 0 &&
+               "PW_WHOIST_WIDE: weight chunk start or length not word-aligned");
+#endif
+        const int w_words    = w_total >> 2;
+        const int w_word_off = (d.w_off + pw_w_chunk_off) >> 2;
+        PW_WEIGHT_HOIST_CHUNK: for (int base = 0; base < w_words; base += ELEMWISE_CHUNK_WORDS) {
+            int this_chunk = (w_words - base < ELEMWISE_CHUNK_WORDS) ? (w_words - base) : ELEMWISE_CHUNK_WORDS;
+            w_burst.read_request(w_word_off + base, this_chunk);
+            PW_WEIGHT_HOIST_W: for (int i = 0; i < ELEMWISE_CHUNK_WORDS; i++) {
+                #pragma HLS PIPELINE II=1
+                if (i < this_chunk) {
+                    ap_uint<32> w = w_burst.read();
+                    for (int k = 0; k < 4; k++) {
+                        #pragma HLS UNROLL
+                        pw_weight_cache[(base + i) * 4 + k] = (wt_t)w.range(k * 8 + 7, k * 8);
+                    }
+                }
+            }
+        }
+#else
+        (void)w_burst;
         PW_WEIGHT_HOIST: for (int i = 0; i < w_total; i++) {
             #pragma HLS PIPELINE II=1
             pw_weight_cache[i] = w_base[d.w_off + pw_w_chunk_off + i];
         }
+#endif
     }
     /* ZHR-92 round (2026-09-03, SECOND shared-multiplier fix): computed
      * ONCE per chunk here (loop-invariant across the whole (rt,colt)
@@ -2577,7 +2609,8 @@ void mac_array_top(
     hls::burst_maxi<ap_uint<32> > in_burst,
     hls::burst_maxi<ap_uint<32> > elemwise_in_burst,
     hls::burst_maxi<ap_uint<32> > elemwise_out_burst,
-    hls::burst_maxi<ap_uint<32> > dw_in_burst)
+    hls::burst_maxi<ap_uint<32> > dw_in_burst,
+    hls::burst_maxi<ap_uint<32> > w_burst)
 {
 #pragma HLS INTERFACE s_axilite port=desc     bundle=control
 /* ZHR-92 round (2026-09-04): COSIM_DEPTH_HINT -- RTL cosimulation (unlike
@@ -2666,6 +2699,21 @@ void mac_array_top(
 #pragma HLS INTERFACE m_axi port=dw_in_burst  offset=slave bundle=gmem_act
 #endif
 #pragma HLS INTERFACE s_axilite port=dw_in_burst bundle=control
+    /* ZHR-92 (2026-09-15) PW_WHOIST_WIDE: 32-bit burst_maxi read port on
+     * gmem_w for PW_WEIGHT_HOIST (the byte-wide w_base[] copy into
+     * pw_weight_cache cost 0.74 cycles/byte = 21.2ms of PW's 181; one word
+     * per cycle floors it at ~0.19). First and only burst_maxi on gmem_w
+     * (the codegen crash needs two DIFFERENT-width burst_maxi ports on one
+     * bundle; a plain 8-bit pointer alongside is the in_base/in_burst
+     * precedent). OWN control register -- wired into all three ARM call
+     * sites in the same round (the shared-bundle != shared-register trap,
+     * closed pre-emptively as for dw_in_burst). */
+#ifdef COSIM_DEPTH_HINT
+#pragma HLS INTERFACE m_axi port=w_burst      offset=slave bundle=gmem_w depth=2304
+#else
+#pragma HLS INTERFACE m_axi port=w_burst      offset=slave bundle=gmem_w
+#endif
+#pragma HLS INTERFACE s_axilite port=w_burst bundle=control
     /* ZHR-92 round (2026-09-11): DW's own packed word writeout
      * (dwr_writeout_packed) does NOT get its own port -- it REUSES
      * out_burst above. A dedicated 6th port (dw_out_burst) was built and
@@ -2796,7 +2844,7 @@ void mac_array_top(
         case LDESC_OP_SCALE:   run_scale(desc, scalar_hw, in_base, out_base); break;
 #endif
         case LDESC_OP_GELU:    run_gelu(desc, scalar_total, elemwise_in_burst, elemwise_out_burst); break;
-        default:                run_layer(desc, in_base, w_base, b_base, out_base, in_base_wide, out_burst, in_burst, dw_in_burst); break;
+        default:                run_layer(desc, in_base, w_base, b_base, out_base, in_base_wide, out_burst, in_burst, dw_in_burst, w_burst); break;
     }
     *out_written = 1;
 }

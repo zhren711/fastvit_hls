@@ -249,6 +249,7 @@ int main(int argc, char **argv) {
      * comment on why this one was front-loaded. Same physical region as
      * in_base. */
     W64(MAC_DW_IN_BURST_LO, MAC_DW_IN_BURST_HI, in_phys);
+    W64(MAC_W_BURST_LO, MAC_W_BURST_HI, w_phys);   /* PW_WHOIST_WIDE port, own register */
 
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);

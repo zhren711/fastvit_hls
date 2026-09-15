@@ -73,7 +73,8 @@ static bool run_case(const char *tag, int cin, int cout, int h_in, int w_in,
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())),
-                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())));
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())),
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(wbuf.data())));
 
     // ---- (b) new raster mechanism, real descriptor-shaped call ----
     std::vector<act_t> in_raster(in_total);

@@ -93,6 +93,7 @@ static bool run_entry(int idx)
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(A)),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(A)),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(A)),
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(A)),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(A)));
 
     int mism = 0, first = -1;
