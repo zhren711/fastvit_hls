@@ -30,6 +30,13 @@
 #ifndef PW_DEFER_WRESP_OFF
 #define PW_DEFER_WRESP 1
 #endif
+
+/* PW_ROWREAD_PREFETCH prefetch depth (requests in flight), sized against the
+ * gmem_act adapter: NUM_READ_OUTSTANDING 16, request FIFO 16, read-data
+ * buffer 256 words; real PW rows <= 16 words -> 8 in flight = 128 words. */
+#ifndef PW_ROWREAD_PF
+#define PW_ROWREAD_PF 8
+#endif
 /* ZHR-92 angle-B step (2026-08-24, final): explicit-API burst for
  * WRITEOUT (PW's own write, inside pw_flat_pipeline). Fast path
  * (hls::burst_maxi<ap_uint<32>>, out_burst) requires BOTH col_sz==MAC_PC
@@ -1267,6 +1274,47 @@ static void run_layer(const LayerDescV2 &d,
                 rr_w += W;
                 int ch_base = 0;    /* == ci * d.in_ch_stride, accumulated -- no runtime multiply */
                 int flat_base = 0;  /* == ci * W, accumulated -- row_buf's own flat layout */
+#ifdef PW_ROWREAD_PREFETCH
+                /* ZHR-92 (2026-09-15) PW_ROWREAD_PREFETCH -- STEP-1 MECHANISM PROBE,
+                 * OFF by default. Real-board fit after PW_DEFER_WRESP: 71-85
+                 * cycles per ROW_READ request for only w/4 (2-16) words --
+                 * 179,904 requests = 128-153ms, ~45% of PW -- i.e. each
+                 * request's own latency is paid serially: request, wait,
+                 * read n_words, next. This variant issues the requests
+                 * PW_ROWREAD_PF channels AHEAD: the first PF requests are
+                 * primed before ROW_READ_CH, and after each channel's fill
+                 * the request for ci+PF is issued, so up to PF request
+                 * latencies overlap with the fills. The read() stays exactly
+                 * where it is, inside ROW_READ_FILL at II=1.
+                 * NOT the same thing as the 2026-08-29 ROW_READ DATAFLOW
+                 * split: that overlapped produce with consume when the read
+                 * side was ~4% of PW ("total ~ max" held but was worth 4%);
+                 * here the request LATENCY is 42% of PW (128/307ms) -- same
+                 * shape of idea, completely different magnitude; do not
+                 * dismiss this on that round's result.
+                 * PF sizing from the exported gmem_act adapter, not defaults:
+                 * NUM_READ_OUTSTANDING = 16, request FIFO USER_MAXREQS = 16,
+                 * load-unit read-data buffer RBUFF_DEPTH = 16*16 = 256 words
+                 * (the adapter issues an AR only with buffer credit, so a
+                 * full buffer stalls AR issue, never deadlocks -- provided
+                 * our own outstanding count stays <= 16). Real PW rows are
+                 * <= 16 words (w <= 64): PF = 8 -> <= 8 in flight, <= 128
+                 * words buffered, prefetch distance >= 8*(n_words+~5) >= 56
+                 * cycles even for the w=8 layers. Addresses are the SAME
+                 * accumulator arithmetic as the fill side (ch_base_req +=
+                 * in_ch_stride), so n_words recomputed at fill time from
+                 * ch_base matches the request's -- no queue, no multiply
+                 * (checked in the binding DB, not assumed). */
+                int ch_base_req = 0;   /* == ci_req * d.in_ch_stride, accumulated */
+                ROW_READ_PRIME: for (int pf = 0; pf < PW_ROWREAD_PF; pf++) {
+                    if (pf < Cin) {
+                        int rq_addr = d.in_off + ch_base_req + oh_w;
+                        int rq_words = ((rq_addr & 3) + W + 3) >> 2;
+                        in_burst.read_request((size_t)(rq_addr >> 2), (unsigned)rq_words);
+                        ch_base_req += d.in_ch_stride;
+                    }
+                }
+#endif
                 ROW_READ_CH: for (int ci = 0; ci < Cin; ci++) {
                     int byte_addr = d.in_off + ch_base + oh_w;
                     int word_addr0 = byte_addr >> 2;
@@ -1286,7 +1334,9 @@ static void run_layer(const LayerDescV2 &d,
                      * changes. Values WILL be wrong. Board-only, csim/
                      * checkpoint NOT meaningful under this flag. Off by
                      * default. */
-#ifdef PW_FIX_ROWREAD_ADDR
+#ifdef PW_ROWREAD_PREFETCH
+                    (void)word_addr0;      /* this channel's request was issued PF channels ago */
+#elif defined(PW_FIX_ROWREAD_ADDR)
                     in_burst.read_request((size_t)(d.in_off >> 2), (unsigned)n_words);
 #else
                     in_burst.read_request((size_t)word_addr0, (unsigned)n_words);
@@ -1304,6 +1354,14 @@ static void run_layer(const LayerDescV2 &d,
                             }
                         }
                     }
+#ifdef PW_ROWREAD_PREFETCH
+                    if (ci + PW_ROWREAD_PF < Cin) {
+                        int rq_addr = d.in_off + ch_base_req + oh_w;
+                        int rq_words = ((rq_addr & 3) + W + 3) >> 2;
+                        in_burst.read_request((size_t)(rq_addr >> 2), (unsigned)rq_words);
+                        ch_base_req += d.in_ch_stride;
+                    }
+#endif
                     ch_base += d.in_ch_stride;
                     flat_base += W;
                 }
