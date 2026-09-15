@@ -238,6 +238,16 @@ static void dwr_produce(
     int row_byte = ci_base;                /* == ci_base + (in-image rows so far) * w_in */
     const int n_words_in_row = w_in >> 2;  /* real w_in is always a multiple of 4 */
     ap_uint<32> cur_word = 0;
+#ifdef DWR_ROW_PF
+    /* ZHR-92 (2026-09-15) DWR_ROW_PF probe: the request for in-image row
+     * r+1 is issued at the START of row r (row 0 primed here), so its
+     * latency hides behind row r's own w_pad beats instead of being paid
+     * serially at every row start. read() below is unchanged. Accumulator
+     * addressing (no multiply); rows_requested bounds it to h_in. */
+    int rows_requested = 1;
+    in_burst_r.read_request(row_byte >> 2, n_words_in_row);
+    row_byte += w_in;
+#endif
 #else
     int read_ptr = 0;
 #endif
@@ -246,9 +256,17 @@ static void dwr_produce(
         int real_row = prow - pad;
         bool row_in_image = (real_row >= 0) && (real_row < h_in);
 #ifdef DWR_ROWREAD
+#ifdef DWR_ROW_PF
+        if (row_in_image && rows_requested < h_in) {   /* next in-image row, one ahead */
+            in_burst_r.read_request(row_byte >> 2, n_words_in_row);
+            row_byte += w_in;
+            rows_requested++;
+        }
+#else
         if (row_in_image) {
             in_burst_r.read_request(row_byte >> 2, n_words_in_row);
         }
+#endif
 #endif
 
         bool row_valid;
@@ -323,7 +341,7 @@ static void dwr_produce(
             if (col_in_image) read_ptr++;
 #endif
         }
-#ifdef DWR_ROWREAD
+#if defined(DWR_ROWREAD) && !defined(DWR_ROW_PF)
         if (row_in_image) row_byte += w_in;
 #endif
     }
@@ -691,6 +709,14 @@ static void dwr_consume(
         lane_base[g] = out_off + (ci * fpg + ((g < fpg) ? g : 0)) * out_ch_stride;
     }
     ap_uint<32> l1buf[DWR_ROWBUF_WORDS];
+#ifdef DWR_DEFER_WRESP
+    /* ZHR-92 (2026-09-15) DWR_DEFER_WRESP probe: a valid row's fpg B
+     * responses are popped DWR_WRESP_DEFER_ROWS valid rows later (at the
+     * end of that later row, after its own request+data are out), so the
+     * ~30-cycle B wait is off the per-row serial path; <= 2*fpg = 4 writes
+     * in flight against the adapter's 16. Drained after CROW. */
+    int rows_pending = 0;
+#endif
     CROW: for (int prow = 0; prow < h_pad; prow++) {
         bool row_valid;
         if (prow < K - 1) {
@@ -794,13 +820,35 @@ static void dwr_consume(
                     out_burst_w.write(l1buf[i]);
                 }
             }
+#ifdef DWR_DEFER_WRESP
+            if (rows_pending == DWR_WRESP_DEFER_ROWS) {
+                for (int g = 0; g < DWR_MAX_FPG; g++) {   /* the row DEFER_ROWS back */
+                    if (g < fpg) out_burst_w.write_response();
+                }
+            } else {
+                rows_pending++;
+            }
+#else
             for (int g = 0; g < DWR_MAX_FPG; g++) {
                 if (g < fpg) out_burst_w.write_response();
             }
+#endif
             row_off += w_out;
         }
 #endif
     }
+#if defined(DW_OUTPUT_BURST) && defined(DWR_ROWBURST) && defined(DWR_DEFER_WRESP)
+    /* One response per iteration (row = i>>1, lane = i&1): the first form
+     * (a row loop with the g loop inside) popped both lanes in one
+     * iteration -> 200-885 II=2 on gmem_act; this keeps the design at zero
+     * II violations. Once per channel, <= 4 iterations. */
+    DWR_WRESP_DRAIN: for (int i = 0; i < DWR_WRESP_DEFER_ROWS * DWR_MAX_FPG; i++) {
+#pragma HLS PIPELINE II=1
+        int r = i >> 1;
+        int g = i & 1;
+        if (r < rows_pending && g < fpg) out_burst_w.write_response();
+    }
+#endif
     for (int g = 0; g < DWR_MAX_FPG; g++) {
         bool g_valid = (g < fpg);
         if (g_valid && wbuf_n[g] > 0) {

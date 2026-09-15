@@ -97,6 +97,30 @@
 #define DWR_ROWREAD 1
 #endif
 
+// ZHR-92 (2026-09-15) DWR_ROW_PF / DWR_DEFER_WRESP -- STEP-1 MECHANISM PROBES,
+// OFF by default (define on the command line). Target: the per-ROW fixed cost
+// of the DW DATAFLOW pair. Refit of the merge4 full-network run with a per-row
+// term (R^2 0.879 -> 0.977; per-channel term drops to ~0): DW 115ms = 0.89
+// cycles/input-pixel + 0.59/output + ~73 cycles per padded row x 97,344 rows
+// (~71ms). Per row, both sides currently pay one AXI latency that OVERLAP each
+// other but are each serial within their own process: dwr_produce issues the
+// row's read_request only after pushing the previous row's last beat and then
+// blocks on the first read() (~35 cycles); dwr_consume pops the row's
+// write_response() right after its last write() (~30 cycles). Removing one
+// side alone only exposes the other (the ROWBURST -> ROWREAD lesson), so the
+// two are gated separately but meant to be measured together:
+//   DWR_ROW_PF     -- dwr_produce issues the read_request for in-image row
+//                     r+1 at the start of row r (prime before the ROW loop);
+//                     read() stays inside the pipelined COL loop. <= 2
+//                     outstanding, <= 64 words buffered (adapter: 16 / 256).
+//                     Same shape as PW_ROWREAD_PREFETCH (PF=1 row).
+//   DWR_DEFER_WRESP-- dwr_consume pops a row's write_response()s two valid
+//                     rows later (DWR_WRESP_DEFER_ROWS), <= 2*fpg = 4 in flight
+//                     (adapter 16); drained after CROW. write_request/write
+//                     unchanged. Same shape as PW_DEFER_WRESP.
+// Requires DWR_ROWREAD (PF) and DW_OUTPUT_BURST+DWR_ROWBURST (DEFER).
+#define DWR_WRESP_DEFER_ROWS 2
+
 // ZHR-92 round (2026-09-07): DWR_INPUT_BURST (OFF by default -- ATTEMPTED
 // AND REJECTED, real board result: DW 531.20ms->574.22ms, +8.1% WORSE,
 // not better. See dw_raster_layer.cpp's own DWR_INPUT_BURST comment for
