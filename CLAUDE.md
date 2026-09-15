@@ -715,7 +715,12 @@ supposedly standing in for.
   estimate (`total_iters x II(=1) x 10ns`, matching this file's own established `Performance Estimates`
   discipline) plus the separately-established ~0.58ms/entry dispatch floor together explain only 46-57%
   of measured time (entry3: 9.83ms pipeline + 0.58ms dispatch = 45.9% of 22.67ms; entry64: 18.43ms +
-  0.58ms = 56.8% of 33.46ms) -- **a large remainder (43-54%) unaccounted by anything tested.** New gap
+  0.58ms = 56.8% of 33.46ms) -- **a large remainder (43-54%) unaccounted by anything tested.**
+  [RETRACTED INPUT, 2026-09-15: the "0.58ms dispatch floor" was the harness's own half-poll
+  overshoot (see the HARNESS CORRECTION in the baseline section); the true floor is <0.01ms. The
+  remainder here is therefore ~0.58ms LARGER than stated, and any single-op ms in this entry
+  (22.67, 33.46, the 11 scaling points) carries up to +1.08ms of overshoot -- the conclusion
+  ("a large remainder exists") stands, the arithmetic does not.] New gap
   in this project's own probe coverage identified while investigating: `PW_FIX_ACTADDR` only ever fixed
   `COPY_FROM_ROW`'s SRAM-to-SRAM copy, never `ROW_READ`'s own real DRAM burst fetch (`in_burst.
   read_request`/`read()`, genuinely data-dependent address, once per row-tile x Cin channels) -- the
@@ -1961,7 +1966,12 @@ supposedly standing in for.
   in the DW-raster round) never calls it at all; it has its own separately-written inline poll loop at
   `usleep(500)` (0.5ms). Found while measuring the real per-entry dispatch floor (0.580ms, confirmed
   to ~zero variance over 20 repeated full-network runs) — the floor itself turned out small (≈65ms /
-  1.79% of a full run, below the round's own close-out threshold), but the duplicate-implementation
+  1.79% of a full run, below the round's own close-out threshold) [RETRACTED 2026-09-15: that
+  "floor" was the poll loop's own average overshoot (half of the ~1.08ms usleep granularity), not
+  an IP cost -- true floor <0.01ms; the "≈65ms / 1.79%, below threshold" close-out was wrong in
+  KIND (it closed a harness artifact as an IP property) and the 65ms turned out to be real,
+  recoverable end-to-end latency once the harness was fixed (343 -> 295ms). See the HARNESS
+  CORRECTION in the baseline section], but the duplicate-implementation
   finding is the more durable lesson: **when asked "what polling granularity does this project use,"
   the honest answer requires checking which specific harness produced the number in question, not
   assuming one canonical driver function is universally on the path** — this codebase has at least two
@@ -2080,6 +2090,28 @@ row (23.2ms) + 196 cycles per channel (8.6ms -- the consume prologue, visible fo
 from quantized data. **Rule: compare full-network numbers only within one harness generation;
 any pre-busypoll number re-cited against a post-busypoll one must first subtract 0.56ms x entry
 count (or be re-measured).** The `*_sohoist` binaries remain on the board for that A/B.
+
+**GELU / ADD / SE DECOMPOSED ON THE CLEAN DATA, 2026-09-15 (same day, analysis only):** schedule
+check first -- `run_gelu`/`run_add` already have the right shape (`readreq`/`writereq`/`writeresp`
+once per 4096-element chunk OUTSIDE the pipelined loop, `read`/`write` inside it at II=1; csynth
+1,047 / 2,082 cycles per chunk), NOT the pre-PW_DEFER_WRESP "every write waits for its own B
+response inside the iteration" shape -- that candidate is ruled out. Fits (17 GELU, 10 ADD, both
+R^2 1.000): **GELU 0.3395 cyc/element + ~246 cycles/entry = 1.36x the one-word-per-cycle floor
+(0.25; 13.02ms vs 9.55 floor)**; **ADD 0.6016 cyc/element + ~268/entry = 1.20x ITS floor of 0.50**
+(two 32-bit input words per output word through one read port -- two II=1 passes; a lower floor
+needs a wider port, an architecture change). The ~340 extra cycles per 1,024-word chunk in both is
+the per-chunk request/first-read and B-response latency, serialized once per chunk -- the same
+prefetch/defer levers as DW rows would apply, ceiling ~4ms total (1.4% of the network). The
+~250-cycle per-entry constant is the TRUE dispatch floor (2.5us). **The SE block is the exception:
+GAP 7.63 cyc/element (3.75ms) and SCALE 11.08 cyc/element (5.45ms) -- plain-pointer, un-bursted,
+one-byte-per-iteration loops (`GAP_HW` II=1 latency 13, `SCALE_HW` II=1 latency 22), the exact
+pre-ELEMWISE_BURST shape GELU had at 8.6x. They are 9.2 of SE's 9.27ms (RELU 0.007ms, SIGMOID
+0.067ms -- negligible). Floor at 0.25 cyc/element: ~0.12ms each -> ~9ms recoverable (3.1% of
+295ms), the same size as DW's whole per-channel prologue term, with a mechanism (`elemwise_in/
+out_burst` over `gmem_act`, chunked 4-lane word processing) already deployed for GELU/ADD and
+time-disjoint from them. Not built; recorded as the obvious next contained lever.** Verdict on
+the round's question: GELU/ADD are at 1.2-1.4x their floors -- that line is close-able; the SE
+pair is at 30-44x and is not.
 
 **MEASUREMENT-RESOLUTION CAVEAT (RESOLVED by the harness correction above -- kept for the record
 of why every earlier per-layer fit had this floor)**: the full-network harness's per-entry `done:` times are quantized to ~1.08ms --
@@ -2947,6 +2979,9 @@ has actually been fixed and re-verified, not when a comment says it was.
   consumers) costs anywhere near that many cycles; even the already-measured real dispatch floor
   (~0.58ms/entry = 58,000 cycles, itself 9x smaller and covering far more than register fan-out
   alone: AP_START handshake, full descriptor validation, etc.) is an order of magnitude too small.
+  [PREMISE CORRECTED 2026-09-15: the 0.58ms "floor" was the harness's poll overshoot, and the real
+  dispatch floor is <0.01ms (<1,000 cycles) -- which makes this refutation STRONGER (the gap is
+  ~500x, not 9x), so the conclusion stands; only the cited figure was wrong.]
   **All five candidates read from the gmem_meta-elimination diff or otherwise proposed are now
   exhausted (AXI-Lite write cost, `run_gelu`/`run_add` field access, `out_written` mechanism,
   SmartConnect `NUM_SI`, register-fan-out startup cost) -- the actual mechanism behind the GELU/ADD
