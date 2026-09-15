@@ -2092,9 +2092,9 @@ resolution ~1us; the true dispatch floor is ~250 cycles = 2.5us per entry):
 | GELU (17) | 13.0 | 0.3395 cyc/element + 246/entry (1.000) | 9.55 (0.25, one word/cycle) | 1.36x | ~3.5 (chunk-boundary latency) |
 | ADD (10) | 5.05 | 0.6016 cyc/element + 268/entry (1.000) | 4.2 (0.50, two input words per output word on one read port) | 1.20x | ~0.9 |
 | SE (4) | 1.02 | GAP 0.77 (768 sequential divides 0.36 + reads 0.13 + 768 byte writes 0.28), SCALE 0.18, RELU 0.01, SIGMOID 0.07 | ~0.3 | ~3x | ~0.7 |
-| host gap | ~21 | PL total minus per-entry sum (descriptor writes, cache ops between entries) | -- | -- | ARM-side, not PL |
+| host gap | 20.8 | **measured per entry (2026-09-15, `gap_before=` in the harness): 76 normal gaps x 0.063ms = 4.7ms (48 AXI-Lite register writes ~9us + two printf/fflush to a file ~40us + out_written read + clock_gettime -- theory ~55us, matches) + 6 checkpoint dumps = 16.0ms (cache invalidate + fwrite of up to 196KB to the board's filesystem -- a test-harness action, not inference)** | 4.7 (ARM dispatch) | -- | 0 -- the 16ms is not inference; true end-to-end inference is ~271.5ms (266.8 IP + 4.7 ARM) |
 
-Sum of the attackable column: **~80ms of ~287 (28%)** by the fits' own arithmetic, and each
+Nothing is unclassified: 287.55 = 266.77 (entries) + 20.76 (gaps) + 0.02. Sum of the attackable column: **~80ms of ~287 (28%)** by the fits' own arithmetic, and each
 remaining piece is small, specific, and has a known shape: PW's requests (the same prefetch/merge
 family, already applied twice), PW's weight load (word-wide `PW_WEIGHT_HOIST`), DW's per-row FSM
 glue (the 8-cycle `readreq` op + fill/drain + per-lane loops -- would need the row loop flattened

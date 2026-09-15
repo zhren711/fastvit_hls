@@ -190,11 +190,18 @@ int main(int argc, char **argv) {
 
     int written_ok[N_HW_SEQ];
     double entry_ms[N_HW_SEQ];
+    /* ZHR-92 (2026-09-15): host-side gap BEFORE each entry (previous entry's
+     * ap_done -> this entry's AP_START: descriptor/base-address register
+     * writes, the two printf+fflush, and any checkpoint dump in between).
+     * Answers "where does PL-total minus sum(entry_ms) go". */
+    double gap_ms[N_HW_SEQ];
+    struct timespec prev_e1;
     int ckpt_cursor = 0;
     int any_fail = 0;
 
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);
+    prev_e1 = t0;
 
     for (int i = 0; i < n_limit; i++) {
         /* ZHR-92 (2026-08-30): desc dispatched straight from host_desc[i]
@@ -248,6 +255,7 @@ int main(int argc, char **argv) {
 
         struct timespec e0, e1;
         clock_gettime(CLOCK_MONOTONIC, &e0);
+        gap_ms[i] = (e0.tv_sec - prev_e1.tv_sec) * 1000.0 + (e0.tv_nsec - prev_e1.tv_nsec) / 1e6;
         W32(MAC_AP_CTRL_OFFSET, MAC_AP_START);
 
         /* ZHR-92 (2026-08-28): this used to be its own inline poll loop
@@ -269,6 +277,7 @@ int main(int argc, char **argv) {
         int timed_out = mac_wait_done_timeout(30000);
         clock_gettime(CLOCK_MONOTONIC, &e1);
         entry_ms[i] = (e1.tv_sec - e0.tv_sec) * 1000.0 + (e1.tv_nsec - e0.tv_nsec) / 1e6;
+        prev_e1 = e1;
 
         if (timed_out) {
             printf(">>> [%2d] TIMEOUT after 30000ms -- ABORTING, do not trust anything past this point\n", i);
@@ -288,8 +297,8 @@ int main(int argc, char **argv) {
         /* ZHR-92 (2026-08-24): print+flush immediately after EVERY entry,
          * not just checkpoint hits -- if the NEXT entry hangs, this is
          * the last line we're guaranteed to have seen. */
-        printf(">>> [%2d] done: %.3fms, out_written=%u%s\n",
-               i, entry_ms[i], out_written_val, written_ok[i] ? "" : "  <-- FAIL (defect-5 symptom)");
+        printf(">>> [%2d] done: %.3fms, gap_before=%.3fms, out_written=%u%s\n",
+               i, entry_ms[i], gap_ms[i], out_written_val, written_ok[i] ? "" : "  <-- FAIL (defect-5 symptom)");
         fflush(stdout);
         if (!written_ok[i]) {
             fprintf(stderr, ">>> entry %d: out_written[%d]=0 -- defect-5 symptom (ap_done set, write never happened)\n", i, i);
