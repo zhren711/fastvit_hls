@@ -580,6 +580,7 @@ static void dwr_consume(
     int ci, int fpg, int K,
     act_t out_base[], int out_off, int out_ch_stride,
     int h_pad, int w_pad,
+    hls::burst_maxi<ap_uint<32> > w_burst,
 #ifdef DW_OUTPUT_BURST
     hls::burst_maxi<ap_uint<32> > out_burst_w,
 #ifdef DWR_ROWBURST
@@ -615,6 +616,46 @@ static void dwr_consume(
 #endif
 
     const int off = DWR_MAX_K - K;
+#ifdef DWR_WBURST
+    (void)w_base;
+    for (int g = 0; g < DWR_MAX_FPG; g++) {
+        bool g_valid = (g < fpg);
+        int co = ci * fpg + (g_valid ? g : 0);
+        /* ZHR-92 (2026-09-15) DWR_WBURST: kernel (K^2 bytes at an ARBITRARY
+         * byte offset -- co*K^2 is spread uniformly over mod 4 on the real
+         * layers, checked) and shift byte read through the 32-bit w_burst
+         * port: two requests back to back, the kernel's words stored RAW
+         * (one store per iteration -- no bank-proof needed), bytes selected
+         * by (j + ko) in the existing kh/kw copy loop. bias stays on gmem_b
+         * (32-bit, aligned, its own bundle -- unaffected). */
+        const int kb  = w_off + co * K * K;
+        const int ko  = kb & 3;
+        const int nw  = (ko + K * K + 3) >> 2;
+        const int sb  = shift_off + co;
+        w_burst.read_request(kb >> 2, nw);
+        w_burst.read_request(sb >> 2, 1);
+        bias[g]  = b_base[b_off + co];
+#ifdef DWR_HOIST_BASE_ADDR
+        base_addr_arr[g] = out_off + co * out_ch_stride;
+#endif
+        ap_uint<32> kwords[DWR_KW_MAX];
+        DWR_KW_READ: for (int i = 0; i < DWR_KW_MAX; i++) {
+#pragma HLS PIPELINE II=1
+            if (i < nw) kwords[i] = w_burst.read();
+        }
+        ap_uint<32> sw = w_burst.read();
+        shift[g] = (int)(wt_t)sw.range((sb & 3) * 8 + 7, (sb & 3) * 8);
+        int j = ko;                                   /* byte position of (kh,kw) in kwords */
+        for (int kh = 0; kh < K; kh++)
+            for (int kw = 0; kw < K; kw++) {
+#pragma HLS PIPELINE II=1
+                ap_uint<32> kw_word = kwords[j >> 2];
+                weight_aligned[g][off + kh][off + kw] = (wt_t)kw_word.range((j & 3) * 8 + 7, (j & 3) * 8);
+                j++;
+            }
+    }
+#else
+    (void)w_burst;
     for (int g = 0; g < DWR_MAX_FPG; g++) {
         bool g_valid = (g < fpg);
         int co = ci * fpg + (g_valid ? g : 0);
@@ -627,6 +668,7 @@ static void dwr_consume(
             for (int kw = 0; kw < K; kw++)
                 weight_aligned[g][off + kh][off + kw] = w_base[w_off + co * K * K + kh * K + kw];
     }
+#endif
 
     act_t wbuf[DWR_MAX_FPG][4];
     // ZHR-92 round (2026-09-08): DWR_WBUF_PARTITION step -- wbuf had no
@@ -910,6 +952,7 @@ void run_dw_layer_raster(
     const acc_t b_base[],
     act_t        out_base[],
     hls::burst_maxi<ap_uint<32> > dw_in_burst,
+    hls::burst_maxi<ap_uint<32> > w_burst,
 #ifdef DW_OUTPUT_BURST
     hls::burst_maxi<ap_uint<32> > out_burst_w,
 #endif
@@ -959,6 +1002,7 @@ void run_dw_layer_raster(
 #else
         dwr_consume(w_base, w_off, shift_off, b_base, b_off, ci, fpg, K,
                     out_base, out_off, out_ch_stride, h_pad, w_pad,
+                    w_burst,
 #ifdef DW_OUTPUT_BURST
                     out_burst_w,
 #ifdef DWR_ROWBURST

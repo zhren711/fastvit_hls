@@ -48,6 +48,9 @@
 #define DWR_PAD_MAX  (DWR_MAX_K / 2)
 #define DWR_WPAD_MAX (DWR_W_MAX + 2 * DWR_PAD_MAX)
 #define DWR_ROWBUF_WORDS (DWR_W_MAX / 4)   /* DWR_ROWBURST: lane-1 per-row word buffer (real fpg=2 layers use <= 8) */
+/* DWR_WBURST: a K^2-byte kernel starting at any byte offset spans at most
+ * ceil((3 + 49)/4) = 13 words; 14 keeps one spare. */
+#define DWR_KW_MAX 14
 
 // ZHR-92 (2026-09-13): DW_OUTPUT_BURST is ON BY DEFAULT as of the
 // mac_array_a3_dwob deployed baseline (real board: DW 531.13ms -> 329.0ms,
@@ -179,6 +182,13 @@ void run_dw_layer_raster(
     const acc_t b_base[],
     act_t        out_base[],
     hls::burst_maxi<ap_uint<32> > dw_in_burst,
+    /* ZHR-92 (2026-09-15) DWR_WBURST: the 32-bit w_burst port on gmem_w (added
+     * for PW_WHOIST_WIDE) -- once it exists on the bundle, w_base's byte reads
+     * lose their burst inference (the DW prologue's K^2 kernel burst went from
+     * iteration latency 2 to 15, +17ms on the board), so the prologue reads
+     * its kernel + shift through this port instead. Parameter unconditional
+     * (a bare #ifdef around a parameter does not compose); body gated. */
+    hls::burst_maxi<ap_uint<32> > w_burst,
 #ifdef DW_OUTPUT_BURST
     /* ZHR-92 (2026-09-12/13): DW's packed word writeout reuses PW_FLAT's
      * own out_burst port (no 6th gmem_act port, no new driver register).

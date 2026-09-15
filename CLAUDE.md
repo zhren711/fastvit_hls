@@ -1428,6 +1428,20 @@ supposedly standing in for.
   "fixed overhead is small" measurement, check whether the harness's own resolution/granularity is
   of the same order as the overhead -- if it is, the measurement cannot distinguish the two, and
   the line must not be closed on it.**
+- **NARROWED PRECEDENT (2026-09-15, `PW_WHOIST_WIDE` round): "a plain pointer of any width can
+  coexist with a `burst_maxi` of any width on one bundle" is only safe when the plain pointer does
+  NOT depend on burst inference.** Adding the 32-bit `w_burst` to `gmem_w` (whose only other port
+  was the 8-bit `w_base`) made the bundle's access width 32-bit for every access: `w_base`'s byte
+  reads became individual 32-bit reads with byte extraction (`i32P1A` in the schedule) and the
+  DW prologue's length-K² kernel burst (`readreq len=K*K` on `p1i8`, kernel-loop iteration
+  latency 2) was NO LONGER INFERRED (latency 15). Real board: DW +17.3ms (+183 cycles/channel
+  at k=3, +605 at k=7 -- exactly 2 lanes x (K²+2) reads x ~6-8 extra cycles) against PW's
+  -20.7ms from the mechanism itself. Confirmed from the two exports' schedule reports, not
+  inferred. `gmem_act`'s `in_base`/`in_burst` coexistence never showed this because `in_base`'s
+  per-pixel reads were never burst-inferred in the first place. **Before adding a wider port to
+  a bundle, grep that bundle's other plain-pointer ports for inferred bursts (`readreq ... i64
+  %<len>` with a non-constant length in their `.verbose.sched.rpt`) -- each such burst will be
+  lost, and the fix is to move that access onto the new wide port too (option (a) of the round).**
 - **Exception condition for the "isolated csynth is direction-agnostic-unreliable" rule: a
   PURE-CONTROL-LOGIC increment (no new datapath, no new array, no new multiplier, no new port) can
   match closely.** Confirmed 2026-09-15 (`DWR_ROW_PF`+`DWR_DEFER_WRESP`): isolated +626 LUT, real

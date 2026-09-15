@@ -873,6 +873,7 @@ static void run_layer(const LayerDescV2 &d,
          * own "adding an m_axi port to an existing bundle is not free"
          * entry. */
         run_dw_layer_raster(in_base, w_base, b_base, out_base, dw_in_burst,
+                             w_burst,
 #ifdef DW_OUTPUT_BURST
                              out_burst,
 #endif
