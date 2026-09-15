@@ -1964,9 +1964,54 @@ supposedly standing in for.
   must reflect current config) is a standing TODO to verify, not a fact — especially before building
   new code (like a register-write driver) that will silently inherit whichever version is wrong.**
 
-## Current deployed baseline (updated 2026-09-15 -- supersedes every earlier baseline reference below)
+## Current deployed baseline (updated 2026-09-15, later -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_pwdefer` is now the deployed baseline**, replacing `mac_array_a3_rowread` (~679ms /
+**`mac_array_a3_pwpf` is now the deployed baseline**, replacing `mac_array_a3_pwdefer` (~496ms /
+PW 307ms / WNS +0.292ns, same day). Full network **~418ms** (419.10 / 415.99ms over two runs,
+per-entry sums 395.7 / 395.7), **-16%**; PW 307.5 -> **231.2ms (-25%)**. Cumulative on this
+latency line: 6,050ms -> ~418ms, **-93.1%**. Archive + writeup:
+`vivado_impl/bitstream_archive/mac_array_a3_pwpf_2026-09-15/README.txt`.
+
+**What changed** (`PW_ROWREAD_PREFETCH`, commit `fecf979`, default ON since this round --
+`PW_ROWREAD_PREFETCH_OFF` reverts; `PW_ROWREAD_PF` = 8): `ROW_READ`'s requests are issued 8
+channels ahead (a `ROW_READ_PRIME` loop issues the first 8 before `ROW_READ_CH`; after each fill
+the request for ci+8 is issued); `read()` unchanged inside `ROW_READ_FILL` at II=1. PF sized from
+the exported adapter (outstanding 16, request FIFO 16, read buffer 256 words; the adapter issues
+ARs only with buffer credit, so it cannot deadlock while our own count stays <= 16): 8 in flight,
+<= 128 words buffered, distance >= 56 cycles for the w=8 rows. Request addresses are the same
+accumulator arithmetic as the fill side -- binding DB confirmed no new multiply (`run_layer`
+still the 4 narrow per-chunk ops, zero 32x32). Step-1 probe: readreq only in `ROW_READ_PRIME`
+and the `ROW_READ_CH` body, read only in `ROW_READ_FILL`, zero II violations. Default-flip
+verified: flag-less csynth totals bit-identical (246/29/38,409/73,075, `hw.h`), six suites clean.
+
+Real P&R (route_design alone, NO phys_opt): **WNS +0.131472ns** (pwdefer +0.292 -- placement
+roll; worst path `gmem_w` load buffer -> DW gather, 1 LUT level, 95% route); LUT 44,230 (83.14%,
++321 vs pwdefer -- isolated said +722); BRAM/DSP flat.
+
+Board (2026-09-15, pre-registered order, 30s timeouts, golden untouched): entry3 FIRST x3,
+byte-exact, 7.5 -> 5.9ms (-21%). **The independent prediction held**: the chunked big-cin PW
+entries that barely moved under PW_DEFER_WRESP (ROW_READ-request dominated) were the biggest
+movers -- entry66 (cin 1152) 29.1 -> 17.5ms (-40%), entry72 (cin 960) 24.9 -> 15.3 (-39%),
+entry64 -25%, entry70 -23%; all byte-exact. Controls DW/SE/GELU/ADD byte-exact and flat. Full
+network 82/82 x2, all 7 checkpoint files MD5-identical; PWCONV 231.25 / 231.17 (-24.8% --
+between the pre-registered 190-220 "works" and 250-280 "partial" bands), DWCONV 115.6 flat,
+GELU/ADD/SE flat; ONNX cosine EXACT. Operator split now: **PW 55%**, DW 28%, GELU 5.5%, ADD
+3.1%, SE 3.1%.
+
+**Refit on this run (R^2 0.989): PW 231ms = 1.08 cycles/`PW_FLAT` iteration (141ms; floor 131) +
+34.0 cycles per `ROW_READ` request (61ms; was 71) + 0.91 cycles/weight byte (26ms).** The request
+term HALVED, not vanished, and the residual is not AXI latency: ~34 cycles/request, uniform (32-47)
+across layers and independent of cin, matches csynth's `ROW_READ_CH` body latency of 24-31 --
+`ROW_READ_FILL` runs its compile-time `MAX_WORDS_PER_CH = 17` iterations regardless of `n_words`
+(2-16), plus fill/drain and loop control. Next lever on PW, smaller (~61ms): make the fill loop's
+work proportional to `n_words` (or fold the 4 `rr` rows of a channel into one 4x-longer
+request/fill so the per-request overhead is paid once per channel instead of 4 times -- rows of
+one channel are `W` bytes apart in DRAM, i.e. contiguous for a full-row tile; check contiguity
+first per this file's own rule). After that PW's three terms are all within ~10% of their floors.
+
+## Prior deployed baseline (superseded 2026-09-15, kept for history)
+
+**`mac_array_a3_pwdefer` was the deployed baseline for part of 2026-09-15**, replacing `mac_array_a3_rowread` (~679ms /
 PW 495.1ms / WNS +0.113ns, 2026-09-14). Full network **~496ms** (501.70 / 491.45ms over two runs,
 per-entry sums 470.2 / 471.8), **-27%**; PW 495.1 -> **306.6ms (-38%)**. Cumulative on this latency
 line: 6,050ms -> ~496ms, **-91.8%**. Archive + writeup:

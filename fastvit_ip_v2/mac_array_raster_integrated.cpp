@@ -37,6 +37,17 @@
 #ifndef PW_ROWREAD_PF
 #define PW_ROWREAD_PF 8
 #endif
+
+/* ZHR-92 (2026-09-15): PW_ROWREAD_PREFETCH is ON BY DEFAULT as of the
+ * mac_array_a3_pwpf deployed baseline (real board: PW 307 -> 231ms, -25%;
+ * full network ~496 -> ~418ms, -16%; byte-exact, ONNX cosine exact). The
+ * real-board fit's per-ROW_READ-request term went 71 -> 34 cycles; the
+ * remaining ~34 is ROW_READ_FILL's fixed MAX_WORDS_PER_CH trip count +
+ * loop overhead, not AXI latency. Define PW_ROWREAD_PREFETCH_OFF to get the
+ * serial request-then-fill form back. */
+#ifndef PW_ROWREAD_PREFETCH_OFF
+#define PW_ROWREAD_PREFETCH 1
+#endif
 /* ZHR-92 angle-B step (2026-08-24, final): explicit-API burst for
  * WRITEOUT (PW's own write, inside pw_flat_pipeline). Fast path
  * (hls::burst_maxi<ap_uint<32>>, out_burst) requires BOTH col_sz==MAC_PC
@@ -1275,7 +1286,10 @@ static void run_layer(const LayerDescV2 &d,
                 int ch_base = 0;    /* == ci * d.in_ch_stride, accumulated -- no runtime multiply */
                 int flat_base = 0;  /* == ci * W, accumulated -- row_buf's own flat layout */
 #ifdef PW_ROWREAD_PREFETCH
-                /* ZHR-92 (2026-09-15) PW_ROWREAD_PREFETCH -- STEP-1 MECHANISM PROBE,
+                /* ZHR-92 (2026-09-15) PW_ROWREAD_PREFETCH -- ON BY DEFAULT since
+                 * 2026-09-15 (define after the includes; PW_ROWREAD_PREFETCH_OFF
+                 * reverts), deployed as mac_array_a3_pwpf. History below as
+                 * written during the round. Originally a STEP-1 MECHANISM PROBE,
                  * OFF by default. Real-board fit after PW_DEFER_WRESP: 71-85
                  * cycles per ROW_READ request for only w/4 (2-16) words --
                  * 179,904 requests = 128-153ms, ~45% of PW -- i.e. each
