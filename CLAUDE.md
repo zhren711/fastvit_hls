@@ -1361,6 +1361,17 @@ supposedly standing in for.
        Cost: the small `_1_1` cores are LUT-fabric multipliers (~+100-200 LUT each in real P&R),
        DSP goes DOWN. Verified twice in one round (top-level `scalar_hw`/`total`, run_layer's four
        per-chunk products).
+    3. **Explicit bank construction for a partitioned array written by unrolled lanes (2026-09-15,
+       `PW_ROWREAD_MERGE4`)** -- not a multiplier trick but the same spirit (make the property
+       structurally visible instead of asking HLS to prove it): when N unrolled lanes store into an
+       array that is `cyclic factor=N` partitioned and the lane addresses are DATA-DEPENDENT (a
+       loop-carried column with a wrap), HLS cannot prove the lanes hit distinct banks and
+       serialises the stores (store-vs-store `200-880`, II=N). Two formulations failed that way
+       (per-lane chained counters; per-word counter with a one-row spill). What worked: build the
+       index as `(word_index << log2 N) | lane` so its low bits ARE the lane -- bank = index % N =
+       lane by construction, II=1 immediately -- and restrict the fast path (a per-LAYER branch
+       outside the loops, never inside the pipeline) to the shapes where a word cannot straddle a
+       row (W % N == 0, aligned), keeping the general path for the rest.
     X. **A standalone add-loop ("add the invariant N times") does NOT work**: HLS's loop-idiom
        pass rewrites `for (i<N) acc += c` into `N*c` -- an i32 multiply, bound straight back onto
        the shared unit (binding DB showed `mul_ln1056/_1/_2` with the loop gone). The accumulator
@@ -1964,9 +1975,52 @@ supposedly standing in for.
   must reflect current config) is a standing TODO to verify, not a fact — especially before building
   new code (like a register-write driver) that will silently inherit whichever version is wrong.**
 
-## Current deployed baseline (updated 2026-09-15, later -- supersedes every earlier baseline reference below)
+## Current deployed baseline (updated 2026-09-15, latest -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_pwpf` is now the deployed baseline**, replacing `mac_array_a3_pwdefer` (~496ms /
+**`mac_array_a3_merge4` is now the deployed baseline**, replacing `mac_array_a3_pwpf` (~418ms /
+PW 231ms / WNS +0.131ns, same day). Full network **~378ms** (378.16 / 377.60ms over two runs,
+per-entry sums 357.9 / 357.8), **-9.5%**; PW 231.2 -> **193.4ms (-16%)**. Cumulative on this
+latency line: 6,050ms -> ~378ms, **-93.8%**. Archive + writeup:
+`vivado_impl/bitstream_archive/mac_array_a3_merge4_2026-09-15/README.txt`.
+
+**What changed** (`PW_ROWREAD_MERGE4`, commit `325d083`, default ON since this round --
+`PW_ROWREAD_MERGE4_OFF` reverts): (a)+(b) on `ROW_READ` -- one request per (rt, ci) covering the
+row tile's 4 contiguous input rows (contiguity verified first: packed rows on all 26 PW layers,
+whole-row reads, consecutive tile rows; 179,904 -> 44,976 requests) and a runtime FILL trip count
+((b) needs (a): a fixed bound would be 65). **Three formulations to reach FILL II=1** -- per-lane
+chained counters and per-word counters with a one-row spill both got II=4 (store-vs-store
+`200-880`); the third builds the store index as `(word << 2) | lane` so the bank IS the lane (see
+the technique list, item 3), with a per-LAYER `W%4==0 && aligned` guard outside the loops (every
+real conv PW layer); the W=1 SE fc layers and synthetic W<4 shapes keep the original per-(rr,ci)
+path, compiled in. Prefetch depth scales with the span. No new multiply. Default-flip verified:
+flag-less csynth totals bit-identical (246/29/39,388/75,181, `hw.h`), six suites clean.
+
+Real P&R (route_design alone, NO phys_opt): **WNS +0.460899ns -- the best on this line's entire
+history** (previous best macpd4's +0.339); the +2,106 isolated LUT became only +360 real (44,590,
+83.82%) -- the resource concern did not materialise; BRAM/DSP flat. Worst path: PS7 GP0 clock ->
+an AXI-Lite control register (1 LUT, 83% route) -- nothing in the datapath is within 0.46ns.
+
+Board (2026-09-15, pre-registered order, 30s timeouts, golden untouched): entry3 (W=64) x3
+byte-exact, 5.9 -> 5.6ms (-5%, the LEAST, as pre-registered); W=8 chunked entries the MOST
+(entry66 -33%, entry72 -36%, entry64 -20%, entry70 -23%), byte-exact; controls flat; full network
+82/82 x2, all 7 checkpoint files MD5-identical; PWCONV 193.45 / 193.38 (-16.3%, pre-registered
+185-200), DW/GELU/ADD/SE flat; ONNX cosine EXACT. **Per-W check against the model** (pwpf ->
+merge4, model in brackets): W=8 -17.2ms [-20.0], W=16 -12.9 [-13.1], W=32 -4.3 [-5.7], W=64 -3.4
+[-3.8], W=1 0 [general path] -- ordering and magnitudes as predicted; the second time a per-layer
+prediction from the fit was confirmed independently on the board. Operator split now: **PW 51%**,
+DW 31%, GELU 6.0%, ADD 3.5%, SE 3.4%.
+
+**Refit on this run (R^2 0.964): PW 193ms = 1.11 cycles/`PW_FLAT` iteration (146ms; floor 131) +
+50 cycles per (rt,ci) request (22ms) + 0.72 cycles/weight byte (21ms).** PW is now within ~15% of
+its floor on every term; its remaining headroom by this model is ~30ms total. DW (115ms) is 1.29
+cycles/pixel + 1.30/output + 886/channel against a 35ms pixel floor -- its per-channel term (39ms)
+and per-output term (27ms) are the larger remaining pieces in the network now, followed by
+GELU+ADD+SE (49ms, all near their own floors). Where the ~378ms goes at this point is mostly
+floors, not handshakes.
+
+## Prior deployed baseline (superseded 2026-09-15, kept for history)
+
+**`mac_array_a3_pwpf` was the deployed baseline for part of 2026-09-15**, replacing `mac_array_a3_pwdefer` (~496ms /
 PW 307ms / WNS +0.292ns, same day). Full network **~418ms** (419.10 / 415.99ms over two runs,
 per-entry sums 395.7 / 395.7), **-16%**; PW 307.5 -> **231.2ms (-25%)**. Cumulative on this
 latency line: 6,050ms -> ~418ms, **-93.1%**. Archive + writeup:

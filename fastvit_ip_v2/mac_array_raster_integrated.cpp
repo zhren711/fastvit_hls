@@ -48,6 +48,19 @@
 #ifndef PW_ROWREAD_PREFETCH_OFF
 #define PW_ROWREAD_PREFETCH 1
 #endif
+
+/* ZHR-92 (2026-09-15): PW_ROWREAD_MERGE4 is ON BY DEFAULT as of the
+ * mac_array_a3_merge4 deployed baseline (real board: PW 231 -> 193ms, -16%;
+ * full network ~418 -> ~378ms, -9.5%; byte-exact, ONNX cosine exact). One
+ * ROW_READ request per (rt, ci) covering the tile's 4 contiguous input rows
+ * (requests 179,904 -> 44,976), runtime FILL trip count, explicit-bank
+ * (word<<2)|lane store indexing (FILL II=1), per-layer W%4==0 && aligned guard
+ * -- the W=1 SE fc layers and any synthetic W<4 shape take the original
+ * per-(rr,ci) path, which stays compiled in. Define PW_ROWREAD_MERGE4_OFF to
+ * disable. */
+#ifndef PW_ROWREAD_MERGE4_OFF
+#define PW_ROWREAD_MERGE4 1
+#endif
 /* ZHR-92 angle-B step (2026-08-24, final): explicit-API burst for
  * WRITEOUT (PW's own write, inside pw_flat_pipeline). Fast path
  * (hls::burst_maxi<ap_uint<32>>, out_burst) requires BOTH col_sz==MAC_PC
@@ -1266,7 +1279,10 @@ static void run_layer(const LayerDescV2 &d,
         bool row_hoist_ok = (d.op_type == LDESC_OP_PWCONV);
         if (row_hoist_ok) {
 #ifdef PW_ROWREAD_MERGE4
-            /* ZHR-92 (2026-09-15) PW_ROWREAD_MERGE4 -- STEP-1 MECHANISM PROBE,
+            /* ZHR-92 (2026-09-15) PW_ROWREAD_MERGE4 -- ON BY DEFAULT since
+             * 2026-09-15 (define after the includes; PW_ROWREAD_MERGE4_OFF
+             * reverts), deployed as mac_array_a3_merge4. History below as
+             * written during the round. Originally a STEP-1 MECHANISM PROBE,
              * OFF by default: (a)+(b) together.
              * After PW_ROWREAD_PREFETCH the real-board fit still had 34 cycles
              * per ROW_READ request (61ms), UNIFORM across layers and independent
