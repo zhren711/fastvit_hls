@@ -54,6 +54,9 @@ static bool run_case(const char *tag) {
     mac_array_top(d, in_buf.data(), wbuf.data(), bbuf.data(), out_buf.data(), written,
                   reinterpret_cast<const ap_uint<32>*>(in_buf.data()),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(out_buf.data())),
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(in_buf.data())),
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(in_buf.data())),
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(in_buf.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(in_buf.data())));
 
     int mismatches = 0;

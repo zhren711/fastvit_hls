@@ -148,6 +148,9 @@ static bool run_case(const char *name, int cin, int cout, int h, int w, uint32_t
     mac_array_top(d, feat.data(), wbuf.data(), bbuf.data(), feat.data(), written,
                   reinterpret_cast<const ap_uint<32>*>(feat.data()),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())),
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())),
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())),
+                  hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())),
                   hls::burst_maxi<ap_uint<32> >(reinterpret_cast<ap_uint<32>*>(feat.data())));
 
     int mismatches = 0;

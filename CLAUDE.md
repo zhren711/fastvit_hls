@@ -2546,6 +2546,15 @@ has actually been fixed and re-verified, not when a comment says it was.
   `dw_raster_layer_tb.cpp` (5), `mac_array_raster_integrated_wiring_tb.cpp` (4),
   `gelu_add_burst_tb.cpp` (8), `scalar_ops_real_desc_tb.cpp` (4) -- `run_csim_sohoist_all.tcl` runs
   the first three in one session, `run_csim_scalar_ops.tcl` the fourth.
+- **The "four standard csim suites" (raster 5, wiring 4, gelu_add 8, scalar_ops 4) do NOT touch
+  PW at all -- a PW-only change can pass all four while broken.** Caught 2026-09-15 (PW_DEFER_WRESP):
+  the only PW_FLAT/FAST_WRITEOUT coverage is `pw_weight_hoist_tb.cpp` (6 real shapes incl. chunked
+  layers) + `pw_scaling_probe_tb.cpp` (20 synthetic shapes), and BOTH had silently been on the
+  9-arg pre-ELEMWISE_BURST `mac_array_top()` signature since 2026-09-06 -- the same class as the
+  three stale call-site files below. Re-paired 2026-09-15; `run_csim_pw_suites.tcl` runs both
+  (extra flags via the `CSIM_CFLAGS` env var). **The standard set is SIX suites now: 5/5 + 4/4 +
+  8/8 + 4/4 + 6/6 + 20/20; run the PW pair for any change that touches `run_layer` or
+  `pw_flat_pipeline_impl`.**
 - **`dw_linebuf_real_tile.cpp`, `verify_bundle_entry5_dw.cpp`, `writeout_edge_probe/
   writeout_edge_probe.cpp`**: still on the pre-gmemmeta_elim1 `mac_array_top()` signature
   (`&desc, 1, ...`); do not compile against the current header. Fix the call site before use.
