@@ -1265,6 +1265,118 @@ static void run_layer(const LayerDescV2 &d,
          * (pw_flat_pipeline_csynth.rpt), don't re-infer it. */
         bool row_hoist_ok = (d.op_type == LDESC_OP_PWCONV);
         if (row_hoist_ok) {
+#ifdef PW_ROWREAD_MERGE4
+            /* ZHR-92 (2026-09-15) PW_ROWREAD_MERGE4 -- STEP-1 MECHANISM PROBE,
+             * OFF by default: (a)+(b) together.
+             * After PW_ROWREAD_PREFETCH the real-board fit still had 34 cycles
+             * per ROW_READ request (61ms), UNIFORM across layers and independent
+             * of cin -- i.e. not AXI latency any more but loop overhead: the
+             * FILL loop ran its compile-time MAX_WORDS_PER_CH = 17 iterations
+             * regardless of n_words (2-16), plus ~17 cycles of fill/drain,
+             * request issue and loop control per request.
+             * (b) ONE request per (rt, ci) covering the row tile's 4 input rows:
+             * contiguity verified first (all 26 PW layers have in_ch_stride ==
+             * h_in*w_in, i.e. packed rows; ROW_READ reads WHOLE rows, k=1/s=1;
+             * the tile's rows are oh = rt*4 + rr, consecutive) -- so the 4 rows
+             * are one contiguous 4*W-byte span, unlike a DW output tile whose
+             * 4 rows are w_out apart. Requests: 179,904 -> 44,976.
+             * (a) the FILL loop's bound is the RUNTIME word count of the span,
+             * 4*W/4 = W words (+1 if unaligned), not a compile-time constant --
+             * (b) needs (a): a fixed bound would be 65 and worse than today for
+             * small W. This is a pipelined loop's trip count, NOT a runtime
+             * value feeding an unrolled index (the DW_PATCH_STAGE II-blowup
+             * shape) -- confirmed in the schedule, not assumed.
+             * The 4 byte lanes now cross row boundaries inside the span: a
+             * loop-carried (cur_row, cur_col) counter walks the span, lane b's
+             * (row, col) chains from lane b-1 with a wrap at W. row_buf is
+             * complete dim=1 (4 row arrays) + cyclic-4 dim=2: 4 consecutive
+             * columns of one row hit 4 distinct banks, and at a row boundary
+             * the lanes split across 2 row ARRAYS -- no two lanes ever hit the
+             * same array+bank (W is a multiple of 4 on every real layer;
+             * for W=1/2 the lanes land on different row arrays). II=1 is
+             * structurally possible; whether HLS proves it is what this step
+             * measures.
+             * Partial last row tile (only the 2 SE fc layers, h_in=w_in=1,
+             * last_row_tile=1): the old code clamped rows rr >= r_sz to row 0
+             * and COPY_FROM_ROW discards them via r_valid; the merged span
+             * reads 4 bytes = the next 3 channels' single bytes into rows
+             * 1..3, which the SAME r_valid discards -- same result, different
+             * path (and up to 3 bytes past the input tensor for the last
+             * channel, inside the arena). Real conv PW layers all have
+             * h_in % 4 == 0, no overrun.
+             * Prefetch depth scales with the span so the in-flight words stay
+             * <= ~136 of the adapter's 256-word buffer and <= 16 outstanding
+             * bursts (MAX_READ_BURST_LENGTH 16): W>32 -> 2, W>16 -> 4, W>8 -> 6,
+             * else 8. Runtime guard in the prime loop, not in the hot loop. */
+            /* Merged path only when every word of the span lies inside one row
+             * and starts word-aligned: W % 4 == 0 (then in_ch_stride = h*W and
+             * rt_in_base = rt*4*W are multiples of 4 too) and in_off % 4 == 0.
+             * True for every real conv PW layer (W in {8,16,32,64}); the W=1
+             * SE fc layers and any synthetic W<4 / unaligned shape take the
+             * original per-(rr,ci) path below. A per-LAYER branch around two
+             * loop nests, not a gate inside a pipeline. */
+            const bool row_wide_ok = ((W & 3) == 0) && ((d.in_off & 3) == 0);
+            if (row_wide_ok) {
+                const int span_bytes = MAC_PR * W;                 /* 4 rows, contiguous */
+                const int pf_dyn = (W > 32) ? 2 : (W > 16) ? 4 : (W > 8) ? 6 : PW_ROWREAD_PF;
+                int ch_base = 0;       /* == ci * d.in_ch_stride, accumulated */
+                int flat_base = 0;     /* == ci * W, accumulated -- row_buf's own flat layout */
+                int ch_base_req = 0;   /* == ci_req * d.in_ch_stride, accumulated */
+                ROW_READ_PRIME4: for (int pf = 0; pf < PW_ROWREAD_PF; pf++) {
+                    if (pf < Cin && pf < pf_dyn) {
+                        int rq_addr = d.in_off + ch_base_req + rt_in_base;
+                        int rq_words = ((rq_addr & 3) + span_bytes + 3) >> 2;
+                        in_burst.read_request((size_t)(rq_addr >> 2), (unsigned)rq_words);
+                        ch_base_req += d.in_ch_stride;
+                    }
+                }
+                ROW_READ_CH4: for (int ci = 0; ci < Cin; ci++) {
+                    const int n_words = span_bytes >> 2;            /* runtime trip count; aligned, no partial word */
+                    /* Per-WORD (row, col) state, not per-lane chaining: the first
+                     * formulation chained lane b's (row, col) from lane b-1 and
+                     * HLS could not prove the 4 stores hit distinct banks --
+                     * store-vs-store 200-880, II=4 (csynth, 2026-09-15). Here
+                     * lane b's column is cur_col + b (+ W to the next row on a
+                     * spill), i.e. the same `base + lane` address form the old
+                     * per-row FILL had, which HLS proved bank-distinct. cur_col
+                     * is the span position of this word's first byte within its
+                     * row; a word can straddle at most one row boundary when
+                     * W >= 4 (every real layer). For the W=1/2 SE fc layers the
+                     * rows > 0 are discarded downstream anyway (see above). */
+                    /* Third formulation (the second, per-word with a one-row
+                     * spill, still got II=4 -- HLS cannot learn that a loop-
+                     * carried column with a wrap-at-W stays 0 mod 4): the bank
+                     * is made EXPLICIT. row_buf is cyclic-4 on dim 2, so bank ==
+                     * index & 3; the index is built as (word << 2) | b, whose
+                     * low two bits ARE the lane -- provably distinct banks -- and
+                     * with W % 4 == 0 and an aligned span a word never straddles
+                     * a row, so all 4 lanes write the SAME row array. */
+                    const int W_words = W >> 2;
+                    int widx = flat_base >> 2;                      /* word index of this word within its row array */
+                    int col_w = 0;                                  /* word column within the row */
+                    int cur_row = 0;
+                    ROW_READ_FILL4: for (int i = 0; i < n_words; i++) {
+                        #pragma HLS PIPELINE II=1
+                        ap_uint<32> wd = in_burst.read();
+                        for (int b = 0; b < 4; b++) {
+                            #pragma HLS UNROLL
+                            row_buf[cur_row][(widx << 2) | b] = (act_t)wd.range(b * 8 + 7, b * 8);
+                        }
+                        widx++;
+                        col_w++;
+                        if (col_w == W_words) { col_w = 0; cur_row++; widx = flat_base >> 2; }
+                    }
+                    if (ci + pf_dyn < Cin) {
+                        int rq_addr = d.in_off + ch_base_req + rt_in_base;
+                        int rq_words = ((rq_addr & 3) + span_bytes + 3) >> 2;
+                        in_burst.read_request((size_t)(rq_addr >> 2), (unsigned)rq_words);
+                        ch_base_req += d.in_ch_stride;
+                    }
+                    ch_base += d.in_ch_stride;
+                    flat_base += W;
+                }
+            } else {
+#endif
             ROW_READ: for (int rr = 0; rr < MAC_PR; rr++) {
                 /* Row-validity zero-fill, not a guard: ALWAYS issue the
                  * read (oh clamped to a safe in-bounds row, same r_valid?
@@ -1380,6 +1492,9 @@ static void run_layer(const LayerDescV2 &d,
                     flat_base += W;
                 }
             }
+#ifdef PW_ROWREAD_MERGE4
+            } /* !row_wide_ok */
+#endif
         }
 
         for (int colt = 0; colt < d.n_col_tiles; colt++) {
