@@ -61,6 +61,17 @@
 #ifndef PW_ROWREAD_MERGE4_OFF
 #define PW_ROWREAD_MERGE4 1
 #endif
+
+/* ZHR-92 (2026-09-15): SE_BURST is ON BY DEFAULT as of the mac_array_a3_seburst
+ * deployed baseline (real board, busy-poll harness: SE 9.27 -> 1.02ms, GAP 3.75
+ * -> 0.77, SCALE 5.45 -> 0.17; full network ~295 -> ~287ms; byte-exact, ONNX
+ * cosine exact; WNS +0.254 route-only, real LUT +790 vs isolated +1,929). GAP
+ * read-side burst + SCALE GELU-style burst over the existing elemwise_in/
+ * out_burst ports. Define SE_BURST_OFF to get the plain-pointer per-byte loops
+ * back. See run_gap's own comment. */
+#ifndef SE_BURST_OFF
+#define SE_BURST 1
+#endif
 /* ZHR-92 angle-B step (2026-08-24, final): explicit-API burst for
  * WRITEOUT (PW's own write, inside pw_flat_pipeline). Fast path
  * (hls::burst_maxi<ap_uint<32>>, out_burst) requires BOTH col_sz==MAC_PC
@@ -2273,7 +2284,8 @@ static void run_add(const LayerDescV2 &d, int total,
  * solved now (matches the project's "don't optimize efficiency this
  * round" discipline). */
 #ifdef SE_BURST
-/* ZHR-92 (2026-09-15) SE_BURST -- STEP-1/csim probe, OFF by default. The
+/* ZHR-92 (2026-09-15) SE_BURST -- ON BY DEFAULT since the mac_array_a3_seburst
+ * promotion (SE_BURST_OFF reverts); history below as written during the probe. The
  * busy-poll harness (same day) put the SE block's GAP at 7.63 and SCALE at
  * 11.08 cycles/element (3.75 / 5.45ms): plain-pointer, one-byte-per-
  * iteration loops -- the exact shape run_gelu had at 8.6x before

@@ -1230,6 +1230,21 @@ supposedly standing in for.
   anything. A real fix likely needs an explicit resource-sharing directive (`#pragma HLS ALLOCATION
   operation instances=... limit=N`) or a loop restructuring that removes the flattening opportunity
   entirely, not a bare pragma removal.**
+- **HLS AUTO-PIPELINING a low-frequency loop is pure waste -- the same family as "a runtime value
+  gating a hardware region" (a default tool behaviour that optimises in the wrong direction for a
+  specific loop shape), on a different trigger.** Confirmed 2026-09-15 (`SE_BURST`): `run_gap`'s
+  new `GAP_OUT` loop (one `sum/HW` division per channel, 768 iterations per dispatch, no inner
+  loop) was auto-pipelined by Vitis HLS's default `config_compile -pipeline_loops` -- it replaced
+  the 216-LUT sequential `sdiv` the pre-existing `GAP_C` loop used with a 47-stage pipelined one:
+  **2,512 LUT** for a loop whose entire sequential cost is 768 x 47 cycles = 0.36ms. `#pragma HLS
+  PIPELINE off` on the loop restored the sequential divider (238 LUT). The pre-existing code had
+  avoided this by accident (its `GAP_C` loop had a pipelined inner loop, so it was not "innermost"
+  and the auto-pipeliner left it alone); restructuring removed the inner loop and exposed it.
+  **Rule: when a restructuring turns a sequential outer loop into an innermost loop with an
+  expensive operator in its body (a divider, a wide multiplier, a barrel shifter), check the
+  csynth report's per-loop II/latency and the per-module LUT before accepting the total -- an
+  auto-pipelined 47-stage divider looks like "II=1, great" in the loop table and costs 10x the
+  LUT of the loop it replaced, for a loop that runs a few hundred times per dispatch.**
 - **A third confirmed failure shape for an HLS resource-sharing fix, distinct from a silent tool
   bug and from an outright syntax error: a pragma can be SYNTACTICALLY ACCEPTED (no warning, no
   error, "Checking Pragmas" step completes clean) and have ZERO measurable effect on the actual
@@ -1396,6 +1411,23 @@ supposedly standing in for.
   base, the isolated/real relationship has now held on three consecutive builds. Use it only with
   >=2 prior real data points for the same mechanism, only for the same resource category, and say
   which prior builds the ratio came from.
+- **A line closed by a CORRECT close-out process can still be closed WRONGLY -- the first confirmed
+  instance on this project (2026-09-15).** The 2026-08-28 per-entry dispatch-floor round did
+  everything this file asks: measured on real hardware, 20 repeats, ~zero variance, compared the
+  number (~0.58ms/entry, ~65ms, 1.79%) against a pre-registered threshold, and closed the line as
+  "small, not worth pursuing." The number was real and repeatable -- and it was the HARNESS's own
+  half-poll overshoot (usleep(1000) ~ 1.08ms on this kernel), not an IP property. When the poll was
+  replaced by a busy-poll on 2026-09-15 (same bitstream), 46ms of real end-to-end latency came back
+  (343 -> 295ms, -14%). This is NOT the "conclusion stands, cited figure wrong" case (the 09-06
+  order-of-magnitude refutation, annotated in place, is that case) -- here the CONCLUSION was wrong:
+  a recoverable cost was filed as an irreducible one. What the process lacked was not rigor but a
+  question: "is the measuring instrument itself part of the quantity being measured?" A per-entry
+  floor measured BY a polling loop includes that loop's own granularity by construction; zero
+  variance across 20 runs is exactly what a deterministic instrument artifact looks like, and is
+  not evidence the number belongs to the device under test. **Rule: before closing a line on a
+  "fixed overhead is small" measurement, check whether the harness's own resolution/granularity is
+  of the same order as the overhead -- if it is, the measurement cannot distinguish the two, and
+  the line must not be closed on it.**
 - **Exception condition for the "isolated csynth is direction-agnostic-unreliable" rule: a
   PURE-CONTROL-LOGIC increment (no new datapath, no new array, no new multiplier, no new port) can
   match closely.** Confirmed 2026-09-15 (`DWR_ROW_PF`+`DWR_DEFER_WRESP`): isolated +626 LUT, real
@@ -2017,7 +2049,73 @@ supposedly standing in for.
 
 ## Current deployed baseline (updated 2026-09-15, latest -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_dwrow` is now the deployed baseline**, replacing `mac_array_a3_merge4` (~378ms /
+**`mac_array_a3_seburst` is now the deployed baseline**, replacing `mac_array_a3_dwrow` (~295ms on
+the busy-poll harness / SE 9.27ms / WNS +0.211ns, same day). Full network **~287ms** (287.46 /
+287.12ms over two runs, per-entry sums 266.72 / 266.72), **-2.8%**; SE 9.27 -> **1.02ms (-89%)**.
+ALL numbers in this section are on the busy-poll ARM harness (`*_busypoll`, commit `5b774ac`) --
+see the HARNESS CORRECTION below before comparing against anything older. Cumulative on this
+latency line: 6,050ms -> ~287ms, **-95.3%** (the 6,050 was a sleeping-poll measurement; ~-94.9%
+like-for-like on the PL side). Archive + writeup:
+`vivado_impl/bitstream_archive/mac_array_a3_seburst_2026-09-15/README.txt`.
+
+**What changed** (`SE_BURST`, commit `89b7a76` + default flip, ON via the define block in
+`mac_array_raster_integrated.cpp` -- `SE_BURST_OFF` reverts): the SE block's GAP and SCALE were
+plain-pointer one-byte-per-iteration loops (7.63 / 11.08 cycles/element, the shape GELU had at 8.6x
+before ELEMWISE_BURST) -- the last un-bursted per-element path in the network. GAP is a reduction:
+read-side burst only (chunked whole-plane read, loop-carried channel counter, per-channel `sum/HW`
+in a separate SEQUENTIAL loop with `PIPELINE off` -- see the auto-pipelining rule in the
+working-method section -- one byte per channel through `out_base[]` unchanged). SCALE: gate vector
+burst-loaded once, then GELU's chunked read/compute/write. Same `elemwise_in/out_burst` ports, no
+new register. Alignment verified on the real descriptors first; csim asserts guard it.
+
+Real P&R (route_design alone, NO phys_opt): **WNS +0.254457ns** (dwrow +0.211; worst path `gmem_w`
+load buffer -> DW consume gather, 0 logic levels, 95% route -- the same member as the last three
+builds); **LUT 46,014 (86.49%, +790 -- isolated said +1,929, a DATAPATH delta that landed at 41%)**;
+BRAM 110 (+3 tiles, as isolated); DSP 30 (-2, as isolated). Register map unchanged.
+
+Board (busy-poll harness, pre-registered order, golden untouched): SE entries first x3 byte-exact:
+GAP 3.749 -> 0.774ms, SCALE 5.447 -> 0.176ms, RELU 0.011, SIGMOID 0.07; controls (entry5_dw 2.915,
+entry3 4.849, GELU 2.676, ADD 1.188, entry64 10.181) byte-exact and flat; full network 82/82 x2,
+7 checkpoint files MD5-identical across runs AND identical to the dwrow bitstream's; SE 1.02ms,
+DW 66.36 / PW 181.27 / GELU 13.02 / ADD 5.05 flat to 0.01ms; ONNX cosine EXACT. Operator split:
+**PW 63%**, DW 23%, GELU 4.5%, ADD 1.8%, SE 0.35%.
+
+### THE CLOSING PICTURE OF THE LATENCY LINE (2026-09-15, after nine promotions in four days)
+
+Every operator now has a fit, a floor and a ratio, all on the busy-poll harness (per-entry
+resolution ~1us; the true dispatch floor is ~250 cycles = 2.5us per entry):
+
+| operator | ms | fit (R^2) | floor | ratio | attackable |
+|---|---|---|---|---|---|
+| PW (26) | 181.3 | 1.072 cyc/`PW_FLAT` iteration (140.6) + 40 cyc/ROW_READ request (19.0, 47,424 req) + 0.74 cyc/weight byte (21.2) (0.987) | 131.2 (iterations at II=1) | 1.38x | ~9 (iteration overhead) + ~19 (requests) + ~16 (weights at 4B/cycle instead of ~1) = **~44** |
+| DW (25) | 66.4 | 0.95 cyc/padded pixel (33.8) + 24 cyc/padded row (23.2) + 196 cyc/channel (8.6, the consume prologue) + ~0/output (0.999) | 35.5 (pixels at II=1) | 1.87x | ~23 (row glue) + ~9 (prologue) = **~32** |
+| GELU (17) | 13.0 | 0.3395 cyc/element + 246/entry (1.000) | 9.55 (0.25, one word/cycle) | 1.36x | ~3.5 (chunk-boundary latency) |
+| ADD (10) | 5.05 | 0.6016 cyc/element + 268/entry (1.000) | 4.2 (0.50, two input words per output word on one read port) | 1.20x | ~0.9 |
+| SE (4) | 1.02 | GAP 0.77 (768 sequential divides 0.36 + reads 0.13 + 768 byte writes 0.28), SCALE 0.18, RELU 0.01, SIGMOID 0.07 | ~0.3 | ~3x | ~0.7 |
+| host gap | ~21 | PL total minus per-entry sum (descriptor writes, cache ops between entries) | -- | -- | ARM-side, not PL |
+
+Sum of the attackable column: **~80ms of ~287 (28%)** by the fits' own arithmetic, and each
+remaining piece is small, specific, and has a known shape: PW's requests (the same prefetch/merge
+family, already applied twice), PW's weight load (word-wide `PW_WEIGHT_HOIST`), DW's per-row FSM
+glue (the 8-cycle `readreq` op + fill/drain + per-lane loops -- would need the row loop flattened
+or the request moved into a pipelined loop), DW's prologue (196 cycles/channel: 2 lanes x 3
+serial requests -- the fpg=1 layers run the g=1 lane for nothing). Nothing left is a
+"mechanism" the size of the ones this line was built on (weight residency -42%, ELEMWISE_BURST
+-28%, DEFER_WRESP -27%, the DW row pair -32%); what remains is floors plus ~28% of glue spread
+across four operators. The 63x peak-utilization gap to the paper (ZHR-64) is NOT in this
+column -- it is architectural (MAC array width, clock), Phase A/D territory, not this line.
+
+**What the line established as method, in the order it mattered:** (1) decompose from BOARD
+data with physical terms before designing (the refit that redirected the DW-row round; the
+per-row vs per-channel separation); (2) a schedule-shape probe before implementing (five rounds
+decided in five minutes each); (3) pre-register a landing RANGE with a reading per band, then
+read the per-layer materialisation; (4) when two costs are coupled, find the layer shape that
+amplifies only one; (5) the measuring instrument is part of the quantity measured (the 0.58ms
+"floor" that was the poll). Nine promotions from 1,095ms (2026-09-12) to 287ms.
+
+## Prior deployed baseline (superseded 2026-09-15, kept for history)
+
+**`mac_array_a3_dwrow` was the deployed baseline for part of 2026-09-15**, replacing `mac_array_a3_merge4` (~378ms /
 DW 115.6ms / WNS +0.461ns, same day). Full network **~343ms** (343.21 / 342.65ms over two runs,
 per-entry sums 321.1 / 321.2), **-9.3%**; DW 115.6 -> **79.0ms (-31.7%)**. Cumulative on this
 latency line: 6,050ms -> ~343ms, **-94.3%**. **With the busy-poll harness (same bitstream, see the
