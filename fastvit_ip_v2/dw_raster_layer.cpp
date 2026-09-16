@@ -618,6 +618,60 @@ static void dwr_consume(
     const int off = DWR_MAX_K - K;
 #ifdef DWR_WBURST
     (void)w_base;
+#ifdef DWR_WBURST_PF
+    /* ZHR-92 (2026-09-15) DWR_WBURST_PF -- STEP-1 probe, OFF by default. Both
+     * lanes' requests (kernel span + shift word each, FIFO order lane 0 then
+     * lane 1) are issued up front, so lane 1's request latency overlaps lane
+     * 0's word/copy loops instead of being paid after them (+27 cycles per
+     * channel on the board vs the pre-w_burst single burst). Reads below
+     * consume in the same order. */
+    int ko_arr[DWR_MAX_FPG], nw_arr[DWR_MAX_FPG], sb_arr[DWR_MAX_FPG], co_arr[DWR_MAX_FPG], kw0_arr[DWR_MAX_FPG];
+    for (int g = 0; g < DWR_MAX_FPG; g++) {
+#pragma HLS UNROLL
+        bool g_valid = (g < fpg);
+        int co = ci * fpg + (g_valid ? g : 0);
+        const int kb = w_off + co * K * K;
+        ko_arr[g]  = kb & 3;
+        nw_arr[g]  = (ko_arr[g] + K * K + 3) >> 2;
+        sb_arr[g]  = shift_off + co;
+        co_arr[g]  = co;
+        kw0_arr[g] = kb >> 2;
+    }
+    /* One request per iteration (lane = i>>1, kernel/shift = i&1): two
+     * requests in one iteration of a pipelined loop is a 200-880 on the
+     * port -- same fix as DWR_WRESP_DRAIN. */
+    DWR_WREQ: for (int i = 0; i < 2 * DWR_MAX_FPG; i++) {
+#pragma HLS PIPELINE II=1
+        const int g = i >> 1;
+        if ((i & 1) == 0) w_burst.read_request(kw0_arr[g], nw_arr[g]);
+        else              w_burst.read_request(sb_arr[g] >> 2, 1);
+    }
+    for (int g = 0; g < DWR_MAX_FPG; g++) {
+        const int co = co_arr[g];
+        const int ko = ko_arr[g];
+        const int nw = nw_arr[g];
+        const int sb = sb_arr[g];
+        bias[g]  = b_base[b_off + co];
+#ifdef DWR_HOIST_BASE_ADDR
+        base_addr_arr[g] = out_off + co * out_ch_stride;
+#endif
+        ap_uint<32> kwords[DWR_KW_MAX];
+        DWR_KW_READ: for (int i = 0; i < DWR_KW_MAX; i++) {
+#pragma HLS PIPELINE II=1
+            if (i < nw) kwords[i] = w_burst.read();
+        }
+        ap_uint<32> sw = w_burst.read();
+        shift[g] = (int)(wt_t)sw.range((sb & 3) * 8 + 7, (sb & 3) * 8);
+        int j = ko;
+        for (int kh = 0; kh < K; kh++)
+            for (int kw = 0; kw < K; kw++) {
+#pragma HLS PIPELINE II=1
+                ap_uint<32> kw_word = kwords[j >> 2];
+                weight_aligned[g][off + kh][off + kw] = (wt_t)kw_word.range((j & 3) * 8 + 7, (j & 3) * 8);
+                j++;
+            }
+    }
+#else
     for (int g = 0; g < DWR_MAX_FPG; g++) {
         bool g_valid = (g < fpg);
         int co = ci * fpg + (g_valid ? g : 0);
@@ -654,6 +708,7 @@ static void dwr_consume(
                 j++;
             }
     }
+#endif /* DWR_WBURST_PF */
 #else
     (void)w_burst;
     for (int g = 0; g < DWR_MAX_FPG; g++) {

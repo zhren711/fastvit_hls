@@ -1489,6 +1489,20 @@ supposedly standing in for.
     round starts from measured terms, not the previous round's projection.
   Every round of this line since the first ROWBURST probe followed exactly this, and the
   pre-registered ranges bracketed every real landing point.
+- **Collinear fit terms let one term absorb another's cost -- and the tell is two layers of the
+  same shape differing in exactly one variable having wildly different residuals.** Confirmed
+  2026-09-15 (PW request-term round): the 2-term PW fit (1.072 cyc/iteration + 40 cyc/request,
+  R^2 0.986) looked fine in aggregate, but e3 and e7 -- same W=64, same PF, same cin, the SAME 768
+  requests, only cout 48 vs 144 -- had per-request residuals of 80 vs 9 cycles: impossible if the
+  per-request cost were real. Iterations and requests are both proportional to cin*tiles, so the
+  fit had split the request cost between them by least-squares convenience. Adding the physical
+  third term (words transferred per request, the FILL's II=1 data) gave R^2 0.994, iteration
+  1.031 (almost exactly the floor, not "7% overhead"), 34.5 cycles fixed per request, 0.82
+  cyc/word -- a different picture for what to attack (the 16-cycle loop structure + ~18 of exposed
+  latency, with the W=8 layers at the ~35-cycle-per-transaction rate floor, not "PF too small on
+  large W"). Same family as the coupled-cost rule above: before trusting a fitted coefficient,
+  find two real layers that differ in only one of the fitted variables and check that the
+  residual is the same -- if it is not, a term is missing or two terms are collinear.
 - **When two costs are coupled (one hides the other, or they overlap), find a layer SHAPE that
   amplifies only one of them -- the shape difference across real layers separates what a single
   aggregate number cannot.** Three instances now, all board-data-only, no new build needed:

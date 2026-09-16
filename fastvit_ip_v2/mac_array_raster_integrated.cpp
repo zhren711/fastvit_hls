@@ -1390,6 +1390,49 @@ static void run_layer(const LayerDescV2 &d,
              * original per-(rr,ci) path below. A per-LAYER branch around two
              * loop nests, not a gate inside a pipeline. */
             const bool row_wide_ok = ((W & 3) == 0) && ((d.in_off & 3) == 0);
+#ifdef PW_ROWREAD_PLANE8
+            /* ZHR-92 (2026-09-15) PW_ROWREAD_PLANE8 -- STEP-1 probe, OFF by default.
+             * The W=8 layers (the five 8x8 stage-4 PW layers, h=w=8, 2 row tiles,
+             * in_ch_stride == 64 so every channel's plane is contiguous with the
+             * next) paid ~51 cycles per (rt,ci) request for only 8 words --
+             * 18,048 requests, 9.2ms: small transactions complete at ~1 per 35
+             * cycles regardless of prefetch depth, so only FEWER transactions
+             * help. Here each rt reads the WHOLE cin*64-byte block in 1024-word
+             * chunks (2x the data: 8 rows read, 4 kept -- ~12k cycles vs ~45k)
+             * and the fill keeps only this rt's 4 rows: the burst_maxi read()
+             * is unconditional, only the on-chip row_buf write-enable is gated
+             * (no m_axi burst inference involved). Per-layer guard OUTSIDE the
+             * loops; ~100 requests network-wide instead of 18,048. */
+            const bool plane_ok = row_wide_ok && (W == 8) && (H == 8) && (d.in_ch_stride == 64);
+            if (plane_ok) {
+                const int total_words = Cin << 4;                  /* Cin * 64 bytes / 4 */
+                const int in_off_w    = d.in_off >> 2;
+                const int rt_row0     = rt_in_base >> 3;           /* rt*4*W bytes / (W=8) = rt*4 */
+                int ch_widx = 0;                                   /* == ci * 2 (words per row) */
+                int col_w = 0, row = 0;
+                PW_PLANE_CHUNK: for (int base = 0; base < total_words; base += ELEMWISE_CHUNK_WORDS) {
+                    int this_chunk = (total_words - base < ELEMWISE_CHUNK_WORDS) ? (total_words - base) : ELEMWISE_CHUNK_WORDS;
+                    in_burst.read_request((size_t)(in_off_w + base), (unsigned)this_chunk);
+                    PW_PLANE_FILL: for (int i = 0; i < ELEMWISE_CHUNK_WORDS; i++) {
+                        #pragma HLS PIPELINE II=1
+                        if (i < this_chunk) {
+                            ap_uint<32> wd = in_burst.read();
+                            bool keep = (row >= rt_row0) && (row < rt_row0 + MAC_PR);
+                            int  r    = row - rt_row0;
+                            int  widx = ch_widx + col_w;
+                            if (keep) {
+                                for (int b = 0; b < 4; b++) {
+                                    #pragma HLS UNROLL
+                                    row_buf[r & 3][(widx << 2) | b] = (act_t)wd.range(b * 8 + 7, b * 8);
+                                }
+                            }
+                            col_w++;
+                            if (col_w == 2) { col_w = 0; row++; if (row == 8) { row = 0; ch_widx += 2; } }
+                        }
+                    }
+                }
+            } else
+#endif
             if (row_wide_ok) {
                 const int span_bytes = MAC_PR * W;                 /* 4 rows, contiguous */
                 const int pf_dyn = (W > 32) ? 2 : (W > 16) ? 4 : (W > 8) ? 6 : PW_ROWREAD_PF;
@@ -1429,8 +1472,26 @@ static void run_layer(const LayerDescV2 &d,
                     int widx = flat_base >> 2;                      /* word index of this word within its row array */
                     int col_w = 0;                                  /* word column within the row */
                     int cur_row = 0;
+#ifdef PW_ROWREAD_REQ_IN_FILL
+                    /* ZHR-92 (2026-09-15) PW_ROWREAD_REQ_IN_FILL -- STEP-1 probe, OFF
+                     * by default. The next channel's read_request used to be a
+                     * separate 8-state op AFTER the fill (per-request loop
+                     * structure ~16 cycles, 7.6ms over 47,424 requests); issuing
+                     * it at the fill's first iteration overlaps those 8 states
+                     * with the data transfer. Same port, same loop: whether the
+                     * scheduler accepts readreq + read in one II=1 iteration is
+                     * the step-1 question. */
+                    const bool issue_next = (ci + pf_dyn < Cin);
+                    const int  rq_addr_n  = d.in_off + ch_base_req + rt_in_base;
+                    const int  rq_words_n = ((rq_addr_n & 3) + span_bytes + 3) >> 2;
+#endif
                     ROW_READ_FILL4: for (int i = 0; i < n_words; i++) {
                         #pragma HLS PIPELINE II=1
+#ifdef PW_ROWREAD_REQ_IN_FILL
+                        if (i == 0 && issue_next) {
+                            in_burst.read_request((size_t)(rq_addr_n >> 2), (unsigned)rq_words_n);
+                        }
+#endif
                         ap_uint<32> wd = in_burst.read();
                         for (int b = 0; b < 4; b++) {
                             #pragma HLS UNROLL
@@ -1440,12 +1501,16 @@ static void run_layer(const LayerDescV2 &d,
                         col_w++;
                         if (col_w == W_words) { col_w = 0; cur_row++; widx = flat_base >> 2; }
                     }
+#ifdef PW_ROWREAD_REQ_IN_FILL
+                    if (issue_next) ch_base_req += d.in_ch_stride;
+#else
                     if (ci + pf_dyn < Cin) {
                         int rq_addr = d.in_off + ch_base_req + rt_in_base;
                         int rq_words = ((rq_addr & 3) + span_bytes + 3) >> 2;
                         in_burst.read_request((size_t)(rq_addr >> 2), (unsigned)rq_words);
                         ch_base_req += d.in_ch_stride;
                     }
+#endif
                     ch_base += d.in_ch_stride;
                     flat_base += W;
                 }
