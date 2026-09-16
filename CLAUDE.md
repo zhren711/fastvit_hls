@@ -1245,6 +1245,20 @@ supposedly standing in for.
   this design) is a P&R failure in waiting; (b) grep the log's `200-1016` listing for it -- the
   fix is usually a counter width or an update fold, never placement; (c) declare loop-carried
   counters at their real width from the start when moving logic into an II=1 body.
+- **A deferred-response pop has a DISTANCE budget in cycles, and anything that moves the data
+  write to a later pipeline stage spends it -- check the write/writeresp stage gap in the
+  schedule after every change to a loop that carries a deferred pop.** Confirmed 2026-09-16
+  (CTR_NARROW + PW_MAC_PREG board round): the full network came back +0.75ms (215.14 -> 215.9)
+  and the per-layer diff put ALL of it on the three cin=48 PW layers (entries 3/7/13: +5.4..5.8
+  cycles per (ot, tile)) while 23 layers got slightly faster. PW_DEFER_WRESP pops the ot-two-back's
+  responses; at cin=48 the pop-to-write distance is 32 iterations minus the in-iteration stage gap
+  between `write` and `writeresp`: dwflat ST_7 vs ST_4 (29 effective), CTR_NARROW ST_8 (28), the
+  product register ST_10 (26) -- against a ~30-35 cycle B response. The shortest-distance shape in
+  the network was already marginal and each of two unrelated timing changes took 1-3 cycles off it.
+  Neither csynth (function latency went DOWN) nor the six suites can see it; the A/B of three
+  bitstreams on one entry (3.783 -> 3.871 -> 3.948) and the per-layer diff did. Fix is the pop
+  depth (ot three back, <= 12 in flight vs the adapter's 16), not the pipeline. Same family as
+  "one mechanism's change invalidates another's premise" (PW_WRITEOUT_ROW's own note).
 - **The step-1 Estimated clock is BLIND to the LUT-inferred multiply-accumulate chain -- the one
   structure whose real P&R delay it does not model.** Confirmed 2026-09-16 (`CTR_NARROW`, real P&R at
   10.0 and 9.0ns): the four counter chains the sweep named were fixed exactly as the estimates said
@@ -2180,8 +2194,11 @@ PW_FLAT MAC accumulate chain (8.94ns absolute, invisible to HLS's Estimated -- s
 working-method section). **Layer (2) built the same day (`PW_MAC_PREG` + `PW_ACC_NARROW`,
 `0a13a9f`, OFF by default): 10.0ns +0.190 / LUT 44,207 (83.10%, -1,557) / FF 39,643 (+1,852);
 9.0ns/111MHz +0.146 with the MAC chain gone and path #300 at +0.620 -- 111MHz closes on
-route_design alone. Not promoted, not deployed: FCLK0 is boot-fixed, realising it needs the
-clk_wiz + CDC BD change (see the 106.667MHz entry).**
+route_design alone. FCLK0 is boot-fixed, realising 111MHz needs the clk_wiz + CDC BD change
+(see the 106.667MHz entry). Board round at 100MHz (`05b803c`, defaults flipped, flag-less build
+bit-identical): byte-exact everywhere, ONNX cosine exact, 7 checkpoint files identical to dwflat's,
+but 215.14 -> 215.9ms (+0.75) -- all on the three cin=48 PW layers, the deferred-pop distance
+(see the working-method rule); promotion pending the pop-depth fix.**
 
 **DW refit on this run** (R^2 0.998): 0.94 cyc/pixel (33.5) + **10.2 cyc/row (9.9; was 22.8)** +
 **291 cyc/channel (12.8; was 10.1 -- the flat loops' deeper fill/drain, ~+60 per channel)**. DW 53.9
