@@ -1627,9 +1627,42 @@ supposedly standing in for.
   mystery" — 6 of 8 leads were misled by static analysis, only real bitstream sweeps found the true
   cause). When a question can be answered by running real hardware instead of reasoning about code,
   run the hardware.
-- Board safety: the currently-deployed bitstream is the golden rollback image — never overwrite it
-  without being told to. Any new binary/bitstream gets a small isolated test before a full-network
-  run (ZHR-10: a change that was "HLS/Vivado all-green" hung the real board).
+- Board safety: the golden rollback image is `/lib/firmware/fastvit_bd_wrapper.bin` — never
+  overwrite it without being told to. Any new binary/bitstream gets a small isolated test before a
+  full-network run (ZHR-10: a change that was "HLS/Vivado all-green" hung the real board).
+  **THE GOLDEN IMAGE IS IDENTIFIED BY md5 `7ee26f67a1fca38a2752e99cf0bac25b`, NOT BY ITS FILE NAME
+  (rewritten 2026-09-17 after it was overwritten once).** It is the pre-A3 unified v18gelu design
+  (proof-of-life / rollback only; a different register map from every `mac_array_a3_*` bitstream).
+  Copies: `vivado_impl/bitstream_archive/_golden_v18gelu/` (in git: the swapped `.bin`, the raw
+  `.bit` md5 `18173c41...`, the `.hwh`, and a README with the procedure), the build server
+  `patrick@192.168.1.87:~/fastvit_golden/`, and the board's `/home/root/fpga_unified_v18gelu/`.
+  Until 2026-09-17 the ONLY copies were on the board. The `.bit` files that USED to be named
+  `fastvit_bd_wrapper.bit` on the board (`/home/root/fpga/`) and in `petalinux/hardware/` are NOT
+  the golden -- they are the PetaLinux-era conv_ip bitstream (swap to `9f1b98a9...`); the board
+  copies are now renamed `*_PETALINUX_convip_NOT_GOLDEN_9f1b98a9.*`. Proof-of-life is
+  `echo fastvit_bd_wrapper.bin > /sys/class/fpga_manager/fpga0/firmware` (loads the existing
+  `.bin`) with an md5 before and after -- NEVER `Overlay(<some .bit>)` for the golden:
+  `Overlay.download()` converts the `.bit` and OVERWRITES `/lib/firmware/<same basename>.bin`.
+- **PS-side corruption incidents, all three in one table (2026-09-17) -- the pattern and the
+  operational rule that came out of it.** (The 2026-09-07 GELU hang is NOT in this class: it was an
+  unprogrammed burst register, explained and fixed.)
+    | date | symptom | preceding activity | uptime |
+    |---|---|---|---|
+    | 2026-08-24 | full-network run hung (PID alive, zero CPU); afterwards a verified `.bin` read back a third md5 | a full 82-entry run, after a day of board rounds | >= 15h35m the next day, i.e. days |
+    | 2026-09-04 | SSH dead during banner exchange, ping fine | a long sequence of single-op scaling-probe dispatches (11 bundles x2 + extras) | unknown, no power cycle for days |
+    | 2026-09-16 | a `.bit` scp'd to the board landed with the wrong md5 while the PL sat idle on the deployed baseline; loading it produced a garbage PL, then `stack smashing`, `Alignment trap: sh`, firmware md5 drifting between reads | ~10 bitstream reloads, ~60 single-op dispatches and 5 full-network runs that day; 11 promotion rounds since the last power cycle | 9 days 8 h |
+  Common to all three: a long uptime with no power cycle AND a heavy day of dispatches/reloads
+  before the failure; the third shows the damage is PS-side and can appear with NO PL activity
+  (a plain scp write went wrong). Three points cannot separate "uptime" from "cumulative
+  dispatches/reloads", and the board keeps no boot history (`last` resets with the 2018 clock), so
+  the rule is operational, not causal: **(1) power-cycle the board at the start of every board day
+  and before any promotion round -- do not carry multi-day uptime into a measurement; (2) at the
+  start of each board round and before every bitstream load, record `uptime` and `dmesg | tail -5`
+  in the round's log, and md5 the `.bit` on the board against the local file before loading; (3)
+  any md5 that reads differently twice is the signal -- stop, power-cycle, redo from step 1 of the
+  recovery checklist.** If a fourth occurrence happens with a fresh (<1 day) uptime, "uptime" is
+  ruled out and cumulative reload count becomes the prime suspect (and an unforced reload
+  ceiling per boot the next rule).
 - **Vivado's own `write_bitstream -bin_file` output is NOT the byte-swapped format the Zynq-7000
   devcfg FPGA manager driver requires.** Confirmed 2026-08-24 (ZHR-92): loading it directly failed
   with "Invalid bitstream, could not find a sync word. Bitstream must be a byte swapped .bin file"
