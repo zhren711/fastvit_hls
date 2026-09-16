@@ -85,6 +85,19 @@
 #ifndef PW_WHOIST_WIDE_OFF
 #define PW_WHOIST_WIDE 1
 #endif
+
+/* ZHR-92 (2026-09-15): PW_WRITEOUT_ROW is ON BY DEFAULT as of the mac_array_a3_worow
+ * deployed baseline (real board, busy-poll/defer harness: PW 160.6 -> 136.4ms,
+ * -24.2; full network ~253 -> ~229ms, -9.6%; byte-exact, ONNX cosine exact; WNS
+ * +0.285 route-only, real LUT -222 vs isolated +1,008). The FAST instance's
+ * writeout phase is MAC_PR=4 iterations (a 4-byte row per iteration, 4
+ * clip_shift lanes) instead of 16 (one byte each) -- 27.7% of the 131ms
+ * iteration floor was writeout. PW_DEFER_WRESP's response pop lives in the
+ * compute phase (last cbase, k=4..7). Define PW_WRITEOUT_ROW_OFF to get the
+ * 16-step byte writeout back. See pw_flat_pipeline_impl's own comment. */
+#ifndef PW_WRITEOUT_ROW_OFF
+#define PW_WRITEOUT_ROW 1
+#endif
 /* ZHR-92 angle-B step (2026-08-24, final): explicit-API burst for
  * WRITEOUT (PW's own write, inside pw_flat_pipeline). Fast path
  * (hls::burst_maxi<ap_uint<32>>, out_burst) requires BOTH col_sz==MAC_PC
@@ -649,7 +662,8 @@ static void pw_flat_pipeline_impl(
              * MAC_PC choice, not an implementation footnote -- see
              * out_burst's header comment and mac_array.h's own note. */
 #ifdef PW_WRITEOUT_ROW
-            /* ZHR-92 (2026-09-15) PW_WRITEOUT_ROW -- STEP-1 probe, OFF by default.
+            /* ZHR-92 (2026-09-15) PW_WRITEOUT_ROW -- ON BY DEFAULT since the worow
+             * promotion (PW_WRITEOUT_ROW_OFF reverts); written as a step-1 probe.
              * The writeout phase was 16 iterations per (ot, tile), one output
              * byte each (a single clip_shift, time-multiplexed) -- 36.4ms of the
              * 131ms iteration floor (27.7%; 50% of the iterations on cin=48

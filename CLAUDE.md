@@ -2077,7 +2077,63 @@ supposedly standing in for.
 
 ## Current deployed baseline (updated 2026-09-15, latest -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_wburst` is now the deployed baseline**, replacing `mac_array_a3_seburst` (272.5ms on
+**`mac_array_a3_worow` is now the deployed baseline**, replacing `mac_array_a3_wburst` (~253ms / PW
+160.6 / WNS +0.180ns, same day). Full network **~229ms** (228.98 / 228.82ms over two runs, per-entry
+sums 223.27 / 223.05), **-9.6%**; PW 160.6 -> **136.4ms (-24.2)**. Cumulative on this latency
+line: 6,050ms -> ~229ms, **-96.2%**. Archive + writeup: `vivado_impl/bitstream_archive/
+mac_array_a3_worow_2026-09-15/README.txt`. Register map unchanged from wburst (`*_whoist`-or-later
+ARM binaries only).
+
+**The finding behind it -- the "131ms II=1 floor" was never an algorithmic floor.** Decomposing
+`PW_FLAT`'s trip count on the real network: **useful compute 90.0ms (68.6%; 0.576 GMAC at 64
+MAC/cycle -- the true algorithmic minimum at this MAC width) + channel-padding waste 4.9ms (3.7%;
+`n_cbase = ceil(cin/32)` on the cin=48/144/240 layers) + WRITEOUT iterations 36.4ms (27.7%)**.
+The writeout phase was 16 iterations per (ot, tile), one output byte each through one
+time-multiplexed `clip_shift` -- 50% of all iterations on the cin=48 layers, 40% at cin=96, 25%
+at 192, 14% at 384. (Arithmetic caution for whoever reads the paper-comparison numbers: 0.64
+GMAC / 64 / 100MHz = 100ms, not 10 -- the floor was 1.46x the algorithmic minimum, not 13x.)
+
+**What changed** (`PW_WRITEOUT_ROW`, commit `0f707c2` + default flip, ON via the define block in
+`mac_array_raster_integrated.cpp` -- `PW_WRITEOUT_ROW_OFF` reverts): the FAST instance finishes a
+whole 4-byte row per writeout iteration (4 `clip_shift` lanes, 16 `acc` reads from the
+complete-partitioned register array): **16 -> 4 iterations per (ot, tile)**, 2,728,512 fewer
+network-wide. `write_request`+`write` stay in the writeout iteration; **PW_DEFER_WRESP's response
+pop moved to the COMPUTE phase** (last cbase, k=4..7, one per iteration while > MAC_PR pending) --
+there is no writeout iteration without a bus write any more, and the pop must not share an
+iteration with the request/write (the "one mechanism's change invalidates another's premise"
+class, handled at implementation time this once: pending 8 -> 4 -> 8, pop-to-push distance >= 32
+cycles at cin=48). The NARROW instance (the two W=1 SE fc layers) keeps the 16-step byte form;
+`run_layer`'s `iters_per_ot` selects 4 vs 16 by the same layer-constant predicate as the dispatch.
+
+Real P&R (route_design alone, NO phys_opt): **WNS +0.284796ns** (wburst +0.180); **LUT 46,144
+(86.74%, -222 -- isolated said +1,008: the writeout FSM shrank more than the 4 lanes cost)**;
+BRAM 110 / DSP 26 flat. Board (`*_whoist` md5-verified; pre-registered order): entry3 (cin=48)
+4.836 -> **3.783 (-22%)**, entry66 (cin 1152) 7.535 -> 7.352 (-2.4%), controls flat and
+byte-exact; full network 82/82 x2, 7 checkpoint files MD5-identical across runs and vs seburst;
+**PW 136.39 (-24.20, the pre-registered 132-137 "as modeled" band)**, DW 67.8/67.6, GELU 13.0,
+ADD 5.05, SE 1.02 flat; ONNX cosine EXACT. Operator split: **PW 60%**, DW 30%, GELU 5.7%, ADD
+2.2%, SE 0.4%.
+
+**PW refit on this run** (R^2 0.975): 1.121 cyc/iteration (116.6; new floor 104.0) + 26 cyc/request
+(12.4) + 0.75 cyc/word (7.5). PW 136.4 = 104 (iterations) + ~18 (serial input read) + ~14
+(request/fill overheads). Left vs the 90ms algorithmic minimum: 4.9 channel padding (MAX_CIN_PW
+32 -> 16 -- coupled to any writeout/compute overlap since it changes the n_cbase >= 2 condition),
+9.1 remaining writeout iterations (overlap the writeout with the next ot's compute via
+double-buffered accumulators -- an FSM restructure of `pw_flat_pipeline_impl`, judged not worth
+the risk for 9ms), ~18 serial ROW_READ (a DATAFLOW-class ping-pong of `row_buf`, three failed
+DATAFLOW attempts on record), ~14 overheads. **PW is judged near its ceiling for this
+architecture; the next target by size is DW (67.6ms, 1.90x its pixel floor, ~33 attackable) --
+which has never had a PW-style iteration-structure decomposition.**
+
+**Same-day negatives on this line, for the record (all kept, OFF):** `PW_ROWREAD_PLANE8` +
+`DWR_WBURST_PF` (net -1.2ms, WNS +0.282, LUT -11 -- the W=8 "request term" was not request cost:
+removing 99.4% of those requests saved <1ms; the excess is ROW_READ's serial input transfer);
+`PW_ROWREAD_REQ_IN_FILL` (moving the request into FILL4's first iteration became pipeline depth
+3 -> 11, still paid per call -- hiding it needs CH4 x FILL4 flattened).
+
+## Prior deployed baseline (superseded 2026-09-15, kept for history)
+
+**`mac_array_a3_wburst` was the deployed baseline for part of 2026-09-15**, replacing `mac_array_a3_seburst` (272.5ms on
 the deferred-I/O harness / PW 181.3 / DW 66.4 / WNS +0.254ns, same day). Full network **~253ms**
 (253.07 / 253.03ms over two runs, per-entry sums 247.24 / 247.26), **-7.2%**; PW 181.3 -> **160.6ms
 (-20.7)**, DW 66.4 -> 67.6 (+1.2, see below). Cumulative on this latency line: 6,050ms -> ~253ms,
