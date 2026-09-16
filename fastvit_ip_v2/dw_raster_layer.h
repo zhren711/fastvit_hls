@@ -51,6 +51,9 @@
 /* DWR_WBURST: a K^2-byte kernel starting at any byte offset spans at most
  * ceil((3 + 49)/4) = 13 words; 14 keeps one spare. */
 #define DWR_KW_MAX 14
+/* DWR_FLAT: rows' worth of write_requests kept in flight before a response is
+ * popped (<= (DWR_FLAT_DEFER_ROWS+1)*fpg = 8 outstanding vs the adapter's 16). */
+#define DWR_FLAT_DEFER_ROWS 3
 
 // ZHR-92 (2026-09-15): DWR_WBURST is ON BY DEFAULT as of the mac_array_a3_wburst
 // deployed baseline. The 32-bit w_burst port (added for PW_WHOIST_WIDE) makes

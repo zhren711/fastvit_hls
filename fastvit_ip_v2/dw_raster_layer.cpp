@@ -189,12 +189,13 @@ static void dwr_produce_burst(
 // II=8 is the real bottleneck, untouched by this file's own input side.
 static void dwr_produce(
     const act_t in_base[], int in_off, int ci, int in_ch_stride,
-    int h_in, int w_in, int K, int S,
+    int h_in, int w_in, int K, int S, int total_beats,
 #ifdef DWR_ROWREAD
     hls::burst_maxi<ap_uint<32> > in_burst_r,
 #endif
     hls::stream<dwr_beat_t> &taps)
 {
+    (void)total_beats;
 #ifdef DWR_ROWREAD
     /* ZHR-92 (2026-09-14) DWR_ROWREAD -- ON BY DEFAULT since 2026-09-14
      * (dw_raster_layer.h; DWR_ROWREAD_OFF reverts), deployed as
@@ -252,6 +253,87 @@ static void dwr_produce(
     int read_ptr = 0;
 #endif
     int row_phase = 0;
+#if defined(DWR_FLAT) && defined(DWR_ROWREAD) && defined(DWR_ROW_PF)
+    /* ZHR-92 (2026-09-16) DWR_FLAT -- STEP-1 probe, OFF by default. ROW x COL
+     * flattened into ONE pipelined loop per channel (total_beats = h_pad*w_pad,
+     * computed narrow-typed by the caller), so the per-row fill/drain and loop
+     * control that the fit priced at ~23.5 cycles per padded row (22.8ms over
+     * 97,344 rows) is paid once per channel. Row state (in_image, valid,
+     * phase) is recomputed at pcol==0; the one-row-ahead read_request is
+     * issued in that same iteration (a readreq inside the pipelined loop --
+     * the PW REQ_IN_FILL probe showed II=1 holds; here the fill depth is paid
+     * per channel, not per row). */
+    {
+    int prow = 0, pcol = 0;
+    int real_row = -pad;
+    bool row_in_image = false, row_valid = false;
+    int col_phase = 0;
+    DWR_PRODUCE_FLAT: for (int i = 0; i < total_beats; i++) {
+#pragma HLS PIPELINE II=1
+        if (pcol == 0) {
+            real_row = prow - pad;
+            row_in_image = (real_row >= 0) && (real_row < h_in);
+            if (row_in_image && rows_requested < h_in) {
+                in_burst_r.read_request(row_byte >> 2, n_words_in_row);
+                row_byte += w_in;
+                rows_requested++;
+            }
+            if (prow < K - 1) {
+                row_valid = false;
+            } else if (prow == K - 1) {
+                row_phase = 0;
+                row_valid = true;
+            } else {
+                row_phase++;
+                if (row_phase == S) row_phase = 0;
+                row_valid = (row_phase == 0);
+            }
+            col_phase = 0;
+        }
+        int real_col = pcol - pad;
+        bool col_in_image = row_in_image && (real_col >= 0) && (real_col < w_in);
+        bool col_valid;
+        if (pcol < K - 1) {
+            col_valid = false;
+        } else if (pcol == K - 1) {
+            col_phase = 0;
+            col_valid = true;
+        } else {
+            col_phase++;
+            if (col_phase == S) col_phase = 0;
+            col_valid = (col_phase == 0);
+        }
+        dwr_beat_t beat;
+        beat.valid = row_valid && col_valid;
+        if (col_in_image && ((real_col & 3) == 0)) {
+            cur_word = in_burst_r.read();
+        }
+        act_t new_pixel = col_in_image ? (act_t)(ap_int<8>)cur_word.range(7, 0) : (act_t)0;
+        act_t v5 = lb5[pcol]; lb5[pcol] = new_pixel;
+        act_t v4 = lb4[pcol]; lb4[pcol] = v5;
+        act_t v3 = lb3[pcol]; lb3[pcol] = v4;
+        act_t v2 = lb2[pcol]; lb2[pcol] = v3;
+        act_t v1 = lb1[pcol]; lb1[pcol] = v2;
+        act_t v0 = lb0[pcol]; lb0[pcol] = v1;
+        for (int r = 0; r < DWR_MAX_K; r++)
+            for (int c = 0; c < DWR_MAX_K - 1; c++)
+                window[r][c] = window[r][c + 1];
+        window[0][DWR_MAX_K - 1] = v0;
+        window[1][DWR_MAX_K - 1] = v1;
+        window[2][DWR_MAX_K - 1] = v2;
+        window[3][DWR_MAX_K - 1] = v3;
+        window[4][DWR_MAX_K - 1] = v4;
+        window[5][DWR_MAX_K - 1] = v5;
+        window[6][DWR_MAX_K - 1] = new_pixel;
+        for (int r = 0; r < DWR_MAX_K; r++)
+            for (int c = 0; c < DWR_MAX_K; c++)
+                beat.window[r][c] = window[r][c];
+        taps.write(beat);
+        if (col_in_image) cur_word = cur_word >> 8;
+        if (pcol == w_pad - 1) { pcol = 0; prow++; } else { pcol++; }
+    }
+    }
+#else
     ROW: for (int prow = 0; prow < h_pad; prow++) {
         int real_row = prow - pad;
         bool row_in_image = (real_row >= 0) && (real_row < h_in);
@@ -345,6 +427,7 @@ static void dwr_produce(
         if (row_in_image) row_byte += w_in;
 #endif
     }
+#endif /* DWR_FLAT */
 }
 #endif // DWR_INPUT_BURST
 
@@ -579,7 +662,7 @@ static void dwr_consume(
     const wt_t w_base[], int w_off, int shift_off, const acc_t b_base[], int b_off,
     int ci, int fpg, int K,
     act_t out_base[], int out_off, int out_ch_stride,
-    int h_pad, int w_pad,
+    int h_pad, int w_pad, int total_beats,
     hls::burst_maxi<ap_uint<32> > w_burst,
 #ifdef DW_OUTPUT_BURST
     hls::burst_maxi<ap_uint<32> > out_burst_w,
@@ -814,6 +897,160 @@ static void dwr_consume(
      * in flight against the adapter's 16. Drained after CROW. */
     int rows_pending = 0;
 #endif
+#ifdef DWR_FLAT
+    /* ZHR-92 (2026-09-16) DWR_FLAT -- STEP-1 probe, OFF by default. CROW x
+     * CCOL flattened into ONE pipelined loop per channel. The row-boundary
+     * bus operations ride on iterations that provably carry no lane-0 data
+     * write: the first lane-0 write of a row is at pcol = K-1 + 3*S >= 5
+     * (the 4th valid column), so pcol 0..4 are free in every row; and the
+     * iteration right after any lane-0 write is free too (the next write is
+     * 4*S >= 4 iterations later). Slot table per row:
+     *   pcol 0 : lane 1's write_request for the buffered row (fpg=2 only)
+     *   pcol 1 : lane 0's write_request for THIS row (if valid)
+     *   pcol 2..n+1 : lane 1's n buffered words (fpg=2), n = w_out/4 <= 8
+     *   after each lane-0 write : one write_response pop while more than
+     *                             DWR_FLAT_DEFER_ROWS rows' worth are pending
+     * AXI ordering for fpg=2: AW order lane1(R), lane0(this) -> data order
+     * lane1(R) drain (pcol 2..n+1), then lane0(this) (pcol >= K-1+3S). A
+     * buffered lane-1 row R is drainable once the valid row AFTER it has
+     * finished (its lane-0 data is out), so the buffer is TWO valid rows deep
+     * and R drains at the start of the second row after it. Constraint,
+     * csim-asserted: n+1 < K-1+3S for fpg=2 (real: K=7/S=2 rows -> 9 < 12,
+     * the K=3/S=1 fpg=2 layer w_out=8 -> 3 < 5). Rows with no output
+     * (padding rows, stride-skipped rows) carry no bus op at all. */
+    {
+    int prow = 0, pcol = 0;
+    bool row_valid = false;
+    ap_uint<32> l1ring[2][DWR_ROWBUF_WORDS];
+#pragma HLS ARRAY_PARTITION variable=l1ring complete dim=1
+    int l1_n_cur = 0;          /* words buffered for the current valid row */
+    int l1_tail = 0;           /* ring slot being filled */
+    int l1_head = 0;           /* ring slot to drain */
+    int l1_nbuf = 0;           /* buffered valid rows not yet drained (0..2) */
+    int l1_row_off[2];         /* row_off of each buffered row */
+#pragma HLS ARRAY_PARTITION variable=l1_row_off complete dim=0
+    bool l1_drain_now = false; /* this row's leading slots drain l1ring[l1_head] */
+    int  l1_drain_off = 0;
+    int  w_pend = 0;           /* write_requests issued - responses popped */
+    bool just_wrote = false;   /* previous iteration issued a lane-0 write */
+    DWR_CONSUME_FLAT: for (int i = 0; i < total_beats; i++) {
+#pragma HLS PIPELINE II=1
+        if (pcol == 0) {
+            if (prow < K - 1) {
+                row_valid = false;
+            } else if (prow == K - 1) {
+                row_phase = 0;
+                row_valid = true;
+            } else {
+                row_phase++;
+                if (row_phase == S) row_phase = 0;
+                row_valid = (row_phase == 0);
+            }
+            l1_n_cur = 0;
+            l1_drain_now = (fpg > 1) && (l1_nbuf == 2);
+            l1_drain_off = l1_row_off[l1_head];
+        }
+        /* --- row-start bus slots --- */
+        if (pcol == 0 && l1_drain_now) {
+            out_burst_w.write_request((lane_base[1] + l1_drain_off) >> 2, n_words_row);
+            w_pend++;
+        }
+        if (pcol == 1 && row_valid) {
+            out_burst_w.write_request((lane_base[0] + row_off) >> 2, n_words_row);
+            w_pend++;
+        }
+        bool drain_slot = l1_drain_now && (pcol >= 2) && (pcol < 2 + n_words_row);
+        ap_uint<32> drain_word = l1ring[l1_head][(pcol >= 2 && pcol < 2 + DWR_ROWBUF_WORDS) ? (pcol - 2) : 0];
+        /* --- the beat --- */
+        dwr_beat_t beat = taps.read();
+        bool wrote0 = false;
+        ap_uint<32> word0 = 0;
+        if (beat.valid) {
+            for (int g = 0; g < DWR_MAX_FPG; g++) {
+                bool g_valid = (g < fpg);
+                acc_t sum = 0;
+                for (int r = 0; r < DWR_MAX_K; r++) {
+                    for (int c = 0; c < DWR_MAX_K; c++) {
+                        bool active = (r >= off) && (c >= off);
+                        acc_t prod;
+#ifdef LB_FORCE_DSP
+#pragma HLS BIND_OP variable=prod op=mul impl=DSP
+#endif
+                        prod = (acc_t)beat.window[r][c] * (acc_t)weight_aligned[g][r][c];
+                        sum += active ? prod : (acc_t)0;
+                    }
+                }
+                acc_t total = sum + bias[g];
+                acc_t v = total >> shift[g];
+                if (v > 127)  v = 127;
+                if (v < -128) v = -128;
+                if (g_valid) {
+                    wbuf[g][wbuf_n[g]] = (act_t)v;
+                    wbuf_n[g]++;
+                    if (wbuf_n[g] == 4) {
+                        ap_uint<32> word = 0;
+                        for (int k = 0; k < 4; k++) {
+#pragma HLS UNROLL
+                            word.range(k * 8 + 7, k * 8) = (ap_uint<8>)wbuf[g][k];
+                        }
+                        if (g == 0) {
+                            word0 = word;          /* written below through the ONE bus-write call site */
+                            wrote0 = true;
+                        } else {
+                            l1ring[l1_tail][l1_n_cur] = word;
+                            l1_n_cur++;
+                        }
+                        write_ptr[g] += 4;
+                        wbuf_n[g] = 0;
+                    }
+                }
+            }
+        }
+        /* --- the ONE bus-write call site: lane-1 drain word or lane-0 word (never
+         * both in one iteration -- drains end before the first lane-0 write; two
+         * write call sites in one body was a 200-880 / II=2, the ROWBURST-era
+         * shape) --- */
+        if (drain_slot || wrote0) {
+            out_burst_w.write(drain_slot ? drain_word : word0);
+        }
+        /* --- response pop: the iteration after a lane-0 write is write-free --- */
+        if (just_wrote && (pcol >= 2) && (w_pend > DWR_FLAT_DEFER_ROWS * fpg)) {   /* pcol 0/1 hold the AW slots */
+            out_burst_w.write_response();
+            w_pend--;
+        }
+        just_wrote = wrote0;
+        /* --- row end --- */
+        if (pcol == w_pad - 1) {
+            if (l1_drain_now) { l1_head ^= 1; l1_nbuf--; }
+            if (row_valid) {
+                if (fpg > 1) { l1_row_off[l1_tail] = row_off; l1_tail ^= 1; l1_nbuf++; }
+                row_off += w_out;
+            }
+            pcol = 0; prow++;
+        } else {
+            pcol++;
+        }
+    }
+    /* channel tail: drain the <= 2 buffered lane-1 rows (AW then data, in
+     * order), then pop every outstanding response. */
+    DWR_FLAT_L1TAIL: for (int t = 0; t < 2; t++) {
+        if (t < l1_nbuf) {
+            out_burst_w.write_request((lane_base[1] + l1_row_off[l1_head]) >> 2, n_words_row);
+            DWR_FLAT_L1TAIL_W: for (int q = 0; q < DWR_ROWBUF_WORDS; q++) {
+#pragma HLS PIPELINE II=1
+                if (q < n_words_row) out_burst_w.write(l1ring[l1_head][q]);
+            }
+            w_pend++;
+            l1_head ^= 1;
+        }
+    }
+    DWR_FLAT_WRESP_TAIL: for (int q = 0; q < 2 * (DWR_FLAT_DEFER_ROWS + 1) * DWR_MAX_FPG; q++) {
+#pragma HLS PIPELINE II=1
+        if (q < w_pend) out_burst_w.write_response();
+    }
+    }
+#endif /* DWR_FLAT */
+#ifndef DWR_FLAT
     CROW: for (int prow = 0; prow < h_pad; prow++) {
         bool row_valid;
         if (prow < K - 1) {
@@ -830,9 +1067,11 @@ static void dwr_consume(
         if (row_valid) {
             out_burst_w.write_request((lane_base[0] + row_off) >> 2, n_words_row);
         }
+#endif /* !DWR_FLAT */
 #else
     CROW: for (int prow = 0; prow < h_pad; prow++) {
 #endif
+#ifndef DWR_FLAT
         CCOL: for (int pcol = 0; pcol < w_pad; pcol++) {
 #pragma HLS PIPELINE II=1
             dwr_beat_t beat = taps.read();
@@ -934,7 +1173,8 @@ static void dwr_consume(
         }
 #endif
     }
-#if defined(DW_OUTPUT_BURST) && defined(DWR_ROWBURST) && defined(DWR_DEFER_WRESP)
+#endif /* DWR_FLAT */
+#if defined(DW_OUTPUT_BURST) && defined(DWR_ROWBURST) && defined(DWR_DEFER_WRESP) && !defined(DWR_FLAT)
     /* One response per iteration (row = i>>1, lane = i&1): the first form
      * (a row loop with the g loop inside) popped both lanes in one
      * iteration -> 200-885 II=2 on gmem_act; this keeps the design at zero
@@ -1024,6 +1264,21 @@ void run_dw_layer_raster(
     const int p = K / 2;
     const int h_pad = h_in + 2 * p;
     const int w_pad = w_in + 2 * p;
+    /* DWR_FLAT: the flat loops' trip count, narrow-typed so the product is
+     * its own small core, not the shared 32x32 unit (h_pad, w_pad <= 134). */
+#ifndef __SYNTHESIS__
+    assert(h_pad < 256 && w_pad < 256 && "DWR_FLAT: padded dims exceed the 8-bit trip-count operands");
+#endif
+    const ap_uint<8>  hp_n = h_pad, wp_n = w_pad;
+    const ap_uint<16> tb_n = hp_n * wp_n;
+    const int total_beats = (int)tb_n;
+    (void)total_beats;
+#if defined(DWR_FLAT) && !defined(__SYNTHESIS__)
+    /* lane-1 drain slots (pcol 2..n_words_row+1) must end before lane 0's first
+     * write of the row (pcol K-1+3S); real fpg=2 layers: 9 < 12 and 3 < 5. */
+    assert((fpg == 1 || ((w_out >> 2) + 1 < K - 1 + 3 * S)) && "DWR_FLAT: lane-1 drain would overlap lane 0's first write");
+    assert((fpg == 1 || (w_out >> 2) <= DWR_ROWBUF_WORDS) && "DWR_FLAT: lane-1 row exceeds the ring buffer");
+#endif
 
 #ifdef DWR_INPUT_BURST
     act_t ch_buf[DWR_CH_BUF_BYTES];
@@ -1040,7 +1295,7 @@ void run_dw_layer_raster(
 #ifdef DWR_INPUT_BURST
         dwr_produce_burst(ch_buf, h_in, w_in, K, S, taps);
 #else
-        dwr_produce(in_base, in_off, ci, in_ch_stride, h_in, w_in, K, S,
+        dwr_produce(in_base, in_off, ci, in_ch_stride, h_in, w_in, K, S, total_beats,
 #ifdef DWR_ROWREAD
                     dw_in_burst,
 #endif
@@ -1056,7 +1311,7 @@ void run_dw_layer_raster(
         }
 #else
         dwr_consume(w_base, w_off, shift_off, b_base, b_off, ci, fpg, K,
-                    out_base, out_off, out_ch_stride, h_pad, w_pad,
+                    out_base, out_off, out_ch_stride, h_pad, w_pad, total_beats,
                     w_burst,
 #ifdef DW_OUTPUT_BURST
                     out_burst_w,
