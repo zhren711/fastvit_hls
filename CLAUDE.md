@@ -1693,6 +1693,18 @@ supposedly standing in for.
     5. **Single-op verification** (a known-good isolated test, e.g. one already-passing entry) before
        trusting the board for anything larger — confirms the specific re-deployed bitstream actually
        works, not just that the FPGA manager accepted it.
+  **Two additions, 2026-09-17 (from the third PS-corruption incident):** (a) **step 3 includes the
+  bitstream you scp'd BEFORE the incident** -- the keep3.bit on the board read md5 `b4d5958f...`
+  after the power cycle vs the local `f6d778d8...`: the PS was corrupting WRITES while idle, before
+  any load, so the "hang" was the load of a garbage bitstream; always md5 the .bit on the board
+  against the local file before every Overlay load, not just after an incident. (b) **Step 2 must
+  NOT use `Overlay()` on a `.bit` named `fastvit_bd_wrapper`** -- `Overlay.download()` converts and
+  OVERWRITES `/lib/firmware/<name>.bin`, and the `.bit` files of that name on the board and in
+  `petalinux/hardware/` are NOT the golden image (they swap to `9f1b98a9...`, not `7ee26f67...`).
+  Doing exactly that on 2026-09-17 overwrote the golden `.bin`; it was recovered from the only other
+  copy, `/home/root/fpga_unified_v18gelu/fastvit_bd_wrapper.bin`, and is now also archived locally
+  (`vivado_impl/bitstream_archive/_golden_v18gelu/`). Proof-of-life = `echo fastvit_bd_wrapper.bin >
+  /sys/class/fpga_manager/fpga0/firmware` (loads the existing .bin) + md5 before and after.
   **New symptom confirmed 2026-09-04 (ZHR-92, PW burst-size round): a hang can present as SSH itself
   going unresponsive (timing out during banner exchange) while ICMP ping keeps answering normally
   (0% loss, ~2-3ms RTT) — network layer alive, board's own SSH/system layer not.** Same recovery
@@ -2162,9 +2174,43 @@ supposedly standing in for.
   must reflect current config) is a standing TODO to verify, not a fact — especially before building
   new code (like a register-write driver) that will silently inherit whichever version is wrong.**
 
-## Current deployed baseline (updated 2026-09-16, latest -- supersedes every earlier baseline reference below)
+## Current deployed baseline (updated 2026-09-17, latest -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_dwflat` is now the deployed baseline**, replacing `mac_array_a3_worow` (~229ms / DW
+**`mac_array_a3_preg` is now the deployed baseline**, replacing `mac_array_a3_dwflat` (215.14ms / WNS
++0.135ns / LUT 85.74%, 2026-09-16). A **timing-margin promotion that also came out ahead on latency**:
+full network **212.34 / 212.21ms (-2.9ms, -1.4%)**, **WNS +0.381ns route-only** (the second-best on
+this line's history), **LUT 44,196 (83.08%, -1,418)**, and the SAME source closes **9.0ns/111MHz at
++0.073 route-only** (the intermediate build +0.146) -- 111MHz is timing-ready; deploying it needs the
+clk_wiz + CDC BD change (FCLK0 is boot-fixed, see the 106.667MHz entry). Cumulative on this latency
+line: 6,050ms -> ~212ms, **-96.5%**. Archive + writeup: `vivado_impl/bitstream_archive/
+mac_array_a3_preg_2026-09-17/README.txt`. Register map unchanged (`*_whoist` binaries).
+
+**What changed** (four flags, ON by default: `CTR_NARROW` in `dw_raster_layer.h`, `PW_MAC_PREG` /
+`PW_ACC_NARROW` / `PW_DEFER_WRESP_KEEP_OTS=3` in `mac_array_raster_integrated.cpp`; `_OFF` or `=2`
+revert): (1) the four loop-carried counter chains the frequency sweep named, narrowed and folded
+(estimates 9.30/8.20/7.80/7.39 -> 7.60/7.78/7.30/7.30); (2) the PW MAC product registered
+(`BIND_OP op=mul impl=fabric latency=1`, PW_FLAT II=1, depth 9 -> 11) -- the 14-level LUT
+multiply-accumulate chain that was 196 of the 9.0ns top-300 is gone, and HLS's Estimated never saw
+it (see the working-method rule); (3) `ap_int<26>` lane accumulators; (4) the deferred write-response
+pop taking the ot three back (<= 12 in flight) -- the first board round of (1)-(3) came back +0.75ms,
+ALL on the three cin=48 PW layers: the pop-to-write distance (32 iterations minus the in-iteration
+write/writeresp stage gap, which the deeper pipeline had grown from 3 to 6) had fallen to 26 effective
+cycles against a ~30-35 cycle B response. With 46+ cycles those layers stop stalling entirely --
+dwflat itself had been stalling ~3.4 cycles per pop on them: entries 3/7/13 -0.425/-1.286/-1.285ms,
+every other PW layer flat or slightly faster, PW 136.39 -> 132.98. Six suites clean, flag-less csynth
+bit-identical to the tested export, ONNX cosine exact, 7 checkpoint files identical to dwflat's.
+
+**The board incident of 2026-09-16 (recorded in the README): the first test of this bitstream ran
+on a PS that was already corrupting writes -- the scp'd .bit had a wrong md5 (found only after the
+power cycle), the loaded bitstream was garbage (PW passed, DW failed, `stack smashing`, `Alignment
+trap: sh`, firmware md5 drifting between reads). Third occurrence of the PS-corruption class, the IP
+was never at fault. Two checklist additions came out of it -- see the recovery checklist.**
+
+**Closing table update: PW 133.0 (1.28x its 104 floor), DW 54.0, GELU 13.0, ADD 5.05, SE 1.02.**
+
+## Prior deployed baseline (superseded 2026-09-17, kept for history)
+
+**`mac_array_a3_dwflat` was the deployed baseline for 2026-09-16**, replacing `mac_array_a3_worow` (~229ms / DW
 67.8 / WNS +0.285ns, 2026-09-15). Full network **~215ms** (215.14 / 215.14ms over two runs, per-entry
 sums 209.42 / 209.41), **-6.1%**; DW 67.8 -> **53.9ms (-20%)**. Cumulative on this latency line:
 6,050ms -> ~215ms, **-96.4%**. Archive + writeup: `vivado_impl/bitstream_archive/
