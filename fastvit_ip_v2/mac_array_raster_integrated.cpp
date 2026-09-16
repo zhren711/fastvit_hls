@@ -510,6 +510,13 @@ static void pw_flat_pipeline_impl(
     PW_FLAT: for (int i = 0; i < total_iters; i++) {
         #pragma HLS PIPELINE II=1
         bool reset_acc = (!in_writeout) && (cbase_idx == 0) && (k == 0);
+#if defined(PW_WRITEOUT_ROW) && defined(PW_DEFER_WRESP)
+        if (FAST_WRITEOUT && !in_writeout && (cbase_idx == n_cbase - 1) && (k >= MAC_PR) && (k < 2 * MAC_PR)
+            && (w_pending > MAC_PR)) {
+            out_burst.write_response();   /* one of the ot two back's MAC_PR responses */
+            w_pending--;
+        }
+#endif
 
         if (!in_writeout) {
             wt_t lane_w[MAC_PD];
@@ -641,6 +648,55 @@ static void pw_flat_pipeline_impl(
              * This IS a real, standing constraint coupled to resolution/
              * MAC_PC choice, not an implementation footnote -- see
              * out_burst's header comment and mac_array.h's own note. */
+#ifdef PW_WRITEOUT_ROW
+            /* ZHR-92 (2026-09-15) PW_WRITEOUT_ROW -- STEP-1 probe, OFF by default.
+             * The writeout phase was 16 iterations per (ot, tile), one output
+             * byte each (a single clip_shift, time-multiplexed) -- 36.4ms of the
+             * 131ms iteration floor (27.7%; 50% of the iterations on cin=48
+             * layers). The FAST instance now finishes a whole 4-byte row per
+             * iteration (4 clip_shift lanes, 16 acc reads from the complete-
+             * partitioned register array), so writeout is MAC_PR=4 iterations.
+             * The write_request+write stay in this iteration (one word per
+             * iteration, as before at wr_col==3); PW_DEFER_WRESP's response pop
+             * moves to the COMPUTE phase (last cbase, k=4..7, one per
+             * iteration while > MAC_PR pending) -- there is no writeout
+             * iteration without a bus write any more, and the pop must not
+             * share an iteration with the request/write. Pending oscillates
+             * 8 -> 4 -> 8 (the ot two back), pop-to-push distance >= 32 cycles
+             * at cin=48. The NARROW instance keeps the 16-step byte form. */
+            if (FAST_WRITEOUT) {
+                ap_uint<32> row_word_r = 0;
+                for (int c = 0; c < MAC_PC; c++) {
+                    #pragma HLS UNROLL
+                    acc_t total = 0;
+                    for (int dd = 0; dd < MAC_PD; dd++) {
+                        #pragma HLS UNROLL
+                        total += acc[dd][wr_row][c];
+                    }
+#ifdef PW_FIX_BIASADDR
+                    total += pw_bias_cache[0];
+#else
+                    total += pw_bias_cache[ot_idx];
+#endif
+                    act_t v = (act_t)clip_shift(total, shift_reg);
+                    row_word_r.range(c * 8 + 7, c * 8) = (ap_uint<8>)v;
+                }
+                if (wr_row < r_sz) {
+#ifdef PW_FIX_OUTADDR
+                    int byte_addr = d.out_off;
+#else
+                    int byte_addr = d.out_off + ot_out_ch_base + rt_row_base + wr_row_off + colt * MAC_PC;
+#endif
+                    out_burst.write_request(byte_addr >> 2, 1);
+                    out_burst.write(row_word_r);
+#ifdef PW_DEFER_WRESP
+                    w_pending++;
+#else
+                    out_burst.write_response();
+#endif
+                }
+            } else {
+#endif
             act_t val = 0;
             if (wr_row < r_sz && wr_col < col_sz) {
                 acc_t total = 0;
@@ -713,6 +769,9 @@ static void pw_flat_pipeline_impl(
                     }
                 }
             }
+#ifdef PW_WRITEOUT_ROW
+            }
+#endif
         }
 
         /* A3 shared-multiplier round (2026-08-25, ZHR-92, MAC_PD=1 sweep):
@@ -732,7 +791,11 @@ static void pw_flat_pipeline_impl(
          * Phase1's cin=20/cout=13 shape lost exactly 3/13 channels in an
          * isolated Python state-machine simulation before this fix, 13/13
          * correct after). Phase-dependent wrap bound restores both. */
+#ifdef PW_WRITEOUT_ROW
+        int wrap_bound = in_writeout ? (FAST_WRITEOUT ? MAC_PR : PW_FLAT_WRITEOUT_ELEMS) : PW_FLAT_STEPS_PER_CBASE;
+#else
         int wrap_bound = in_writeout ? PW_FLAT_WRITEOUT_ELEMS : PW_FLAT_STEPS_PER_CBASE;
+#endif
         if (k == wrap_bound - 1) {
             k = 0;
             if (!in_writeout) {
@@ -777,6 +840,10 @@ static void pw_flat_pipeline_impl(
             if (!in_writeout) {
                 ch_off += MAC_PD;
             } else {
+#ifdef PW_WRITEOUT_ROW
+                if (FAST_WRITEOUT) { wr_row++; wr_row_off += d.w_out; }
+                else
+#endif
                 if (wr_col == MAC_PC - 1) { wr_col = 0; wr_row++; wr_row_off += d.w_out; }
                 else { wr_col++; }
             }
@@ -1157,7 +1224,16 @@ static void run_layer(const LayerDescV2 &d,
     /* iters_per_ot: PW_FLAT_STEPS_PER_CBASE and PW_FLAT_WRITEOUT_ELEMS are
      * compile-time constants (8 and 16), so this is a shift+add, no
      * multiplier. */
+#ifdef PW_WRITEOUT_ROW
+    /* the FAST instance's writeout is MAC_PR iterations (a row per iteration);
+     * the NARROW instance (last_col_tile < MAC_PC or unaligned out_off -- the
+     * two W=1 SE fc layers) keeps the 16-step byte form. Same predicate as
+     * the pw_narrow dispatch below, layer-constant. */
+    const bool pw_narrow_wo = (d.last_col_tile < MAC_PC) || ((d.out_off & 3) != 0);
+    const int pw_iters_per_ot = pw_n_cbase * PW_FLAT_STEPS_PER_CBASE + (pw_narrow_wo ? PW_FLAT_WRITEOUT_ELEMS : MAC_PR);
+#else
     const int pw_iters_per_ot = pw_n_cbase * PW_FLAT_STEPS_PER_CBASE + PW_FLAT_WRITEOUT_ELEMS;
+#endif
 
     PW_WCHUNK: for (int wchunk = 0; wchunk < pw_n_chunks; wchunk++) {
     int pw_ot_count = pw_ot_per_chunk;
