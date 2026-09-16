@@ -1258,7 +1258,13 @@ supposedly standing in for.
   three times); for a datapath chain (multiply-accumulate, wide add trees) only real P&R at the
   target clock says anything, and the lever is structural (register the product -- `BIND_OP op=mul
   latency=1` or a DSP-bound multiply -- and/or narrow `acc_t` from 32 to the real 26 bits), not
-  another counter fix. Layer (2) of the 111MHz line; not built as of this entry.
+  another counter fix. **BUILT the same day (`PW_MAC_PREG` + `PW_ACC_NARROW`, commit `0a13a9f`, OFF
+  by default): `BIND_OP variable=prod op=mul impl=fabric latency=1` turned the 64 `mul_8s_8s_16_1_1`
+  into `mul_8s_8s_16_2_1`, PW_FLAT II=1, FAST depth 9 -> 11, Estimated still 7.601 (blind), six
+  suites clean; real P&R 10.0ns +0.190 (no regression, LUT 45,764 -> 44,207) and 9.0ns/111MHz
+  WNS +0.146 -- the MAC chain went from 196 of the top-300 to ZERO, path #300 at +0.620. So for a
+  fabric multiply-accumulate chain the product register IS the lever, it costs FF only (+1,852
+  real), and it is invisible to every HLS-side check -- judge it by P&R at the target clock.**
 - **HLS AUTO-PIPELINING a low-frequency loop is pure waste -- the same family as "a runtime value
   gating a hardware region" (a default tool behaviour that optimises in the wrong direction for a
   specific loop shape), on a different trigger.** Confirmed 2026-09-15 (`SE_BURST`): `run_gap`'s
@@ -2171,7 +2177,11 @@ cin=1152/W=8 -- technique 4 in the working-method list). Real P&R: **10.0ns +0.1
 +0.135; LUT 45,764 / +150; next datapath structure +0.487)**; **9.0ns/111MHz -0.191** (sweep
 -0.174) -- the DW chains are gone from the top-10 (worst DW path +0.263) and the ceiling is now the
 PW_FLAT MAC accumulate chain (8.94ns absolute, invisible to HLS's Estimated -- see the rule in the
-working-method section). 111MHz needs layer (2): product register / `acc_t` 32 -> 26 bits.
+working-method section). **Layer (2) built the same day (`PW_MAC_PREG` + `PW_ACC_NARROW`,
+`0a13a9f`, OFF by default): 10.0ns +0.190 / LUT 44,207 (83.10%, -1,557) / FF 39,643 (+1,852);
+9.0ns/111MHz +0.146 with the MAC chain gone and path #300 at +0.620 -- 111MHz closes on
+route_design alone. Not promoted, not deployed: FCLK0 is boot-fixed, realising it needs the
+clk_wiz + CDC BD change (see the 106.667MHz entry).**
 
 **DW refit on this run** (R^2 0.998): 0.94 cyc/pixel (33.5) + **10.2 cyc/row (9.9; was 22.8)** +
 **291 cyc/channel (12.8; was 10.1 -- the flat loops' deeper fill/drain, ~+60 per channel)**. DW 53.9
