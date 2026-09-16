@@ -73,6 +73,22 @@
 #define SE_BURST 1
 #endif
 
+/* ZHR-92 (2026-09-16): PW_MAC_PREG and PW_ACC_NARROW are ON BY DEFAULT as of the
+ * mac_array_a3_preg deployed baseline (a timing-margin promotion, with
+ * CTR_NARROW in dw_raster_layer.h): the PW MAC product is registered
+ * (BIND_OP op=mul impl=fabric latency=1 -> mul_8s_8s_16_2_1, PW_FLAT II=1,
+ * FAST depth 9 -> 11) and the per-lane accumulators are ap_int<26>. Real P&R:
+ * 10.0ns +0.190 with LUT 45,764 -> 44,207 (-1,557); 9.0ns/111MHz +0.146 with
+ * the MAC accumulate chain gone from the top-300 (it was 196 of them at
+ * -0.191). HLS's own Estimated never saw that chain (7.601 before and after)
+ * -- see CLAUDE.md. Define PW_MAC_PREG_OFF / PW_ACC_NARROW_OFF to revert. */
+#ifndef PW_MAC_PREG_OFF
+#define PW_MAC_PREG 1
+#endif
+#ifndef PW_ACC_NARROW_OFF
+#define PW_ACC_NARROW 1
+#endif
+
 /* ZHR-92 (2026-09-15): PW_WHOIST_WIDE is ON BY DEFAULT as of the mac_array_a3_wburst
  * deployed baseline (real board, busy-poll/defer harness: PW 181.3 -> 160.6ms,
  * -20.7, 0.72 cycles per weight byte saved on all 26 layers; together with

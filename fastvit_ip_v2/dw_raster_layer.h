@@ -69,6 +69,20 @@
 #define DWR_FLAT 1
 #endif
 
+// ZHR-92 (2026-09-16): CTR_NARROW is ON BY DEFAULT as of the mac_array_a3_preg
+// deployed baseline (a timing-margin promotion, together with PW_MAC_PREG +
+// PW_ACC_NARROW in mac_array_raster_integrated.cpp). The four loop-carried
+// counter chains the 9.0/8.5/8.0ns frequency sweep named (PW_FLAT w_pending /
+// k / cbase_idx, ROW_READ_FILL4 col_w/widx/cur_row, DWR_CONSUME_FLAT's l1_nbuf
+// drain decision) narrowed to their real widths with one net update per
+// iteration: HLS estimates 9.30/8.20/7.80/7.39 -> 7.60/7.78/7.30/7.30. Real
+// P&R at 10.0ns +0.135 -> +0.189; at 9.0ns every DW-sourced path left the
+// top-10. Spans both source files (this header is included by both). Define
+// CTR_NARROW_OFF to get the int counters back.
+#ifndef CTR_NARROW_OFF
+#define CTR_NARROW 1
+#endif
+
 // ZHR-92 (2026-09-15): DWR_WBURST is ON BY DEFAULT as of the mac_array_a3_wburst
 // deployed baseline. The 32-bit w_burst port (added for PW_WHOIST_WIDE) makes
 // gmem_w's access width 32-bit for every port, which cost w_base's byte reads
