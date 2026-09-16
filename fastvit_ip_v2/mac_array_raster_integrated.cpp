@@ -89,6 +89,24 @@
 #define PW_ACC_NARROW 1
 #endif
 
+/* ZHR-92 (2026-09-16): PW_DEFER_WRESP_KEEP_OTS -- how many ots' worth of write
+ * responses stay in flight before the compute-phase pop starts (the pop takes
+ * the OLDEST ot's MAC_PR responses). 2 = pop the ot two back (the 2026-09-15
+ * form: <= 8 in flight, pop-to-write distance 32 iterations at cin=48). The
+ * CTR_NARROW + PW_MAC_PREG board round found that distance was already
+ * marginal against the ~30-35 cycle B response: each change moved `write` to
+ * a later stage of the iteration (ST_7 -> ST_8 -> ST_10, writeresp from ST_4),
+ * and the three cin=48 layers (entries 3/7/13, the network's shortest
+ * distance) regressed +5.5 cycles per (ot, tile) while every other layer got
+ * faster. 3 = pop the ot three back: <= 12 in flight vs the adapter's 16
+ * (NUM_WRITE_OUTSTANDING), ap_uint<4> holds it, the post-loop drain is
+ * count-driven (II=1, +4 cycles per call = ~72us network-wide), distance
+ * +20 iterations at cin=48. */
+#ifndef PW_DEFER_WRESP_KEEP_OTS
+#define PW_DEFER_WRESP_KEEP_OTS 3
+#endif
+#define PW_DEFER_WRESP_POP_ABOVE ((PW_DEFER_WRESP_KEEP_OTS - 1) * MAC_PR)
+
 /* ZHR-92 (2026-09-15): PW_WHOIST_WIDE is ON BY DEFAULT as of the mac_array_a3_wburst
  * deployed baseline (real board, busy-poll/defer harness: PW 181.3 -> 160.6ms,
  * -20.7, 0.72 cycles per weight byte saved on all 26 layers; together with
@@ -564,7 +582,7 @@ static void pw_flat_pipeline_impl(
      * outside the loop the way DW's is, because here the deferral is to a
      * later ITERATION of the same loop. */
 #ifdef CTR_NARROW
-    ap_uint<4> w_pending = 0;    /* <= 8 in flight */
+    ap_uint<4> w_pending = 0;    /* <= PW_DEFER_WRESP_KEEP_OTS*MAC_PR (12) in flight */
 #else
     ap_uint<5> w_pending = 0;    /* write_requests issued minus responses popped, <= 8 */
 #endif
@@ -579,12 +597,12 @@ static void pw_flat_pipeline_impl(
          * end of the body (w_pending + push - pop) -- the inline --/++ pair
          * chained cmp/and/mux/add/mux into HLS's 9.30ns estimate. */
         const bool w_pop = FAST_WRITEOUT && !in_writeout && (cbase_idx == n_cbase_last) && (k >= MAC_PR) && (k < 2 * MAC_PR)
-            && (w_pending > MAC_PR);
+            && (w_pending > PW_DEFER_WRESP_POP_ABOVE);
         bool w_push = false;
         if (w_pop) out_burst.write_response();
 #else
         if (FAST_WRITEOUT && !in_writeout && (cbase_idx == n_cbase - 1) && (k >= MAC_PR) && (k < 2 * MAC_PR)
-            && (w_pending > MAC_PR)) {
+            && (w_pending > PW_DEFER_WRESP_POP_ABOVE)) {
             out_burst.write_response();   /* one of the ot two back's MAC_PR responses */
             w_pending--;
         }
