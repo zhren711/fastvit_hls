@@ -1568,6 +1568,28 @@ supposedly standing in for.
   large W"). Same family as the coupled-cost rule above: before trusting a fitted coefficient,
   find two real layers that differ in only one of the fitted variables and check that the
   residual is the same -- if it is not, a term is missing or two terms are collinear.
+- **METHOD: when a change's aggregate effect is inside the threshold but its direction is
+  suspicious, a per-layer diff plus a multi-bitstream A/B on one entry separates the mechanism --
+  and the SHAPE of "which layers moved" is itself the diagnosis.** This is one method with four
+  instances on this line now, all board-data-only:
+    1. II-materialisation read (2026-09-13): consume's II 8->2 landed 1:1 on 23 DW layers and only
+       -4.0 of -6 cycles/pixel on layer 1 (stride-2, few outputs) -> the OTHER side of the DATAFLOW
+       pair was binding there. The exception layer named the mechanism.
+    2. Per-W prediction check (MERGE4, 2026-09-15): the saving ordered by W (W=8 most, W=64 least)
+       separated the request term from the compute term.
+    3. Coupled-cost shapes (DW per-row round): stride-2 layers halve one of two overlapping costs.
+    4. The pop-distance regression (2026-09-16): +0.75ms total, INSIDE the 1ms line, csynth said
+       -16 cycles per call, six suites clean -- but a three-bitstream A/B on entry3 (3.783 -> 3.871
+       -> 3.948, each layer ~+0.08) said it was real, and the per-layer diff put ALL of it on the
+       three cin=48 (n_cbase=2) PW layers with 23 layers slightly FASTER. That shape ruled out
+       "pipeline depth +2 per call" (would hit every 256-tile layer, incl. the cin=144 ones at
+       -0.02) and pointed at the one mechanism keyed to n_cbase: the deferred-pop distance.
+  Procedure: (a) A/B the single entry that moved most across every intermediate bitstream you
+  have (they exist -- each step's P&R made one); (b) diff all layers of the operator against the
+  previous run, sorted by the physical variables (n_tiles, n_cbase, n_ot, W); (c) ask which
+  mechanism is keyed to exactly the variable that separates the movers from the non-movers.
+  A threshold is a promotion gate, not a diagnosis gate -- run the diff whenever the sign is
+  wrong, even under the line.
 - **When two costs are coupled (one hides the other, or they overlap), find a layer SHAPE that
   amplifies only one of them -- the shape difference across real layers separates what a single
   aggregate number cannot.** Three instances now, all board-data-only, no new build needed:
