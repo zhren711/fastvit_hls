@@ -1407,6 +1407,22 @@ supposedly standing in for.
        lane by construction, II=1 immediately -- and restrict the fast path (a per-LAYER branch
        outside the loops, never inside the pipeline) to the shapes where a word cannot straddle a
        row (W % N == 0, aligned), keeping the general path for the rest.
+    4. **Narrow loop-carried counters + one net update per iteration (2026-09-16, `DWR_FLAT`'s
+       -2.574 -> +0.135 fix and `CTR_NARROW`)** -- the timing-side twin of technique 2: a 32-bit
+       `int` counter updated at several sites inside an II=1 body chains add/mux/cmp/add into one
+       cycle (HLS 200-1016 estimates 9.3-15ns); declare it at its real width (`ap_uint<3..6>`),
+       compute the decision (pop/drain/wrap) on the OLD value, and apply `x = x + push - pop`
+       ONCE at the end of the body. Took PW_FLAT 9.30 -> 7.60, CONSUME_FLAT 8.20 -> 7.78, produce
+       10.57 -> 7.30. **Its own trap, hit on the third use and caught only by csim
+       (`pw_weight_hoist_tb` case 4, cin=1152, W=8): `ap_uint<N> << k` does NOT widen -- the
+       result keeps N bits, so an index built as `(ap_uint<12>)widx << 2` silently truncates
+       for any value >= 1024, i.e. only on the large-cin shapes. Cast to the RESULT width before
+       shifting (`(ap_uint<14>)widx << 2`), and run the six suites (the PW pair covers cin=1152)
+       after every narrowing -- the failure is shape-specific, not caught by the small cases.**
+       Next cut when a narrowed chain is still the worst (~7.6-7.8ns is the cmp -> and -> select
+       -> add -> add of the decision itself): register the decision one iteration EARLIER
+       (`l1_drain_next`, decided at the previous row end and copied at `pcol==0`) -- the same
+       move, one more pipeline register.
     X. **A standalone add-loop ("add the invariant N times") does NOT work**: HLS's loop-idiom
        pass rewrites `for (i<N) acc += c` into `N*c` -- an i32 multiply, bound straight back onto
        the shared unit (binding DB showed `mul_ln1056/_1/_2` with the loop gone). The accumulator
