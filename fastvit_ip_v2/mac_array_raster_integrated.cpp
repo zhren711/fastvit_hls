@@ -476,9 +476,24 @@ static void pw_flat_pipeline_impl(
     /* loop-carried state -- all plain counters, wrap via compare+add,
      * no derived multiply/divide/mod anywhere in the hot loop (see the
      * spike's own header comment for why this matters). */
+#ifdef CTR_NARROW
+    /* ZHR-92 (2026-09-16) CTR_NARROW -- the frequency-sweep round: HLS's own
+     * 200-1016 listings named four loop-carried counter chains (this module's
+     * w_pending 9.30ns and cbase_idx/k 7.80ns among them) that did not
+     * reschedule at any clock target. Same medicine as DWR_FLAT's fix: real
+     * widths, one net update per iteration. k <= 15, cbase_idx <= 36. */
+    ap_uint<5> k = 0;
+#else
     int k = 0;                  /* 0..PW_FLAT_STEPS_PER_CBASE-1, dual-use */
+#endif
     bool in_writeout = false;
+#ifdef CTR_NARROW
+    ap_uint<6> cbase_idx = 0;
+    const ap_uint<6> n_cbase_last = n_cbase - 1;
+#else
     int cbase_idx = 0;
+    const int n_cbase_last = n_cbase - 1;
+#endif
     int ch_off = 0;              /* channel offset within Cin, shared by patch+weight addressing */
     int w_ot_base = 0;           /* == (ot-ot_start)*Cin, cache-relative, accumulated from 0 every call */
     int ot_out_ch_base = ot_out_ch_base_init;  /* == ot*d.out_ch_stride, ABSOLUTE -- passed in, not multiplied here */
@@ -517,18 +532,32 @@ static void pw_flat_pipeline_impl(
      * DISJOINT predicate (wr_col==0 & pending>=8 vs wr_col==3) -- not
      * outside the loop the way DW's is, because here the deferral is to a
      * later ITERATION of the same loop. */
+#ifdef CTR_NARROW
+    ap_uint<4> w_pending = 0;    /* <= 8 in flight */
+#else
     ap_uint<5> w_pending = 0;    /* write_requests issued minus responses popped, <= 8 */
+#endif
 #endif
 
     PW_FLAT: for (int i = 0; i < total_iters; i++) {
         #pragma HLS PIPELINE II=1
         bool reset_acc = (!in_writeout) && (cbase_idx == 0) && (k == 0);
 #if defined(PW_WRITEOUT_ROW) && defined(PW_DEFER_WRESP)
+#ifdef CTR_NARROW
+        /* pop decided on the OLD count; the counter is updated once at the
+         * end of the body (w_pending + push - pop) -- the inline --/++ pair
+         * chained cmp/and/mux/add/mux into HLS's 9.30ns estimate. */
+        const bool w_pop = FAST_WRITEOUT && !in_writeout && (cbase_idx == n_cbase_last) && (k >= MAC_PR) && (k < 2 * MAC_PR)
+            && (w_pending > MAC_PR);
+        bool w_push = false;
+        if (w_pop) out_burst.write_response();
+#else
         if (FAST_WRITEOUT && !in_writeout && (cbase_idx == n_cbase - 1) && (k >= MAC_PR) && (k < 2 * MAC_PR)
             && (w_pending > MAC_PR)) {
             out_burst.write_response();   /* one of the ot two back's MAC_PR responses */
             w_pending--;
         }
+#endif
 #endif
 
         if (!in_writeout) {
@@ -704,7 +733,11 @@ static void pw_flat_pipeline_impl(
                     out_burst.write_request(byte_addr >> 2, 1);
                     out_burst.write(row_word_r);
 #ifdef PW_DEFER_WRESP
+#ifdef CTR_NARROW
+                    w_push = true;
+#else
                     w_pending++;
+#endif
 #else
                     out_burst.write_response();
 #endif
@@ -805,15 +838,27 @@ static void pw_flat_pipeline_impl(
          * Phase1's cin=20/cout=13 shape lost exactly 3/13 channels in an
          * isolated Python state-machine simulation before this fix, 13/13
          * correct after). Phase-dependent wrap bound restores both. */
+#if defined(CTR_NARROW) && defined(PW_WRITEOUT_ROW) && defined(PW_DEFER_WRESP)
+        w_pending = w_pending + (ap_uint<4>)(w_push ? 1 : 0) - (ap_uint<4>)(w_pop ? 1 : 0);
+#endif
+#ifdef CTR_NARROW
+#ifdef PW_WRITEOUT_ROW
+        const ap_uint<5> wrap_last = in_writeout ? (ap_uint<5>)((FAST_WRITEOUT ? MAC_PR : PW_FLAT_WRITEOUT_ELEMS) - 1) : (ap_uint<5>)(PW_FLAT_STEPS_PER_CBASE - 1);
+#else
+        const ap_uint<5> wrap_last = in_writeout ? (ap_uint<5>)(PW_FLAT_WRITEOUT_ELEMS - 1) : (ap_uint<5>)(PW_FLAT_STEPS_PER_CBASE - 1);
+#endif
+        if (k == wrap_last) {
+#else
 #ifdef PW_WRITEOUT_ROW
         int wrap_bound = in_writeout ? (FAST_WRITEOUT ? MAC_PR : PW_FLAT_WRITEOUT_ELEMS) : PW_FLAT_STEPS_PER_CBASE;
 #else
         int wrap_bound = in_writeout ? PW_FLAT_WRITEOUT_ELEMS : PW_FLAT_STEPS_PER_CBASE;
 #endif
         if (k == wrap_bound - 1) {
+#endif
             k = 0;
             if (!in_writeout) {
-                if (cbase_idx == n_cbase - 1) {
+                if (cbase_idx == n_cbase_last) {
                     in_writeout = true;
 #ifdef PW_FIX_BIASADDR
                     shift_reg = d.use_shift_table ? (int)pw_shift_cache[0] : d.out_shift;
@@ -1558,10 +1603,20 @@ static void run_layer(const LayerDescV2 &d,
                      * low two bits ARE the lane -- provably distinct banks -- and
                      * with W % 4 == 0 and an aligned span a word never straddles
                      * a row, so all 4 lanes write the SAME row array. */
+#ifdef CTR_NARROW
+                    /* W_words <= 16, row_buf word index < 2304, cur_row < 4: the
+                     * int versions chained add/cmp/select into a 7.39ns estimate. */
+                    const ap_uint<5> W_words = W >> 2;
+                    ap_uint<12> widx = flat_base >> 2;
+                    ap_uint<5> col_w = 0;
+                    ap_uint<3> cur_row = 0;
+                    const ap_uint<12> widx0 = flat_base >> 2;
+#else
                     const int W_words = W >> 2;
                     int widx = flat_base >> 2;                      /* word index of this word within its row array */
                     int col_w = 0;                                  /* word column within the row */
                     int cur_row = 0;
+#endif
 #ifdef PW_ROWREAD_REQ_IN_FILL
                     /* ZHR-92 (2026-09-15) PW_ROWREAD_REQ_IN_FILL -- STEP-1 probe, OFF
                      * by default. The next channel's read_request used to be a
@@ -1585,11 +1640,26 @@ static void run_layer(const LayerDescV2 &d,
                         ap_uint<32> wd = in_burst.read();
                         for (int b = 0; b < 4; b++) {
                             #pragma HLS UNROLL
+#ifdef CTR_NARROW
+                            /* widen BEFORE the shift: ap_uint<12> << 2 keeps 12 bits and
+                             * truncated for widx >= 1024 (cin > 512 at W=8 -- caught by
+                             * pw_weight_hoist_tb case 4, 14437/98304 mismatches). */
+                            row_buf[cur_row][((ap_uint<14>)widx << 2) | b] = (act_t)wd.range(b * 8 + 7, b * 8);
+#else
                             row_buf[cur_row][(widx << 2) | b] = (act_t)wd.range(b * 8 + 7, b * 8);
+#endif
                         }
+#ifdef CTR_NARROW
+                        const ap_uint<5> col_w_n = col_w + 1;
+                        const bool row_done = (col_w_n == W_words);
+                        col_w  = row_done ? (ap_uint<5>)0 : col_w_n;
+                        widx   = row_done ? widx0 : (ap_uint<12>)(widx + 1);
+                        cur_row = row_done ? (ap_uint<3>)(cur_row + 1) : cur_row;
+#else
                         widx++;
                         col_w++;
                         if (col_w == W_words) { col_w = 0; cur_row++; widx = flat_base >> 2; }
+#endif
                     }
 #ifdef PW_ROWREAD_REQ_IN_FILL
                     if (issue_next) ch_base_req += d.in_ch_stride;

@@ -953,6 +953,7 @@ static void dwr_consume(
     int l1_row_off[2];         /* row_off of each buffered row */
 #pragma HLS ARRAY_PARTITION variable=l1_row_off complete dim=0
     bool l1_drain_now = false; /* this row's leading slots drain l1ring[l1_head] */
+    bool l1_drain_next = false;/* CTR_NARROW: decided at the previous row end, so pcol==0 does not chain off l1_nbuf */
     int  l1_drain_off = 0;
     ap_uint<5> w_pend = 0;     /* write_requests issued - responses popped (<= 8) */
     bool just_wrote = false;   /* previous iteration issued a lane-0 write */
@@ -972,7 +973,11 @@ static void dwr_consume(
                 row_valid = (rp == 0);
             }
             l1_n_cur = 0;
+#ifdef CTR_NARROW
+            l1_drain_now = l1_drain_next;
+#else
             l1_drain_now = (fpg > 1) && (l1_nbuf == 2);
+#endif
             l1_drain_off = l1_row_off[l1_head];
         }
         /* --- row-start bus slots --- */
@@ -1048,7 +1053,11 @@ static void dwr_consume(
             const bool push1 = row_valid && (fpg > 1);
             if (l1_drain_now) { l1_head = ~l1_head; }
             if (push1) { l1_row_off[l1_tail] = row_off; l1_tail = ~l1_tail; }
-            l1_nbuf = l1_nbuf + (ap_uint<2>)(push1 ? 1 : 0) - (ap_uint<2>)(l1_drain_now ? 1 : 0);
+            const ap_uint<2> nbuf_next = l1_nbuf + (ap_uint<2>)(push1 ? 1 : 0) - (ap_uint<2>)(l1_drain_now ? 1 : 0);
+            l1_nbuf = nbuf_next;
+#ifdef CTR_NARROW
+            l1_drain_next = (fpg > 1) && (nbuf_next == 2);
+#endif
             if (row_valid) row_off += w_out;
             pcol = 0; prow++;
         } else {
