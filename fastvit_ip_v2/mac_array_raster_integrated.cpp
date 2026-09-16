@@ -464,7 +464,22 @@ static void pw_flat_pipeline_impl(
     const int n_cbase = (Cin + MAX_CIN_PW - 1) / MAX_CIN_PW;
     const int total_iters = total_iters_in;
 
-    acc_t acc[MAC_PD][MAC_PR][MAC_PC];
+#ifdef PW_ACC_NARROW
+    /* ZHR-92 (2026-09-16) PW_ACC_NARROW -- layer (2) of the 111MHz line, the
+     * cheap half: the per-lane accumulator's real range is |a|*|w| <= 16,384
+     * x (cin / MAC_PD) <= 288 channels per lane on every real layer = 4.7M,
+     * i.e. 24 bits signed; ap_int<26> holds cin < 8,192 (csim-asserted). A
+     * 32-bit acc register is a CARRY4x8-9 chain on the 9.0ns critical path;
+     * this removes ~1.5 CARRY4 of it. The 4-lane sum + bias in the writeout
+     * stays acc_t (32-bit). */
+    typedef ap_int<26> pw_acc_t;
+#ifndef __SYNTHESIS__
+    assert(Cin < 8192 && "PW_ACC_NARROW: ap_int<26> per-lane accumulator bound");
+#endif
+#else
+    typedef acc_t pw_acc_t;
+#endif
+    pw_acc_t acc[MAC_PD][MAC_PR][MAC_PC];
     #pragma HLS ARRAY_PARTITION variable=acc complete dim=0
     /* ZHR-92 angle-B step (2026-08-24): one row (MAC_PC=4 act_t) packs
      * exactly into one 32-bit word -- accumulated a byte/cycle across the
@@ -656,7 +671,7 @@ static void pw_flat_pipeline_impl(
                     #pragma HLS UNROLL
                     for (int cw = 0; cw < MAC_PC; cw++) {
                         #pragma HLS UNROLL
-                        acc_t prod;
+                        pw_acc_t prod;
                         /* ZHR-92 round (2026-09-01): PW_FORCE_DSP -- untested
                          * counterpart to DW's LB_FORCE_DSP (dw_raster_layer.cpp).
                          * Conservative variant of the CLOSED DSP-packing line:
@@ -669,8 +684,27 @@ static void pw_flat_pipeline_impl(
 #ifdef PW_FORCE_DSP
 #pragma HLS BIND_OP variable=prod op=mul impl=DSP
 #endif
-                        prod = (acc_t)lane_in[dd][rr][cw] * (acc_t)lane_w[dd];
-                        acc[dd][rr][cw] = reset_acc ? prod : (acc_t)(acc[dd][rr][cw] + prod);
+                        /* ZHR-92 (2026-09-16) PW_MAC_PREG -- layer (2) of the
+                         * 111MHz line, the structural half. At 9.0ns the real
+                         * P&R worst path (196 of the top-300, 8.25-8.94ns, 14
+                         * levels) is THIS statement in one cycle: operand
+                         * register -> LUT-inferred 8x8 multiply -> 32-bit add
+                         * -> acc register. HLS's own Estimated does not see it
+                         * (7.601 at every target; its 200-1016 names the
+                         * w_pending fold). latency=1 registers the product so
+                         * the chain becomes multiply | add across two stages;
+                         * the product is not loop-carried, so II stays 1 and
+                         * the pipeline depth grows by one. PW_MAC_PREG_DSP is
+                         * the same split via a DSP48 with its output register
+                         * (DSP 26 -> ~90 of 220; the 2026-09-01 LUT-release
+                         * verdict on PW_FORCE_DSP was about LUT, not timing). */
+#if defined(PW_MAC_PREG_DSP)
+#pragma HLS BIND_OP variable=prod op=mul impl=DSP latency=1
+#elif defined(PW_MAC_PREG)
+#pragma HLS BIND_OP variable=prod op=mul impl=fabric latency=1
+#endif
+                        prod = (pw_acc_t)lane_in[dd][rr][cw] * (pw_acc_t)lane_w[dd];
+                        acc[dd][rr][cw] = reset_acc ? prod : (pw_acc_t)(acc[dd][rr][cw] + prod);
                     }
                 }
             }
