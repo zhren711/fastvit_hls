@@ -2063,7 +2063,55 @@ supposedly standing in for.
 
 ## Current deployed baseline (updated 2026-09-15, latest -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_seburst` is now the deployed baseline**, replacing `mac_array_a3_dwrow` (~295ms on
+**`mac_array_a3_wburst` is now the deployed baseline**, replacing `mac_array_a3_seburst` (272.5ms on
+the deferred-I/O harness / PW 181.3 / DW 66.4 / WNS +0.254ns, same day). Full network **~253ms**
+(253.07 / 253.03ms over two runs, per-entry sums 247.24 / 247.26), **-7.2%**; PW 181.3 -> **160.6ms
+(-20.7)**, DW 66.4 -> 67.6 (+1.2, see below). Cumulative on this latency line: 6,050ms -> ~253ms,
+**-95.8%**. Archive + writeup: `vivado_impl/bitstream_archive/mac_array_a3_wburst_2026-09-15/
+README.txt`. **REGISTER MAP CHANGED: `W_BURST` at 0x10c/0x110 appended -- only ARM binaries built
+from `mac_array_driver.h` at/after commit `9b6b3bc` (`*_whoist`) program it; `*_defer`/`*_busypoll`/
+`*_sohoist` leave it at 0 and will read weights from address 0 (wrong output or a hang).**
+
+**What changed** (two flags, ON by default -- `PW_WHOIST_WIDE_OFF` / `DWR_WBURST_OFF` revert, only
+together): `PW_WHOIST_WIDE` (`9b6b3bc`) -- a 32-bit `burst_maxi` port `w_burst` on `gmem_w` (the
+bundle's first) feeds `PW_WEIGHT_HOIST` one word per cycle instead of the byte-wide `w_base[]` copy
+(0.74 cyc/weight byte = 21.2ms of PW): saved 0.72 cyc/byte uniformly on all 26 PW layers; the weight
+term is gone. `DWR_WBURST` (`5797f02`) -- REQUIRED by the first: a 32-bit port on the bundle makes
+every access 32-bit, and `w_base`'s byte reads in `dwr_consume`'s prologue lost their K^2 kernel
+burst (iteration latency 2 -> 15; the PW_WHOIST_WIDE-only build `whoist` measured DW +17.3ms, net
+-3.3, NOT promoted -- see the narrowed-precedent rule in the working-method section). Fix: the
+prologue reads each lane's kernel (K^2 bytes at an arbitrary byte offset -- `co*K^2` is spread
+uniformly over mod 4 on the real layers, checked) as ceil((ko+K^2)/4) words + the shift byte as one
+word through the same `w_burst`, words stored raw, bytes selected by `(j+ko)` in the copy loop with a
+running byte pointer (`kh*K+kw` multiply gone; `dwr_consume` DSP 17 -> 13). `gmem_b` (bias) carries
+only the 32-bit `b_base` -- checked, unaffected.
+
+Real P&R (route_design alone, NO phys_opt): **WNS +0.180204ns** (seburst +0.254, whoist +0.088 --
+placement rolls; worst path `gmem_act` store-unit request FIFO, 84% route); **LUT 46,366 (87.15%,
++352 vs seburst; isolated said +298)**; BRAM 110 flat; **DSP 26 (-4)**.
+
+Board (`*_whoist` binaries md5-verified on build server / local / board before dispatch;
+pre-registered order): entry5_dw x3 2.924-2.929 (seburst 2.915, whoist 3.000 -- restored); entry66
+(3 x 144KB weight load) 10.779 -> **7.535 (-30%)**; entry3 (2.3KB) flat; chunked entries 64/72
+-31%; GELU/ADD/SE flat; all byte-exact. Full network 82/82 x2, 7 checkpoint files MD5-identical
+across runs AND vs seburst; **PW 160.59 (-20.67)**, **DW 67.57 (+1.21: a uniform +27 cycles/channel
+on both k=3 and k=7 -- the second request + the 14-iteration word loop vs the old single K^2 burst;
+recoverable by issuing lane 1's requests before lane 0's copy loop, ~1ms, not done)**, GELU 13.02 /
+ADD 5.05 / SE 1.02 flat; ONNX cosine EXACT. Pre-registered 248-252: landed 253, the 1ms over being
+exactly DW's residual. Operator split: **PW 63%**, DW 27%, GELU 5.1%, ADD 2.0%, SE 0.4%.
+
+**Refits on this run:** PW 160.6 = 140.6 (1.072 cyc/iteration; floor 131.2) + 19.0 (40 cyc/request)
++ ~1 (weights) -- two terms left, the iteration overhead (9.4) and the requests (19). DW (R^2
+0.998): 0.95 cyc/pixel (33.9) + 23.5 cyc/row (22.8) + 230 cyc/channel (10.1) + ~0/output.
+
+**Closing-table update (supersedes the PW/DW rows below): PW 160.6 (1.22x floor, attackable ~28:
+requests 19 + iteration overhead 9), DW 67.6 (1.90x, attackable ~33: row glue 23 + prologue 10),
+GELU 13.0, ADD 5.05, SE 1.02, ARM dispatch ~4.7 (+ ~1 harness), checkpoint capture 2.9. Total
+attackable by the fits ~70ms of ~253.**
+
+## Prior deployed baseline (superseded 2026-09-15, kept for history)
+
+**`mac_array_a3_seburst` was the deployed baseline for part of 2026-09-15**, replacing `mac_array_a3_dwrow` (~295ms on
 the busy-poll harness / SE 9.27ms / WNS +0.211ns, same day). Full network **~287ms** (287.46 /
 287.12ms over two runs, per-entry sums 266.72 / 266.72), **-2.8%**; SE 9.27 -> **1.02ms (-89%)**.
 **Same day, deferred-I/O harness (`mac_array_full_network_test_defer`, harness only): 272.51 / 272.64ms

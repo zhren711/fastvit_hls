@@ -52,6 +52,18 @@
  * ceil((3 + 49)/4) = 13 words; 14 keeps one spare. */
 #define DWR_KW_MAX 14
 
+// ZHR-92 (2026-09-15): DWR_WBURST is ON BY DEFAULT as of the mac_array_a3_wburst
+// deployed baseline. The 32-bit w_burst port (added for PW_WHOIST_WIDE) makes
+// gmem_w's access width 32-bit for every port, which cost w_base's byte reads
+// their K^2 kernel burst (DW +17.3ms on the board, +183/+605 cycles per channel
+// at k=3/k=7); reading the kernel + shift through w_burst instead restores it
+// (DW 66.4 -> 67.6ms, +27 cycles/channel residual = the second request + the
+// 14-iteration word loop vs the old single burst). Define DWR_WBURST_OFF to
+// revert (only sensible together with PW_WHOIST_WIDE_OFF).
+#ifndef DWR_WBURST_OFF
+#define DWR_WBURST 1
+#endif
+
 // ZHR-92 (2026-09-13): DW_OUTPUT_BURST is ON BY DEFAULT as of the
 // mac_array_a3_dwob deployed baseline (real board: DW 531.13ms -> 329.0ms,
 // -38.0%; full network 1,095.36ms -> ~898ms, -18%; byte-exact, ONNX cosine

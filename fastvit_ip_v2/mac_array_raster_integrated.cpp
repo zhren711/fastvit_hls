@@ -72,6 +72,19 @@
 #ifndef SE_BURST_OFF
 #define SE_BURST 1
 #endif
+
+/* ZHR-92 (2026-09-15): PW_WHOIST_WIDE is ON BY DEFAULT as of the mac_array_a3_wburst
+ * deployed baseline (real board, busy-poll/defer harness: PW 181.3 -> 160.6ms,
+ * -20.7, 0.72 cycles per weight byte saved on all 26 layers; together with
+ * DWR_WBURST -- which it REQUIRES on this bundle, see dw_raster_layer.h --
+ * full network ~272.5 -> ~253ms; WNS +0.180 route-only). Define
+ * PW_WHOIST_WIDE_OFF to get the byte-wide w_base[] copy back (then also
+ * define DWR_WBURST_OFF, or DW's prologue pays the wide-bundle penalty for
+ * nothing). NOTE: the w_burst PORT and its register (0x10c/0x110) exist
+ * regardless of this flag; ARM binaries must program it (*_whoist and later). */
+#ifndef PW_WHOIST_WIDE_OFF
+#define PW_WHOIST_WIDE 1
+#endif
 /* ZHR-92 angle-B step (2026-08-24, final): explicit-API burst for
  * WRITEOUT (PW's own write, inside pw_flat_pipeline). Fast path
  * (hls::burst_maxi<ap_uint<32>>, out_burst) requires BOTH col_sz==MAC_PC
@@ -1187,7 +1200,8 @@ static void run_layer(const LayerDescV2 &d,
     const int pw_total_iters   = (int)pw_total_iters_n;
     if (pw_cached_ok) {
 #ifdef PW_WHOIST_WIDE
-        /* ZHR-92 (2026-09-15) PW_WHOIST_WIDE -- STEP-1 probe, OFF by default.
+        /* ZHR-92 (2026-09-15) PW_WHOIST_WIDE -- ON BY DEFAULT since the wburst
+         * promotion (PW_WHOIST_WIDE_OFF reverts); written as a step-1 probe.
          * One 32-bit word per cycle from w_burst (bundle gmem_w), 4 bytes
          * into pw_weight_cache per iteration, requests chunked at
          * ELEMWISE_CHUNK_WORDS like GELU/ADD. Alignment verified on the real
