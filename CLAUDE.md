@@ -1245,6 +1245,20 @@ supposedly standing in for.
   this design) is a P&R failure in waiting; (b) grep the log's `200-1016` listing for it -- the
   fix is usually a counter width or an update fold, never placement; (c) declare loop-carried
   counters at their real width from the start when moving logic into an II=1 body.
+- **The step-1 Estimated clock is BLIND to the LUT-inferred multiply-accumulate chain -- the one
+  structure whose real P&R delay it does not model.** Confirmed 2026-09-16 (`CTR_NARROW`, real P&R at
+  10.0 and 9.0ns): the four counter chains the sweep named were fixed exactly as the estimates said
+  (7.60/7.78/7.30/7.30; at 10.0 WNS +0.135 -> +0.189 with the next datapath structure at +0.487; at
+  9.0 every DW-sourced path left the top-10, worst DW path -0.174 -> +0.263). But 9.0 still came
+  back -0.191, and the worst path is now `PW_FLAT`'s MAC accumulate chain (operand register ->
+  LUT 8x8 multiply -> 32-bit add -> `acc` register, 14 levels, CARRY4x9, 8.25-8.94ns absolute, 196
+  of the top-300) -- while HLS's Estimated for that same module is 7.601 at BOTH targets and its
+  200-1016 listing names the `w_pending` fold, not the MAC. HLS prices the fabric multiply far below
+  Vivado's real levels. Rule: the Estimated-clock check catches counter/control chains (it did,
+  three times); for a datapath chain (multiply-accumulate, wide add trees) only real P&R at the
+  target clock says anything, and the lever is structural (register the product -- `BIND_OP op=mul
+  latency=1` or a DSP-bound multiply -- and/or narrow `acc_t` from 32 to the real 26 bits), not
+  another counter fix. Layer (2) of the 111MHz line; not built as of this entry.
 - **HLS AUTO-PIPELINING a low-frequency loop is pure waste -- the same family as "a runtime value
   gating a hardware region" (a default tool behaviour that optimises in the wrong direction for a
   specific loop shape), on a different trigger.** Confirmed 2026-09-15 (`SE_BURST`): `run_gap`'s
@@ -2147,6 +2161,17 @@ controls flat and byte-exact; full network 82/82 x2, 7 checkpoint files MD5-iden
 and vs seburst; **DW 53.94 (-13.9; pre-registered 45-52, landed 1.9 above)**, PW 136.39 / GELU
 13.02 / ADD 5.05 / SE 1.02 flat; ONNX cosine EXACT. Operator split: **PW 63%**, DW 25%, GELU 6.0%,
 ADD 2.4%, SE 0.5%.
+
+**Timing-margin follow-up on this source, 2026-09-16 (`CTR_NARROW`, OFF by default, commit
+`dcf26d0`, not promoted, no board round):** the four loop-carried counter chains the frequency sweep
+named (PW_FLAT `w_pending`/`k`/`cbase_idx`, FILL4's `col_w`/`widx`/`cur_row`, CONSUME_FLAT's
+`l1_nbuf` drain decision) narrowed/folded -> HLS estimates 9.30/8.20/7.80/7.39 -> 7.60/7.78/7.30/7.30,
+II=1, zero violations, six suites clean (one real bug caught: `ap_uint<12> << 2` truncation at
+cin=1152/W=8 -- technique 4 in the working-method list). Real P&R: **10.0ns +0.189 (dwflat
++0.135; LUT 45,764 / +150; next datapath structure +0.487)**; **9.0ns/111MHz -0.191** (sweep
+-0.174) -- the DW chains are gone from the top-10 (worst DW path +0.263) and the ceiling is now the
+PW_FLAT MAC accumulate chain (8.94ns absolute, invisible to HLS's Estimated -- see the rule in the
+working-method section). 111MHz needs layer (2): product register / `acc_t` 32 -> 26 bits.
 
 **DW refit on this run** (R^2 0.998): 0.94 cyc/pixel (33.5) + **10.2 cyc/row (9.9; was 22.8)** +
 **291 cyc/channel (12.8; was 10.1 -- the flat loops' deeper fill/drain, ~+60 per channel)**. DW 53.9
