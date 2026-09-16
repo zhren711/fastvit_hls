@@ -1230,6 +1230,21 @@ supposedly standing in for.
   anything. A real fix likely needs an explicit resource-sharing directive (`#pragma HLS ALLOCATION
   operation instances=... limit=N`) or a loop restructuring that removes the flattening opportunity
   entirely, not a bare pragma removal.**
+- **The step-1 schedule probe must also read each new pipelined module's OWN timing estimate
+  (`Estimated` in its `_csynth.rpt`, and the `HLS 200-871`/`200-1016` critical-path listing in the
+  csynth log) -- "II=1, zero violations" is not enough.** Confirmed 2026-09-16 (`DWR_FLAT`): both
+  flat loops passed II=1 with zero violations, the round went to P&R, and route_design came back at
+  **WNS -2.574ns** -- while the csynth log had already said `dwr_consume3_Pipeline_DWR_CONSUME_FLAT`
+  estimated **14.986ns** and the produce loop **10.566ns** against a 10ns clock. The named cause
+  was purely structural and cheap: 32-bit `int` loop-carried counters (`w_pend` updated in three
+  places, `col_phase`/`row_phase` reset+increment+wrap, `wbuf_n` ++/==4/mux) whose dependent
+  updates inside the II=1 body chained add(2.55ns)/mux/add/cmp into one cycle. Narrowing each to
+  its real width (`ap_uint<3>`/`<5>`/`<8>`) and folding multi-site updates into ONE net add took
+  the estimates to 8.20 / 7.30ns with no other change. Rule: for every new or restructured
+  pipelined loop, (a) read its `Estimated` clock -- above ~9.3ns (the worst module that closes on
+  this design) is a P&R failure in waiting; (b) grep the log's `200-1016` listing for it -- the
+  fix is usually a counter width or an update fold, never placement; (c) declare loop-carried
+  counters at their real width from the start when moving logic into an II=1 body.
 - **HLS AUTO-PIPELINING a low-frequency loop is pure waste -- the same family as "a runtime value
   gating a hardware region" (a default tool behaviour that optimises in the wrong direction for a
   specific loop shape), on a different trigger.** Confirmed 2026-09-15 (`SE_BURST`): `run_gap`'s
@@ -2075,9 +2090,60 @@ supposedly standing in for.
   must reflect current config) is a standing TODO to verify, not a fact — especially before building
   new code (like a register-write driver) that will silently inherit whichever version is wrong.**
 
-## Current deployed baseline (updated 2026-09-15, latest -- supersedes every earlier baseline reference below)
+## Current deployed baseline (updated 2026-09-16, latest -- supersedes every earlier baseline reference below)
 
-**`mac_array_a3_worow` is now the deployed baseline**, replacing `mac_array_a3_wburst` (~253ms / PW
+**`mac_array_a3_dwflat` is now the deployed baseline**, replacing `mac_array_a3_worow` (~229ms / DW
+67.8 / WNS +0.285ns, 2026-09-15). Full network **~215ms** (215.14 / 215.14ms over two runs, per-entry
+sums 209.42 / 209.41), **-6.1%**; DW 67.8 -> **53.9ms (-20%)**. Cumulative on this latency line:
+6,050ms -> ~215ms, **-96.4%**. Archive + writeup: `vivado_impl/bitstream_archive/
+mac_array_a3_dwflat_2026-09-16/README.txt`. Register map unchanged (`*_whoist`-or-later ARM
+binaries only).
+
+**The DW iteration-structure decomposition that motivated it (first done this round, PW-style):**
+3,552,000 beats = 35.5ms at II=1 (55.7% valid outputs, 44.3% padding/stride-skipped); real MACs
+59.1M on the 98-tap consume array (2 lanes x 7x7) -> **algorithmic floor 6.0ms; measured 67.8 was
+11.2x (PW: 1.46x)**; the 12 k=3 layers use 9 of 98 taps (45% of DW time, 16% of its MACs).
+67.8 = 35.5 (beats) + 22.8 (per-row glue: `CROW` sequential around a request loop / `CCOL`
+fill-drain / `L1_DRAIN` / a response loop, ~23.5 cycles x 97,344 rows) + 10.1 (per-channel prologue).
+
+**What changed** (`DWR_FLAT`, commit `9023d7d` + counter-narrowing fix + default flip, ON via
+`dw_raster_layer.h` -- `DWR_FLAT_OFF` reverts): `dwr_produce`'s ROW x COL and `dwr_consume`'s CROW x
+CCOL are each ONE II=1 pipelined loop per channel (`total_beats = h_pad*w_pad`, narrow-typed, once
+per layer). Row-boundary bus ops sit on iterations that provably carry no lane-0 data write (first
+lane-0 write of a row at pcol = K-1+3S >= 5; the iteration after any lane-0 write is free): pcol 0
+lane-1 `write_request` (fpg=2, buffered row), pcol 1 lane-0 `write_request`, pcol 2..n+1 lane-1
+drain words, one `write_response` pop after each lane-0 write while > 3 rows' worth pending (<= 8 in
+flight). fpg=2's AXI order (AW lane1(R) before lane0(this) -> data lane1(R) then lane0(this)) means a
+lane-1 row drains only after its successor valid row finished -> 2-deep ring, csim-asserted
+n+1 < K-1+3S. Two bus-write call sites in one body were a `200-880` II=2 -> merged into ONE `write`
+with a muxed source. Produce: the one-row-ahead `read_request` at pcol==0.
+
+**The P&R lesson (now a working-method rule, see "step-1 schedule probe must also read each new
+pipelined module's OWN timing estimate")**: the first P&R was **WNS -2.574ns** with II=1 and zero
+violations -- the csynth log had said 14.986ns (consume) / 10.566ns (produce): 32-bit `int`
+loop-carried counters chained inside the II=1 bodies. Narrowed to real widths, multi-site updates
+folded into one add -> 8.20 / 7.30ns estimates, real **WNS +0.135054ns** with no other change.
+Real **LUT 45,614 (85.74%, -530 vs worow; isolated said +801)**, BRAM 111 (+1), DSP 28 (+2). Worst
+path: `desc_op_type` register -> `gmem_act` load-unit buffer enable, 82% route.
+
+Board (`*_whoist` md5-verified; pre-registered order): entry5_dw x3 2.924 -> **2.230 (-24%)**;
+controls flat and byte-exact; full network 82/82 x2, 7 checkpoint files MD5-identical across runs
+and vs seburst; **DW 53.94 (-13.9; pre-registered 45-52, landed 1.9 above)**, PW 136.39 / GELU
+13.02 / ADD 5.05 / SE 1.02 flat; ONNX cosine EXACT. Operator split: **PW 63%**, DW 25%, GELU 6.0%,
+ADD 2.4%, SE 0.5%.
+
+**DW refit on this run** (R^2 0.998): 0.94 cyc/pixel (33.5) + **10.2 cyc/row (9.9; was 22.8)** +
+**291 cyc/channel (12.8; was 10.1 -- the flat loops' deeper fill/drain, ~+60 per channel)**. DW 53.9
+= 33.5 beats (19.8 valid + 13.7 padding/stride) + 9.9 row + 12.8 channel. Left on DW by size: the
+13.7ms of padding/stride beats and the 9-of-98-tap utilisation on k=3 (both need produce/consume to
+handle >1 pixel per beat -- the K-specialised datapath whose one precedent cost +143% LUT), the
+12.8 per-channel (prologue + fill/drain; lane 1 runs for nothing on fpg=1 layers), the 9.9 per-row
+residual. **Closing-table update: PW 136.4 (1.31x its 104 floor), DW 53.9 (1.52x its 35.5 beat
+floor; 9.0x the 6.0 algorithmic floor), GELU 13.0, ADD 5.05, SE 1.02, ARM ~4.7, capture 2.9.**
+
+## Prior deployed baseline (superseded 2026-09-16, kept for history)
+
+**`mac_array_a3_worow` was the deployed baseline from 2026-09-15 to 2026-09-16**, replacing `mac_array_a3_wburst` (~253ms / PW
 160.6 / WNS +0.180ns, same day). Full network **~229ms** (228.98 / 228.82ms over two runs, per-entry
 sums 223.27 / 223.05), **-9.6%**; PW 160.6 -> **136.4ms (-24.2)**. Cumulative on this latency
 line: 6,050ms -> ~229ms, **-96.2%**. Archive + writeup: `vivado_impl/bitstream_archive/

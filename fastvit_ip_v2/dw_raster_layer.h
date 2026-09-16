@@ -55,6 +55,20 @@
  * popped (<= (DWR_FLAT_DEFER_ROWS+1)*fpg = 8 outstanding vs the adapter's 16). */
 #define DWR_FLAT_DEFER_ROWS 3
 
+// ZHR-92 (2026-09-16): DWR_FLAT is ON BY DEFAULT as of the mac_array_a3_dwflat
+// deployed baseline (real board, busy-poll/defer harness: DW 67.8 -> 53.9ms,
+// -20%; full network ~229 -> ~215ms, -6%; byte-exact, ONNX cosine exact; WNS
+// +0.135 route-only, real LUT -530). dwr_produce's ROWxCOL and dwr_consume's
+// CROWxCCOL are each ONE II=1 pipelined loop per channel; row-boundary bus ops
+// sit on provably write-free iterations (see dwr_consume's own comment). The
+// first P&R was -2.574ns from 32-bit loop-carried counters chained inside the
+// II=1 bodies (HLS's own 200-871 estimates 14.99/10.57ns -- read them in step
+// 1); narrowing the counters fixed it with no other change. Define
+// DWR_FLAT_OFF to get the row-nested loops back.
+#ifndef DWR_FLAT_OFF
+#define DWR_FLAT 1
+#endif
+
 // ZHR-92 (2026-09-15): DWR_WBURST is ON BY DEFAULT as of the mac_array_a3_wburst
 // deployed baseline. The 32-bit w_burst port (added for PW_WHOIST_WIDE) makes
 // gmem_w's access width 32-bit for every port, which cost w_base's byte reads

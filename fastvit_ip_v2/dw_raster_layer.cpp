@@ -254,7 +254,8 @@ static void dwr_produce(
 #endif
     int row_phase = 0;
 #if defined(DWR_FLAT) && defined(DWR_ROWREAD) && defined(DWR_ROW_PF)
-    /* ZHR-92 (2026-09-16) DWR_FLAT -- STEP-1 probe, OFF by default. ROW x COL
+    /* ZHR-92 (2026-09-16) DWR_FLAT -- ON BY DEFAULT since the dwflat promotion
+     * (DWR_FLAT_OFF reverts); written as a step-1 probe. ROW x COL
      * flattened into ONE pipelined loop per channel (total_beats = h_pad*w_pad,
      * computed narrow-typed by the caller), so the per-row fill/drain and loop
      * control that the fit priced at ~23.5 cycles per padded row (22.8ms over
@@ -264,44 +265,54 @@ static void dwr_produce(
      * the PW REQ_IN_FILL probe showed II=1 holds; here the fill depth is paid
      * per channel, not per row). */
     {
-    int prow = 0, pcol = 0;
+    /* narrow loop-carried counters: a 32-bit add is 2.55ns in HLS's model and
+     * the reset/increment/wrap chain of an int counter inside the II=1 body
+     * estimated at 10.57ns (HLS 200-1016 on col_phase). h_pad/w_pad <= 134,
+     * phases < S <= 7. */
+    ap_uint<8> prow = 0, pcol = 0;
     int real_row = -pad;
     bool row_in_image = false, row_valid = false;
-    int col_phase = 0;
+    ap_uint<3> col_phase = 0;
+    ap_uint<3> row_phase_n = 0;
+    const ap_uint<3> S_n = S;
+    const ap_uint<8> wpad_last = w_pad - 1;
+    const ap_uint<8> Km1 = K - 1;
     DWR_PRODUCE_FLAT: for (int i = 0; i < total_beats; i++) {
 #pragma HLS PIPELINE II=1
         if (pcol == 0) {
-            real_row = prow - pad;
+            real_row = (int)prow - pad;
             row_in_image = (real_row >= 0) && (real_row < h_in);
             if (row_in_image && rows_requested < h_in) {
                 in_burst_r.read_request(row_byte >> 2, n_words_in_row);
                 row_byte += w_in;
                 rows_requested++;
             }
-            if (prow < K - 1) {
+            if (prow < Km1) {
                 row_valid = false;
-            } else if (prow == K - 1) {
-                row_phase = 0;
+            } else if (prow == Km1) {
+                row_phase_n = 0;
                 row_valid = true;
             } else {
-                row_phase++;
-                if (row_phase == S) row_phase = 0;
-                row_valid = (row_phase == 0);
+                ap_uint<3> rp = row_phase_n + 1;
+                if (rp == S_n) rp = 0;
+                row_phase_n = rp;
+                row_valid = (rp == 0);
             }
-            col_phase = 0;
         }
-        int real_col = pcol - pad;
+        int real_col = (int)pcol - pad;
         bool col_in_image = row_in_image && (real_col >= 0) && (real_col < w_in);
         bool col_valid;
-        if (pcol < K - 1) {
+        if (pcol < Km1) {
             col_valid = false;
-        } else if (pcol == K - 1) {
+            col_phase = 0;
+        } else if (pcol == Km1) {
             col_phase = 0;
             col_valid = true;
         } else {
-            col_phase++;
-            if (col_phase == S) col_phase = 0;
-            col_valid = (col_phase == 0);
+            ap_uint<3> cp = col_phase + 1;
+            if (cp == S_n) cp = 0;
+            col_phase = cp;
+            col_valid = (cp == 0);
         }
         dwr_beat_t beat;
         beat.valid = row_valid && col_valid;
@@ -330,7 +341,7 @@ static void dwr_produce(
                 beat.window[r][c] = window[r][c];
         taps.write(beat);
         if (col_in_image) cur_word = cur_word >> 8;
-        if (pcol == w_pad - 1) { pcol = 0; prow++; } else { pcol++; }
+        if (pcol == wpad_last) { pcol = 0; prow++; } else { pcol++; }
     }
     }
 #else
@@ -830,7 +841,11 @@ static void dwr_consume(
 #ifdef DW_OUTPUT_BURST
 #pragma HLS ARRAY_PARTITION variable=wbuf complete dim=1
 #endif
+#ifdef DWR_FLAT
+    ap_uint<3> wbuf_n[DWR_MAX_FPG];   /* 0..4: an int here chained ++/==4/mux into a 9.6ns estimate */
+#else
     int   wbuf_n[DWR_MAX_FPG];
+#endif
     int   write_ptr[DWR_MAX_FPG];
     for (int g = 0; g < DWR_MAX_FPG; g++) { wbuf_n[g] = 0; write_ptr[g] = 0; }
 
@@ -898,7 +913,8 @@ static void dwr_consume(
     int rows_pending = 0;
 #endif
 #ifdef DWR_FLAT
-    /* ZHR-92 (2026-09-16) DWR_FLAT -- STEP-1 probe, OFF by default. CROW x
+    /* ZHR-92 (2026-09-16) DWR_FLAT -- ON BY DEFAULT since the dwflat promotion
+     * (DWR_FLAT_OFF reverts); written as a step-1 probe. CROW x
      * CCOL flattened into ONE pipelined loop per channel. The row-boundary
      * bus operations ride on iterations that provably carry no lane-0 data
      * write: the first lane-0 write of a row is at pcol = K-1 + 3*S >= 5
@@ -919,48 +935,58 @@ static void dwr_consume(
      * the K=3/S=1 fpg=2 layer w_out=8 -> 3 < 5). Rows with no output
      * (padding rows, stride-skipped rows) carry no bus op at all. */
     {
-    int prow = 0, pcol = 0;
+    /* narrow loop-carried counters (see the produce-side note): the int
+     * versions chained into a 15ns / 9.8ns estimate (HLS 200-1016). */
+    ap_uint<8> prow = 0, pcol = 0;
     bool row_valid = false;
+    ap_uint<3> row_phase_n = 0;
+    const ap_uint<3> S_n = S;
+    const ap_uint<8> wpad_last = w_pad - 1;
+    const ap_uint<8> Km1 = K - 1;
+    const ap_uint<8> drain_end = 2 + n_words_row;    /* first pcol after the drain slots */
     ap_uint<32> l1ring[2][DWR_ROWBUF_WORDS];
 #pragma HLS ARRAY_PARTITION variable=l1ring complete dim=1
-    int l1_n_cur = 0;          /* words buffered for the current valid row */
-    int l1_tail = 0;           /* ring slot being filled */
-    int l1_head = 0;           /* ring slot to drain */
-    int l1_nbuf = 0;           /* buffered valid rows not yet drained (0..2) */
+    ap_uint<6> l1_n_cur = 0;   /* words buffered for the current valid row */
+    ap_uint<1> l1_tail = 0;    /* ring slot being filled */
+    ap_uint<1> l1_head = 0;    /* ring slot to drain */
+    ap_uint<2> l1_nbuf = 0;    /* buffered valid rows not yet drained (0..2) */
     int l1_row_off[2];         /* row_off of each buffered row */
 #pragma HLS ARRAY_PARTITION variable=l1_row_off complete dim=0
     bool l1_drain_now = false; /* this row's leading slots drain l1ring[l1_head] */
     int  l1_drain_off = 0;
-    int  w_pend = 0;           /* write_requests issued - responses popped */
+    ap_uint<5> w_pend = 0;     /* write_requests issued - responses popped (<= 8) */
     bool just_wrote = false;   /* previous iteration issued a lane-0 write */
+    const ap_uint<5> pend_thr = (ap_uint<5>)(DWR_FLAT_DEFER_ROWS * fpg);   /* 3 or 6, layer-constant */
     DWR_CONSUME_FLAT: for (int i = 0; i < total_beats; i++) {
 #pragma HLS PIPELINE II=1
         if (pcol == 0) {
-            if (prow < K - 1) {
+            if (prow < Km1) {
                 row_valid = false;
-            } else if (prow == K - 1) {
-                row_phase = 0;
+            } else if (prow == Km1) {
+                row_phase_n = 0;
                 row_valid = true;
             } else {
-                row_phase++;
-                if (row_phase == S) row_phase = 0;
-                row_valid = (row_phase == 0);
+                ap_uint<3> rp = row_phase_n + 1;
+                if (rp == S_n) rp = 0;
+                row_phase_n = rp;
+                row_valid = (rp == 0);
             }
             l1_n_cur = 0;
             l1_drain_now = (fpg > 1) && (l1_nbuf == 2);
             l1_drain_off = l1_row_off[l1_head];
         }
         /* --- row-start bus slots --- */
-        if (pcol == 0 && l1_drain_now) {
-            out_burst_w.write_request((lane_base[1] + l1_drain_off) >> 2, n_words_row);
-            w_pend++;
-        }
-        if (pcol == 1 && row_valid) {
-            out_burst_w.write_request((lane_base[0] + row_off) >> 2, n_words_row);
-            w_pend++;
-        }
-        bool drain_slot = l1_drain_now && (pcol >= 2) && (pcol < 2 + n_words_row);
-        ap_uint<32> drain_word = l1ring[l1_head][(pcol >= 2 && pcol < 2 + DWR_ROWBUF_WORDS) ? (pcol - 2) : 0];
+        const bool aw1 = (pcol == 0) && l1_drain_now;
+        const bool aw0 = (pcol == 1) && row_valid;
+        if (aw1) out_burst_w.write_request((lane_base[1] + l1_drain_off) >> 2, n_words_row);
+        if (aw0) out_burst_w.write_request((lane_base[0] + row_off) >> 2, n_words_row);
+        /* pop decision on the PREVIOUS pending count (this iteration's AWs only
+         * make it larger); the counter is updated ONCE below as a single 5-bit
+         * 3-operand add -- three dependent updates in one iteration chained
+         * add/mux/add/mux/cmp into a 15ns path (HLS 200-1016). */
+        const bool pop = just_wrote && (pcol >= 2) && (w_pend > pend_thr);
+        bool drain_slot = l1_drain_now && (pcol >= 2) && (pcol < drain_end);
+        ap_uint<32> drain_word = l1ring[l1_head][(ap_uint<5>)(pcol - 2)];
         /* --- the beat --- */
         dwr_beat_t beat = taps.read();
         bool wrote0 = false;
@@ -1014,18 +1040,16 @@ static void dwr_consume(
             out_burst_w.write(drain_slot ? drain_word : word0);
         }
         /* --- response pop: the iteration after a lane-0 write is write-free --- */
-        if (just_wrote && (pcol >= 2) && (w_pend > DWR_FLAT_DEFER_ROWS * fpg)) {   /* pcol 0/1 hold the AW slots */
-            out_burst_w.write_response();
-            w_pend--;
-        }
+        if (pop) out_burst_w.write_response();
+        w_pend = w_pend + (ap_uint<5>)(aw1 ? 1 : 0) + (ap_uint<5>)(aw0 ? 1 : 0) - (ap_uint<5>)(pop ? 1 : 0);
         just_wrote = wrote0;
-        /* --- row end --- */
-        if (pcol == w_pad - 1) {
-            if (l1_drain_now) { l1_head ^= 1; l1_nbuf--; }
-            if (row_valid) {
-                if (fpg > 1) { l1_row_off[l1_tail] = row_off; l1_tail ^= 1; l1_nbuf++; }
-                row_off += w_out;
-            }
+        /* --- row end: one net update of the ring count --- */
+        if (pcol == wpad_last) {
+            const bool push1 = row_valid && (fpg > 1);
+            if (l1_drain_now) { l1_head = ~l1_head; }
+            if (push1) { l1_row_off[l1_tail] = row_off; l1_tail = ~l1_tail; }
+            l1_nbuf = l1_nbuf + (ap_uint<2>)(push1 ? 1 : 0) - (ap_uint<2>)(l1_drain_now ? 1 : 0);
+            if (row_valid) row_off += w_out;
             pcol = 0; prow++;
         } else {
             pcol++;
@@ -1046,7 +1070,7 @@ static void dwr_consume(
     }
     DWR_FLAT_WRESP_TAIL: for (int q = 0; q < 2 * (DWR_FLAT_DEFER_ROWS + 1) * DWR_MAX_FPG; q++) {
 #pragma HLS PIPELINE II=1
-        if (q < w_pend) out_burst_w.write_response();
+        if (q < (int)w_pend) out_burst_w.write_response();
     }
     }
 #endif /* DWR_FLAT */
