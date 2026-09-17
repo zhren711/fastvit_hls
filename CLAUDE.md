@@ -1568,6 +1568,26 @@ supposedly standing in for.
   large W"). Same family as the coupled-cost rule above: before trusting a fitted coefficient,
   find two real layers that differ in only one of the fitted variables and check that the
   residual is the same -- if it is not, a term is missing or two terms are collinear.
+- **CDC per-transaction cost, measured (2026-09-17, `vivado_impl/cdc_probe/`, XSim, AXI VIP master ->
+  interconnect -> `axi_bram_ctrl`): an `axi_clock_converter` crossing (what `axi_interconnect` inserts)
+  costs +18-19 MASTER cycles per AXI4 transaction round trip (write1 8 -> 26, read1 6 -> 24.5,
+  read16 51 -> 69.6 at 111 -> 100MHz; scales with the slave period, so it is a real crossing), and
+  +12 write / +15 read cycles on AXI4-Lite (100 -> 111).** Two things learned about the tool while
+  measuring: (1) **SmartConnect's own crossing (`sc_node`, `ACLK_RELATIONSHIP=0`,
+  `SYNCHRONIZATION_STAGES=3`) is NOT simulated by its encrypted behavioural model** -- async
+  111 -> 100 and even 111 -> 50 came back cycle-identical to the synchronous case (a 50MHz slave
+  answering a single read in 63ns is impossible with 3-stage synchronizers). A SmartConnect CDC
+  number needs a post-synthesis (gate-level) simulation with a synthesizable master, not the VIP;
+  not done. (2) **XSim: a `-generic_top` parameter override reached `$display` but NOT an
+  `always #(PARAM/2) clk = ~clk` delay** -- the clocks ran at the default period while the printout
+  claimed otherwise; clock periods now come in as run-time plusargs (`$value$plusargs`). Verify a
+  simulated clock with an edge counter, never with the parameter's printed value.
+  Against the 111MHz prize (~16ms, 7.6%): the fully-exposed break-even is ~10 cycles per
+  transaction, so +18 would lose if every transaction paid it -- but ROW_READ's 8-deep prefetch,
+  the deferred write responses (KEEP_OTS, would need 4 = the adapter's 16 for the cin=48 layers)
+  and DW's one-row-ahead reads hide most of it; the exposed part is the narrow-W DW layers, the
+  1024-word elementwise chunks (~0.4ms) and AXI-Lite (+0.28ms, 2,296 writes). Estimated net
+  +5..10ms at best, on a 9.0ns build with +0.073 route-only margin. Decision pending (see ZHR-92).
 - **METHOD: when a change's aggregate effect is inside the threshold but its direction is
   suspicious, a per-layer diff plus a multi-bitstream A/B on one entry separates the mechanism --
   and the SHAPE of "which layers moved" is itself the diagnosis.** This is one method with four
