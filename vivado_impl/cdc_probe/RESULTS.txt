@@ -1,0 +1,18 @@
+CDC probe results (ZHR-92, 2026-09-17, (b) step 1) -- XSim behavioural, AXI VIP master -> ic -> axi_bram_ctrl
+Blocking-call duration per transaction (AW/AR issue -> B/RLAST), mean of 16, in MASTER clock cycles.
+
+axi_interconnect 2.1 (axi_clock_converter inside), AXI4, 32-bit:
+  config              write1  read1  write4  read4  write16  read16
+  sync 111/111          8      6      11     15      23       51
+  async 111 -> 100     26     24.5    30     33.3    42.6     69.6     (+18 / +18.5 / +19 / +18.3 / +19.6 / +18.6)
+  async 111 -> 50      36.6   37.8    42.9   46.7    70.1     82.9     (scales with the slave period: real crossing)
+axi_interconnect 2.1, AXI4-Lite (the s_axi_control path, PS master 100MHz):
+  sync 100/100          9      3
+  async 100 -> 111     21     18.1                                    (+12 / +15 master cycles = +120 / +150 ns)
+SmartConnect (NUM_CLKS=2, sc_node ACLK_RELATIONSHIP=0, SYNCHRONIZATION_STAGES=3):
+  sync 100/100          8      7      11     16      23       52
+  async 111 -> 100      8      7      11     16      23       52      IDENTICAL to sync in master cycles
+  async 111 -> 50       8      7      11     16      23       52      -- a 50MHz slave answering a single read in 63ns
+                                                                      is physically impossible with 3-stage synchronizers:
+                                                                      the (encrypted) sc_node behavioural model does NOT
+                                                                      simulate the crossing. NOT a measurement.
