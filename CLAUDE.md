@@ -1587,7 +1587,23 @@ supposedly standing in for.
   the deferred write responses (KEEP_OTS, would need 4 = the adapter's 16 for the cin=48 layers)
   and DW's one-row-ahead reads hide most of it; the exposed part is the narrow-W DW layers, the
   1024-word elementwise chunks (~0.4ms) and AXI-Lite (+0.28ms, 2,296 writes). Estimated net
-  +5..10ms at best, on a 9.0ns build with +0.073 route-only margin. Decision pending (see ZHR-92).
+  +5..10ms at best, on a 9.0ns build with +0.073 route-only margin. **DECLINED 2026-09-17 (ZHR-63
+  close-out comment): 111MHz stays "P&R-verified (+0.146 / +0.073 route-only, path #300 at
+  +0.620), deployment-limited by the boot-fixed FCLK0" -- a footnote, not a target. 2-5% for a
+  BD/CDC change class never deployed on this board, on 3ps of margin, the week the golden image
+  was nearly lost and the PS-corruption incident recurred: the risk tolerance is lower than
+  usual and the prize is not the 7.6% it looked like. Its four timing changes are deployed at
+  100MHz on their own merit (212.34ms, WNS +0.381, LUT 83.08%).**
+  Two tool lessons from the probe, filed in their families: (a) the `-generic_top` override that
+  reached `$display` but not the clock delay is another member of the "tool accepted the input
+  and did not do what it claimed" family (export_design's stale HDL, vitis_hls's exit code, the
+  silently-ignored ALLOCATION pragma) -- caught this time by an INDEPENDENT cross-check (an edge
+  counter on the simulated clock), which is the general defence: verify the effect, not the
+  acceptance; (b) SmartConnect's idealized crossing is the FIRST instance on this project of a
+  vendor SIMULATION MODEL disagreeing with the hardware it models (previous instances were all
+  reports/estimates, not simulations) -- a behavioural model of encrypted IP is a claim about the
+  hardware, not a measurement of it, and needs a physical-plausibility check (here: 63ns for a
+  50MHz round trip through 3-stage synchronizers) before its number is used.
 - **METHOD: when a change's aggregate effect is inside the threshold but its direction is
   suspicious, a per-layer diff plus a multi-bitstream A/B on one entry separates the mechanism --
   and the SHAPE of "which layers moved" is itself the diagnosis.** This is one method with four
