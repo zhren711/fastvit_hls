@@ -309,6 +309,26 @@ supposedly standing in for.
   documents. No new avenue opened by this round; both `PW_FORCE_DSP` and `LB_FORCE_DSP` stay
   undefined by default.
 - 125/142.86MHz frequency midpoints: a cheap side-check during Phase A at most, never a mainline goal.
+- **MAC_PD 4->8 with DSP-bound multipliers -- RESOURCE-ACCOUNTED 2026-09-19 (isolated csynth, three
+  probes, nothing implemented): infeasible AS-IS on all three axes, one structural shape left open.**
+  Numbers (10ns): PD4 baseline 255/22/40,847/78,124; PD4 + `impl=DSP` 255/150/40,847/70,188 (LUT
+  -7,936 = exactly 128 x 62, the latency=1 product register maps onto the DSP48 P register, II/depth/
+  Estimated unchanged); **PD8 + DSP 319/278/47,948/99,031; PD8 LUT 319/22/47,948/114,903.** (a) DSP
+  278 > 220: the 128 multipliers are PER PW_FLAT TEMPLATE INSTANCE and there are two (`FAST_WRITEOUT`
+  true/false; the second exists only for the two W=1 SE fc layers) -- any "192 idle DSPs" count must
+  be divided by the instance count first. (b) LUT: the NON-multiplier slope is 7,211 LUT per PD unit
+  (isolated; the 2026-08-31 figure 7,156 still holds after a dozen rounds), i.e. adder/acc/mux logic
+  grows 3.6x faster than the multipliers it feeds; real projection 103-105% by either ratio. (c) BRAM
+  +64 BRAM_18K = +32 tiles (-> ~143/140): `pw_patch_full[MAX_CIN][4][4]` with `cyclic factor=MAC_PD`
+  dim 1 + complete dims 2/3 becomes 128 banks of 144 bytes, each in its own BRAM_18K -- it already
+  wastes 32 tiles at PD4 (64 banks x 288 B); `pw_weight_cache` is NOT the cause (HLS auto-inferred
+  cyclic 4, same 128 BRAM_18K). (d) Correctness trap: at PD8 `PW_FLAT_STEPS_PER_CBASE` = 4, so the
+  deferred-response pop predicate `k >= MAC_PR && k < 2*MAC_PR` never fires -> outstanding writes
+  exceed the adapter's 16. The only shape the arithmetic leaves open: ONE PW_FLAT instance (SE fc
+  pair handled otherwise) + DSP multipliers + `pw_patch_full` in LUTRAM (`BIND_STORAGE impl=lutram`)
+  + the pop schedule re-cut -> DSP 150, BRAM ~79 tiles, isolated LUT ~77.7k (real ~83%) -- three
+  structural changes before a first P&R, payoff ceiling PW 104 -> ~57ms by trip count (a prediction).
+  Probe scripts `run_csynth_probe_{pd4dsp,pd8dsp,pd8lut}.tcl`; `MAC_PD` is now `#ifndef`-overridable.
 
 ## Working method (non-negotiable, not stylistic)
 
