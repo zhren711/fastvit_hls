@@ -329,6 +329,17 @@ supposedly standing in for.
   + the pop schedule re-cut -> DSP 150, BRAM ~79 tiles, isolated LUT ~77.7k (real ~83%) -- three
   structural changes before a first P&R, payoff ceiling PW 104 -> ~57ms by trip count (a prediction).
   Probe scripts `run_csynth_probe_{pd4dsp,pd8dsp,pd8lut}.tcl`; `MAC_PD` is now `#ifndef`-overridable.
+  **The single-instance step evaluated separately (2026-09-19, `pw_scalar_probe.cpp`, standalone csynth):
+  the NARROW instance serves only entries 76/78 (the h=w=1 SE fc layers, 73,728 MACs, 1.90 ms).
+  (a) FAST-handles-W=1 is rejected: with w_out=1 the channel stride is 1 byte, so a 4-byte row word
+  covers channels co..co+3 -- a byte tail is needed, `hls::burst_maxi` has no strobe, and a tail
+  branch inside the one instance is the same two-bus-writes-per-iteration `200-880` (II=2) the
+  template was created to avoid. (c) ARM: ~1.3-1.5 ms, slower than (b) and breaks "whole network on
+  the PL". (b) a minimal II=1 scalar PW loop: 123 LUT (1 MAC/cycle, byte pointer, burst-inferred,
+  0.78 ms) or 328 LUT (4 MACs/cycle via `w_burst`, 0.25 ms) for the loop, ~1.6-1.9k LUT non-adapter
+  in total, vs the 12,648-LUT instance it retires -- net about -11k isolated AND -1.1..-1.65 ms.
+  Design note: the per-co bias/shift/output/request accesses must be hoisted (768 of each on entry
+  78 = ~0.8 ms of serial AXI ops otherwise). Not built; pre-registered as its own round.**
 
 ## Working method (non-negotiable, not stylistic)
 
